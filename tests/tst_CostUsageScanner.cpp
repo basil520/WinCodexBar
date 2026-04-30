@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QFile>
 #include <QTextStream>
+#include <algorithm>
 
 #include "util/CostUsageScanner.h"
 
@@ -33,7 +34,6 @@ private slots:
         QTextStream log(&logFile);
         log << "OpenCode Go scan result:\n";
         log << "  opencodego tokens: " << result.opencodego.last30DaysTokens << "\n";
-        log << "  deepseek tokens: " << result.deepseek.last30DaysTokens << "\n";
         log << "  kimi tokens: " << result.kimi.last30DaysTokens << "\n";
         
         auto dumpSnapshot = [&](const QString& name, const CostUsageSnapshot& snap) {
@@ -51,13 +51,26 @@ private slots:
         };
         
         dumpSnapshot("opencodego", result.opencodego);
-        dumpSnapshot("deepseek", result.deepseek);
         dumpSnapshot("kimi", result.kimi);
         logFile.close();
         
         QVERIFY(result.opencodego.last30DaysTokens > 0 || !result.opencodego.errorMessage.isEmpty()
-                || result.deepseek.last30DaysTokens > 0 || !result.deepseek.errorMessage.isEmpty()
                 || result.kimi.last30DaysTokens > 0 || !result.kimi.errorMessage.isEmpty());
+    }
+
+    void testOpenCodeGoPricingOnlyContainsSupportedModelFamilies() {
+        auto keys = CostUsageScanner::opencodeGoPricingMap().keys();
+        std::sort(keys.begin(), keys.end());
+
+        const QStringList expected = {
+            "glm-5",
+            "glm-5.1",
+            "k2p6",
+            "kimi-k2.5",
+            "kimi-k2.6",
+            "minimax",
+        };
+        QCOMPARE(keys, expected);
     }
 };
 
