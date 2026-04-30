@@ -100,8 +100,18 @@ void CostUsageScanner::initPricing() {
     m_opencodeGoPricing["kimi-k2.6"]        = { 1.0, 0.1, 1.25, 5.0 };    // Kimi K2.6
     m_opencodeGoPricing["minimax"]           = { 0.1, 0.01, 0.1, 0.4 };    // MiniMax approximate
 
-    // DeepSeek models
-    m_opencodeGoPricing["deepseek-v4-pro"]   = { 1.0, 0.1, 1.0, 4.0 };    // DeepSeek V4 Pro approximate
+    // DeepSeek models (pricing in USD per 1M tokens, converted from CNY at 1 USD = 6.82 CNY)
+    // DeepSeek V4 Pro (current 2.5x discount until 2026/05/31)
+    //   - Cache miss input: 3.0 CNY / 6.82 = $0.44
+    //   - Cache hit input: 0.025 CNY / 6.82 = $0.0037
+    //   - Output: 6.0 CNY / 6.82 = $0.88
+    m_opencodeGoPricing["deepseek-v4-pro"]   = { 0.44, 0.0037, 0, 0.88 };
+    
+    // DeepSeek V4 Flash (cheaper tier)
+    //   - Cache miss input: 1.0 CNY / 6.82 = $0.147
+    //   - Cache hit input: 0.02 CNY / 6.82 = $0.0029
+    //   - Output: 2.0 CNY / 6.82 = $0.293
+    m_opencodeGoPricing["deepseek-v4-flash"] = { 0.147, 0.0029, 0, 0.293 };
 
     // Kimi for coding models (used by kimi-for-coding provider)
     m_opencodeGoPricing["k2p6"]             = { 1.0, 0.1, 1.25, 5.0 };    // Kimi K2.6 for coding
@@ -881,7 +891,9 @@ CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QD
                 time_created,
                 json_extract(data, '$.tokens.input') AS input_tokens,
                 json_extract(data, '$.tokens.output') AS output_tokens,
-                json_extract(data, '$.tokens.cache.read') AS cache_read
+                json_extract(data, '$.tokens.cache.read') AS cache_read,
+                json_extract(data, '$.tokens.cache.write') AS cache_write,
+                json_extract(data, '$.tokens.reasoning') AS reasoning
             FROM message
             WHERE json_extract(data, '$.role') = 'assistant'
               AND json_extract(data, '$.tokens') IS NOT NULL
@@ -893,7 +905,9 @@ CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QD
             COUNT(*) AS message_count,
             SUM(a.input_tokens) AS input_tokens,
             SUM(a.output_tokens) AS output_tokens,
-            SUM(a.cache_read) AS cache_read
+            SUM(a.cache_read) AS cache_read,
+            SUM(a.cache_write) AS cache_write,
+            SUM(a.reasoning) AS reasoning
         FROM assistant_tokens a
         LEFT JOIN user_models um
             ON a.session_id = um.session_id
@@ -931,12 +945,21 @@ CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QD
         int inputTokens = query.value("input_tokens").toInt();
         int outputTokens = query.value("output_tokens").toInt();
         int cacheRead = query.value("cache_read").toInt();
+        int cacheWrite = query.value("cache_write").toInt();
+        int reasoning = query.value("reasoning").toInt();
 
         auto& mb = providerData[providerId].dayModels[day][model];
         mb.modelName = model;
         mb.inputTokens += qMax(0, inputTokens);
         mb.outputTokens += qMax(0, outputTokens);
         mb.cacheReadTokens += qMax(0, cacheRead);
+        mb.cacheWriteTokens += qMax(0, cacheWrite);
+        mb.reasoningTokens += qMax(0, reasoning);
+        
+        // Calculate cache hit/miss (cache hit = min(input, cacheRead))
+        int clampedCacheRead = qMin(mb.inputTokens, mb.cacheReadTokens);
+        mb.cacheHitTokens = clampedCacheRead;
+        mb.cacheMissTokens = qMax(0, mb.inputTokens - clampedCacheRead);
     }
 
     db.close();
@@ -957,7 +980,9 @@ CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QD
             for (auto mit = dit.value().constBegin(); mit != dit.value().constEnd(); ++mit) {
                 auto mb = mit.value();
                 Pricing p = priceForModel(mb.modelName);
-                double cost = costForCodexModel(p, mb.inputTokens, mb.cacheReadTokens, mb.outputTokens);
+                // Reasoning tokens are billed as output (following tokscale convention)
+                int totalOutput = mb.outputTokens + mb.reasoningTokens;
+                double cost = costForCodexModel(p, mb.inputTokens, mb.cacheReadTokens, totalOutput);
                 mb.costUSD = cost;
                 entry.inputTokens += mb.inputTokens;
                 entry.cacheReadTokens += mb.cacheReadTokens;
