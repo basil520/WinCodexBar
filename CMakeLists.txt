@@ -52,7 +52,6 @@ set(CORE_SOURCES
     src/providers/opencode/OpenCodeProvider.cpp
     src/providers/opencode/OpenCodeGoProvider.cpp
     src/providers/opencode/OpenCodeUtils.cpp
-    src/providers/deepseek/DeepSeekProvider.cpp
 
     src/network/NetworkManager.cpp
 
@@ -99,7 +98,6 @@ set(CORE_HEADERS
     src/providers/opencode/OpenCodeProvider.h
     src/providers/opencode/OpenCodeGoProvider.h
     src/providers/opencode/OpenCodeUtils.h
-    src/providers/deepseek/DeepSeekProvider.h
 
     src/providers/IProvider.h
     src/providers/IFetchStrategy.h

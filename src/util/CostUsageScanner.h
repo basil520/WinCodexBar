@@ -23,7 +23,6 @@ public:
 
     struct OpenCodeGoScanResult {
         CostUsageSnapshot opencodego;
-        CostUsageSnapshot deepseek;
         CostUsageSnapshot kimi;
     };
     OpenCodeGoScanResult scanOpenCodeGo(const QDate& since, const QDate& until);

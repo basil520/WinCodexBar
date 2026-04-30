@@ -345,8 +345,7 @@ Rectangle {
                                         text: {
                                             var names = {
                                                 "codex": "Codex", "claude": "Claude",
-                                                "opencodego": "OpenCode Go",
-                                                "deepseek": "DeepSeek"
+                                                "opencodego": "OpenCode Go"
                                             }
                                             return names[modelData.providerId] || modelData.providerId
                                         }
@@ -955,7 +954,6 @@ Rectangle {
             "copilot": "#2DA44E",
             "zai": "#E85A6A",
             "opencode": "#E44D26",
-            "deepseek": "#1E3A8A",
             "warp": "#00BCD4",
             "mistral": "#F77F00",
             "openrouter": "#FF6B6B",

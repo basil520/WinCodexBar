@@ -464,22 +464,18 @@ void UsageStore::refreshCostUsage() {
             perProvider["opencodego"] = ocgResult.opencodego;
         if (ocgResult.kimi.last30DaysTokens > 0)
             perProvider["kimi"] = ocgResult.kimi;
-        
-        // API providers: add as independent providers
-        if (ocgResult.deepseek.last30DaysTokens > 0)
-            perProvider["deepseek"] = ocgResult.deepseek;
 
         // Global aggregate (backward compat)
         CostUsageSnapshot combined;
         combined.updatedAt = QDateTime::currentDateTime();
         combined.sessionTokens = mergedClaude.sessionTokens + mergedCodex.sessionTokens 
-            + ocgResult.opencodego.sessionTokens + ocgResult.deepseek.sessionTokens + ocgResult.kimi.sessionTokens;
+            + ocgResult.opencodego.sessionTokens + ocgResult.kimi.sessionTokens;
         combined.sessionCostUSD = mergedClaude.sessionCostUSD + mergedCodex.sessionCostUSD 
-            + ocgResult.opencodego.sessionCostUSD + ocgResult.deepseek.sessionCostUSD + ocgResult.kimi.sessionCostUSD;
+            + ocgResult.opencodego.sessionCostUSD + ocgResult.kimi.sessionCostUSD;
         combined.last30DaysTokens = mergedClaude.last30DaysTokens + mergedCodex.last30DaysTokens 
-            + ocgResult.opencodego.last30DaysTokens + ocgResult.deepseek.last30DaysTokens + ocgResult.kimi.last30DaysTokens;
+            + ocgResult.opencodego.last30DaysTokens + ocgResult.kimi.last30DaysTokens;
         combined.last30DaysCostUSD = mergedClaude.last30DaysCostUSD + mergedCodex.last30DaysCostUSD 
-            + ocgResult.opencodego.last30DaysCostUSD + ocgResult.deepseek.last30DaysCostUSD + ocgResult.kimi.last30DaysCostUSD;
+            + ocgResult.opencodego.last30DaysCostUSD + ocgResult.kimi.last30DaysCostUSD;
         {
             QHash<QString, CostUsageDailyEntry> dayMap;
             auto mergeDaily = [&](const QVector<CostUsageDailyEntry>& daily) {
@@ -497,7 +493,6 @@ void UsageStore::refreshCostUsage() {
             mergeDaily(mergedClaude.daily);
             mergeDaily(mergedCodex.daily);
             mergeDaily(ocgResult.opencodego.daily);
-            mergeDaily(ocgResult.deepseek.daily);
             mergeDaily(ocgResult.kimi.daily);
             for (auto it = dayMap.constBegin(); it != dayMap.constEnd(); ++it)
                 combined.daily.append(it.value());

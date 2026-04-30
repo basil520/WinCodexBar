@@ -100,9 +100,6 @@ void CostUsageScanner::initPricing() {
     m_opencodeGoPricing["kimi-k2.6"]        = { 1.0, 0.1, 1.25, 5.0 };    // Kimi K2.6
     m_opencodeGoPricing["minimax"]           = { 0.1, 0.01, 0.1, 0.4 };    // MiniMax approximate
 
-    // DeepSeek models
-    m_opencodeGoPricing["deepseek-v4-pro"]   = { 1.0, 0.1, 1.0, 4.0 };    // DeepSeek V4 Pro approximate
-
     // Kimi for coding models (used by kimi-for-coding provider)
     m_opencodeGoPricing["k2p6"]             = { 1.0, 0.1, 1.25, 5.0 };    // Kimi K2.6 for coding
 }
@@ -177,7 +174,7 @@ double CostUsageScanner::costForCodexModel(const Pricing& p, int inputTokens, in
 }
 
 CostUsageScanner::Pricing CostUsageScanner::priceForModel(const QString& modelName) {
-    // Check OpenCode Go pricing first (includes deepseek, kimi, etc.)
+    // Check OpenCode Go pricing first (includes Kimi, MiniMax, and other proxied models)
     for (auto mit = CostUsageScanner::opencodeGoPricingMap().constBegin(); mit != CostUsageScanner::opencodeGoPricingMap().constEnd(); ++mit) {
         if (modelName.contains(mit.key(), Qt::CaseInsensitive)) return mit.value();
     }
@@ -830,7 +827,6 @@ CostUsageScanner::PiScanResult CostUsageScanner::scanPi(const QDate& since, cons
 CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QDate& since, const QDate& until) {
     OpenCodeGoScanResult result;
     result.opencodego.updatedAt = QDateTime::currentDateTime();
-    result.deepseek.updatedAt = QDateTime::currentDateTime();
     result.kimi.updatedAt = QDateTime::currentDateTime();
 
     // OpenCode Go stores session data in SQLite at ~/.local/share/opencode/opencode.db
@@ -989,7 +985,6 @@ CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QD
     };
 
     result.opencodego = buildSnapshot("opencode-go");
-    result.deepseek = buildSnapshot("deepseek");
     result.kimi = buildSnapshot("kimi-for-coding");
 
     return result;

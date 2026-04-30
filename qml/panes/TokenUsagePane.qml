@@ -254,7 +254,6 @@ Rectangle {
         return providerId === "codex"
             || providerId === "claude"
             || providerId === "opencodego"
-            || providerId === "deepseek"
             || providerId === "kimi"
             || providerId === "kimik2"
             || providerId === "copilot"
@@ -301,7 +300,6 @@ Rectangle {
         if (!provider || !provider.id) return ""
         var id = provider.id
         if (id === "codex" || id === "claude" || id === "opencodego") return "token"
-        if (id === "deepseek") return "api"
         if (id === "kimi" || id === "kimik2") return "credit"
         if (id === "copilot" || id === "cursor") return "quota"
         if (provider.supportsCredits === true) return "credit"
@@ -311,7 +309,6 @@ Rectangle {
     function kindLabel(kind) {
         if (kind === "credit") return qsTr("Credit")
         if (kind === "quota") return qsTr("Quota")
-        if (kind === "api") return qsTr("API")
         return qsTr("Token")
     }
 
@@ -321,7 +318,6 @@ Rectangle {
             "codex": "Codex",
             "claude": "Claude",
             "opencodego": "OpenCode Go",
-            "deepseek": "DeepSeek",
             "kimi": "Kimi",
             "kimik2": "Kimi K2",
             "copilot": "Copilot",
@@ -399,7 +395,6 @@ Rectangle {
             "zai": "#E85A6A",
             "opencode": "#E44D26",
             "opencodego": "#E44D26",
-            "deepseek": "#1E3A8A",
             "warp": "#00BCD4",
             "mistral": "#F77F00",
             "openrouter": "#FF6B6B",
