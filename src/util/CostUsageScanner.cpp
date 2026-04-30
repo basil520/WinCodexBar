@@ -877,9 +877,7 @@ CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QD
                 time_created,
                 json_extract(data, '$.tokens.input') AS input_tokens,
                 json_extract(data, '$.tokens.output') AS output_tokens,
-                json_extract(data, '$.tokens.cache.read') AS cache_read,
-                json_extract(data, '$.tokens.cache.write') AS cache_write,
-                json_extract(data, '$.tokens.reasoning') AS reasoning
+                json_extract(data, '$.tokens.cache.read') AS cache_read
             FROM message
             WHERE json_extract(data, '$.role') = 'assistant'
               AND json_extract(data, '$.tokens') IS NOT NULL
@@ -891,9 +889,7 @@ CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QD
             COUNT(*) AS message_count,
             SUM(a.input_tokens) AS input_tokens,
             SUM(a.output_tokens) AS output_tokens,
-            SUM(a.cache_read) AS cache_read,
-            SUM(a.cache_write) AS cache_write,
-            SUM(a.reasoning) AS reasoning
+            SUM(a.cache_read) AS cache_read
         FROM assistant_tokens a
         LEFT JOIN user_models um
             ON a.session_id = um.session_id
@@ -931,21 +927,12 @@ CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QD
         int inputTokens = query.value("input_tokens").toInt();
         int outputTokens = query.value("output_tokens").toInt();
         int cacheRead = query.value("cache_read").toInt();
-        int cacheWrite = query.value("cache_write").toInt();
-        int reasoning = query.value("reasoning").toInt();
 
         auto& mb = providerData[providerId].dayModels[day][model];
         mb.modelName = model;
         mb.inputTokens += qMax(0, inputTokens);
         mb.outputTokens += qMax(0, outputTokens);
         mb.cacheReadTokens += qMax(0, cacheRead);
-        mb.cacheWriteTokens += qMax(0, cacheWrite);
-        mb.reasoningTokens += qMax(0, reasoning);
-        
-        // Calculate cache hit/miss (cache hit = min(input, cacheRead))
-        int clampedCacheRead = qMin(mb.inputTokens, mb.cacheReadTokens);
-        mb.cacheHitTokens = clampedCacheRead;
-        mb.cacheMissTokens = qMax(0, mb.inputTokens - clampedCacheRead);
     }
 
     db.close();
@@ -966,9 +953,7 @@ CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QD
             for (auto mit = dit.value().constBegin(); mit != dit.value().constEnd(); ++mit) {
                 auto mb = mit.value();
                 Pricing p = priceForModel(mb.modelName);
-                // Reasoning tokens are billed as output (following tokscale convention)
-                int totalOutput = mb.outputTokens + mb.reasoningTokens;
-                double cost = costForCodexModel(p, mb.inputTokens, mb.cacheReadTokens, totalOutput);
+                double cost = costForCodexModel(p, mb.inputTokens, mb.cacheReadTokens, mb.outputTokens);
                 mb.costUSD = cost;
                 entry.inputTokens += mb.inputTokens;
                 entry.cacheReadTokens += mb.cacheReadTokens;

@@ -562,10 +562,6 @@ QVariantMap UsageStore::costUsageData() const {
             mm["name"] = md.modelName;
             mm["tokens"] = md.totalTokens();
             mm["costUSD"] = md.costUSD;
-            mm["cacheHitTokens"] = md.cacheHitTokens;
-            mm["cacheMissTokens"] = md.cacheMissTokens;
-            mm["cacheWriteTokens"] = md.cacheWriteTokens;
-            mm["reasoningTokens"] = md.reasoningTokens;
             models.append(mm);
         }
         dm["models"] = models;
@@ -591,10 +587,6 @@ QVariantList UsageStore::providerCostUsageList() const {
             mm["name"] = model.modelName;
             mm["tokens"] = model.totalTokens();
             mm["costUSD"] = model.costUSD;
-            mm["cacheHitTokens"] = model.cacheHitTokens;
-            mm["cacheMissTokens"] = model.cacheMissTokens;
-            mm["cacheWriteTokens"] = model.cacheWriteTokens;
-            mm["reasoningTokens"] = model.reasoningTokens;
             models.append(mm);
         }
         m["models"] = models;
@@ -641,10 +633,6 @@ QVariantMap UsageStore::providerCostUsageData(const QString& providerId) const {
             mm["name"] = md.modelName;
             mm["tokens"] = md.totalTokens();
             mm["costUSD"] = md.costUSD;
-            mm["cacheHitTokens"] = md.cacheHitTokens;
-            mm["cacheMissTokens"] = md.cacheMissTokens;
-            mm["cacheWriteTokens"] = md.cacheWriteTokens;
-            mm["reasoningTokens"] = md.reasoningTokens;
             models.append(mm);
         }
         dm["models"] = models;
@@ -660,10 +648,6 @@ QVariantMap UsageStore::providerCostUsageData(const QString& providerId) const {
                 mm["name"] = model.modelName;
                 mm["tokens"] = model.totalTokens();
                 mm["costUSD"] = model.costUSD;
-                mm["cacheHitTokens"] = model.cacheHitTokens;
-                mm["cacheMissTokens"] = model.cacheMissTokens;
-                mm["cacheWriteTokens"] = model.cacheWriteTokens;
-                mm["reasoningTokens"] = model.reasoningTokens;
                 models.append(mm);
             }
             m["models"] = models;

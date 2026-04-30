@@ -715,88 +715,35 @@ Rectangle {
                 Repeater {
                     model: card.provider.models || []
 
-                    delegate: ColumnLayout {
+                    delegate: RowLayout {
                         Layout.fillWidth: true
-                        spacing: 2
+                        Layout.preferredHeight: 24
+                        spacing: 10
 
-                        // Main model row
-                        RowLayout {
+                        Label {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 24
-                            spacing: 10
-
-                            Label {
-                                Layout.fillWidth: true
-                                text: modelData.name || qsTr("Unknown model")
-                                color: AppTheme.textSecondary
-                                font.pixelSize: AppTheme.fontSizeSm
-                                elide: Text.ElideRight
-                            }
-
-                            Label {
-                                Layout.preferredWidth: 92
-                                text: "$" + root.formatCost(modelData.costUSD || 0)
-                                color: AppTheme.textSecondary
-                                font.pixelSize: AppTheme.fontSizeSm
-                                horizontalAlignment: Text.AlignRight
-                                elide: Text.ElideRight
-                            }
-
-                            Label {
-                                Layout.preferredWidth: 100
-                                text: root.fmtNum(modelData.tokens || 0) + " " + qsTr("tokens")
-                                color: AppTheme.textTertiary
-                                font.pixelSize: AppTheme.fontSizeSm
-                                horizontalAlignment: Text.AlignRight
-                                elide: Text.ElideRight
-                            }
+                            text: modelData.name || qsTr("Unknown model")
+                            color: AppTheme.textSecondary
+                            font.pixelSize: AppTheme.fontSizeSm
+                            elide: Text.ElideRight
                         }
 
-                        // Cache statistics row (only if cache data exists)
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 18
-                            visible: (modelData.cacheHitTokens || 0) > 0 
-                                || (modelData.cacheMissTokens || 0) > 0
-                                || (modelData.cacheWriteTokens || 0) > 0
-                            spacing: 8
+                        Label {
+                            Layout.preferredWidth: 92
+                            text: "$" + root.formatCost(modelData.costUSD || 0)
+                            color: AppTheme.textSecondary
+                            font.pixelSize: AppTheme.fontSizeSm
+                            horizontalAlignment: Text.AlignRight
+                            elide: Text.ElideRight
+                        }
 
-                            Item { Layout.preferredWidth: 20 }
-
-                            Label {
-                                text: qsTr("Cache:")
-                                color: AppTheme.textTertiary
-                                font.pixelSize: 10
-                            }
-
-                            Label {
-                                visible: (modelData.cacheHitTokens || 0) > 0
-                                text: qsTr("Hit") + " " + root.fmtNum(modelData.cacheHitTokens || 0)
-                                    + " (" + ((modelData.cacheHitTokens || 0) / Math.max(1, modelData.tokens || 1) * 100).toFixed(1) + "%)"
-                                color: "#4CAF50"
-                                font.pixelSize: 10
-                            }
-
-                            Label {
-                                visible: (modelData.cacheMissTokens || 0) > 0
-                                text: qsTr("Miss") + " " + root.fmtNum(modelData.cacheMissTokens || 0)
-                                color: AppTheme.textTertiary
-                                font.pixelSize: 10
-                            }
-
-                            Label {
-                                visible: (modelData.cacheWriteTokens || 0) > 0
-                                text: qsTr("Write") + " " + root.fmtNum(modelData.cacheWriteTokens || 0)
-                                color: AppTheme.textTertiary
-                                font.pixelSize: 10
-                            }
-
-                            Label {
-                                visible: (modelData.reasoningTokens || 0) > 0
-                                text: qsTr("Reasoning") + " " + root.fmtNum(modelData.reasoningTokens || 0)
-                                color: "#FF9800"
-                                font.pixelSize: 10
-                            }
+                        Label {
+                            Layout.preferredWidth: 100
+                            text: root.fmtNum(modelData.tokens || 0) + " " + qsTr("tokens")
+                            color: AppTheme.textTertiary
+                            font.pixelSize: AppTheme.fontSizeSm
+                            horizontalAlignment: Text.AlignRight
+                            elide: Text.ElideRight
                         }
                     }
                 }

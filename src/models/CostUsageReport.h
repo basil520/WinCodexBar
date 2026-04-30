@@ -11,12 +11,7 @@ struct CostUsageModelBreakdown {
     int cacheReadTokens = 0;
     int cacheCreationTokens = 0;
     int outputTokens = 0;
-    // Cache statistics (for display)
-    int cacheHitTokens = 0;      // min(input, cacheRead)
-    int cacheMissTokens = 0;     // input - cacheHit
-    int cacheWriteTokens = 0;    // cache creation
-    int reasoningTokens = 0;     // reasoning (billed as output)
-    int totalTokens() const { return inputTokens + cacheReadTokens + cacheCreationTokens + outputTokens + reasoningTokens; }
+    int totalTokens() const { return inputTokens + cacheReadTokens + cacheCreationTokens + outputTokens; }
     double costUSD = 0.0;
 };
 
