@@ -1,0 +1,32 @@
+# Build products
+/build/
+/cmake-build-*/
+/CMakeFiles/
+/CMakeCache.txt
+/cmake_install.cmake
+/CTestTestfile.cmake
+/_deps/
+
+# Generated project files
+/*.sln
+/*.vcxproj
+/*.vcxproj.filters
+/*.vcxproj.user
+/*_autogen/
+
+# IDE and local settings
+/.idea/
+/.vscode/
+*.user
+*.env
+*.local
+
+# Logs and test output
+/out.txt
+/plugins.log
+/test_*.txt
+*.log
+
+# OS metadata
+.DS_Store
+Thumbs.db

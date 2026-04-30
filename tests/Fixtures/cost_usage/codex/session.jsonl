@@ -1,0 +1,2 @@
+{"timestamp":"2026-04-29T04:18:54.355Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":1000,"cached_input_tokens":200,"output_tokens":50,"total_tokens":1050}}}}
+{"timestamp":"2026-04-29T04:19:04.035Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":1500,"cached_input_tokens":250,"output_tokens":80,"total_tokens":1580}}}}
