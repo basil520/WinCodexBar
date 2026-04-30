@@ -168,6 +168,13 @@ if(WINCODEXBAR_QT_RUNTIME_FOUND)
         Qt6::Quick Qt6::Qml Qt6::Widgets
     )
 
+    if(WIN32 AND TARGET Qt6::windeployqt)
+        add_custom_command(TARGET WinCodexBar POST_BUILD
+            COMMAND Qt6::windeployqt --qmldir "${CMAKE_CURRENT_SOURCE_DIR}/qml" "$<TARGET_FILE:WinCodexBar>"
+            COMMENT "Deploying Qt runtime and QML modules"
+        )
+    endif()
+
     # Compile .ts to .qm using lrelease
     if(TARGET Qt6::lrelease)
         set(TS_FILES

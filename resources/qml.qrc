@@ -23,6 +23,7 @@
         <file alias="qml/components/ProviderErrorCard.qml">../qml/components/ProviderErrorCard.qml</file>
         <file alias="qml/panes/GeneralPane.qml">../qml/panes/GeneralPane.qml</file>
         <file alias="qml/panes/ProvidersPane.qml">../qml/panes/ProvidersPane.qml</file>
+        <file alias="qml/panes/TokenUsagePane.qml">../qml/panes/TokenUsagePane.qml</file>
         <file alias="qml/panes/DisplayPane.qml">../qml/panes/DisplayPane.qml</file>
         <file alias="qml/panes/AdvancedPane.qml">../qml/panes/AdvancedPane.qml</file>
         <file alias="qml/panes/AboutPane.qml">../qml/panes/AboutPane.qml</file>
