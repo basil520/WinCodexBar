@@ -21,6 +21,9 @@
 *.env
 *.local
 
+# Local documentation moved from the macOS parent repository
+/docs/
+
 # Logs and test output
 /out.txt
 /plugins.log
