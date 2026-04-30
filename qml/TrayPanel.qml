@@ -296,6 +296,118 @@ Rectangle {
                         Rectangle { width: 10; height: 10; radius: 5; color: "#3a3a6a" }
                         Text { text: qsTr("other day"); color: "#888"; font.pixelSize: 9 }
                     }
+
+                    // Per-provider breakdown
+                    Repeater {
+                        model: UsageStore.providerCostUsageList()
+                        delegate: ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+
+                            property bool providerExpanded: false
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 28
+                                radius: 6
+                                color: providerMouse.containsMouse ? "#252545" : "#1c1c32"
+
+                                Behavior on color { ColorAnimation { duration: 150 } }
+
+                                MouseArea {
+                                    id: providerMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: providerExpanded = !providerExpanded
+                                }
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 8
+                                    anchors.rightMargin: 8
+                                    spacing: 6
+
+                                    Text {
+                                        Layout.preferredWidth: 12
+                                        text: providerExpanded ? "▾" : "▸"
+                                        color: "#888"
+                                        font.pixelSize: 10
+                                        horizontalAlignment: Text.AlignHCenter
+                                    }
+                                    Rectangle {
+                                        Layout.preferredWidth: 8
+                                        Layout.preferredHeight: 8
+                                        radius: 4
+                                        color: brandColorFor(modelData.providerId)
+                                    }
+                                    Text {
+                                        text: {
+                                            var names = {
+                                                "codex": "Codex", "claude": "Claude",
+                                                "opencodego": "OpenCode Go",
+                                                "deepseek": "DeepSeek"
+                                            }
+                                            return names[modelData.providerId] || modelData.providerId
+                                        }
+                                        color: "#ccc"
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                        Layout.fillWidth: true
+                                        elide: Text.ElideRight
+                                    }
+                                    Text {
+                                        text: "$" + formatCost(modelData.last30DaysCostUSD)
+                                        color: "#888"
+                                        font.pixelSize: 10
+                                    }
+                                    Text {
+                                        text: fmtNum(modelData.last30DaysTokens) + " " + qsTr("tokens")
+                                        color: "#666"
+                                        font.pixelSize: 9
+                                    }
+                                }
+                            }
+
+                            // Model breakdown (expanded)
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                visible: providerExpanded
+                                spacing: 2
+                                Layout.leftMargin: 28
+
+                                Repeater {
+                                    model: modelData.models || []
+                                    delegate: RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 4
+                                        Text {
+                                            text: "└─"
+                                            color: "#555"
+                                            font.pixelSize: 9
+                                        }
+                                        Text {
+                                            text: modelData.name
+                                            color: "#999"
+                                            font.pixelSize: 10
+                                            Layout.fillWidth: true
+                                            elide: Text.ElideRight
+                                        }
+                                        Text {
+                                            text: "$" + formatCost(modelData.costUSD)
+                                            color: "#888"
+                                            font.pixelSize: 9
+                                        }
+                                        Text {
+                                            text: fmtNum(modelData.tokens) + " tk"
+                                            color: "#666"
+                                            font.pixelSize: 9
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -843,6 +955,7 @@ Rectangle {
             "copilot": "#2DA44E",
             "zai": "#E85A6A",
             "opencode": "#E44D26",
+            "deepseek": "#1E3A8A",
             "warp": "#00BCD4",
             "mistral": "#F77F00",
             "openrouter": "#FF6B6B",

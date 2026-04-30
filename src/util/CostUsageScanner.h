@@ -21,6 +21,13 @@ public:
     };
     PiScanResult scanPi(const QDate& since, const QDate& until);
 
+    struct OpenCodeGoScanResult {
+        CostUsageSnapshot opencodego;
+        CostUsageSnapshot deepseek;
+        CostUsageSnapshot kimi;
+    };
+    OpenCodeGoScanResult scanOpenCodeGo(const QDate& since, const QDate& until);
+
     QString cacheDir();
 
     struct Pricing {
@@ -46,6 +53,7 @@ public:
 
     static const QHash<QString, Pricing>& codexPricingMap();
     static const QHash<QString, Pricing>& claudePricingMap();
+    static const QHash<QString, Pricing>& opencodeGoPricingMap();
 
 private:
     static QString stripQuotes(const QString& s);
@@ -54,5 +62,6 @@ private:
 
     QHash<QString, Pricing> m_codexPricing;
     QHash<QString, Pricing> m_claudePricing;
+    QHash<QString, Pricing> m_opencodeGoPricing;
     void initPricing();
 };

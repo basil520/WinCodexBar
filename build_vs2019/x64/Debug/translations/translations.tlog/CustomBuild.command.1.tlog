@@ -1,0 +1,38 @@
+^D:\CODEXBAR\WINCODEXBAR\BUILD_VS2019\CMAKEFILES\C593CBF15F767C89A988F9FBB7C091B3\WINCODEXBAR_EN.QM.RULE
+setlocal
+D:\QT_5152\6.5.2\msvc2019_64\bin\lrelease.exe D:/CodexBar/WinCodexBar/translations/WinCodexBar_en.ts -qm D:/CodexBar/WinCodexBar/build_vs2019/translations/WinCodexBar_en.qm
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\CODEXBAR\WINCODEXBAR\BUILD_VS2019\CMAKEFILES\C593CBF15F767C89A988F9FBB7C091B3\WINCODEXBAR_ZH_CN.QM.RULE
+setlocal
+D:\QT_5152\6.5.2\msvc2019_64\bin\lrelease.exe D:/CodexBar/WinCodexBar/translations/WinCodexBar_zh_CN.ts -qm D:/CodexBar/WinCodexBar/build_vs2019/translations/WinCodexBar_zh_CN.qm
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\CODEXBAR\WINCODEXBAR\BUILD_VS2019\CMAKEFILES\AFF4CFAAC307E02E34A188EFC0D11758\TRANSLATIONS.RULE
+setlocal
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\CODEXBAR\WINCODEXBAR\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/CodexBar/WinCodexBar -BD:/CodexBar/WinCodexBar/build_vs2019 --check-stamp-file D:/CodexBar/WinCodexBar/build_vs2019/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

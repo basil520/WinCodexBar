@@ -8,6 +8,10 @@
 #include <QJsonObject>
 #include <QStandardPaths>
 #include <QRegularExpression>
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QSqlError>
+#include <QVariant>
 #include <algorithm>
 
 CostUsageScanner::CostUsageScanner() { initPricing(); }
@@ -26,6 +30,15 @@ const QHash<QString, CostUsageScanner::Pricing>& CostUsageScanner::claudePricing
     if (map.isEmpty()) {
         CostUsageScanner scanner;
         map = scanner.m_claudePricing;
+    }
+    return map;
+}
+
+const QHash<QString, CostUsageScanner::Pricing>& CostUsageScanner::opencodeGoPricingMap() {
+    static QHash<QString, Pricing> map;
+    if (map.isEmpty()) {
+        CostUsageScanner scanner;
+        map = scanner.m_opencodeGoPricing;
     }
     return map;
 }
@@ -79,6 +92,19 @@ void CostUsageScanner::initPricing() {
     m_claudePricing["claude-3-opus-20240229"]     = { 15.0, 1.5, 22.5,  75.0 };
     m_claudePricing["claude-3-sonnet-20240229"]   = { 3.0,  0.3,  4.5,  15.0 };
     m_claudePricing["claude-3-haiku-20240307"]    = { 0.25, 0.03, 0.375, 1.25 };
+
+    // OpenCode Go models (proxied from various providers)
+    m_opencodeGoPricing["glm-5"]            = { 0.5, 0.05, 0.5, 2.0 };    // Zhipu GLM-5 approximate
+    m_opencodeGoPricing["glm-5.1"]          = { 0.5, 0.05, 0.5, 2.0 };    // Zhipu GLM-5.1
+    m_opencodeGoPricing["kimi-k2.5"]        = { 1.0, 0.1, 1.25, 5.0 };    // Kimi K2.5 approximate
+    m_opencodeGoPricing["kimi-k2.6"]        = { 1.0, 0.1, 1.25, 5.0 };    // Kimi K2.6
+    m_opencodeGoPricing["minimax"]           = { 0.1, 0.01, 0.1, 0.4 };    // MiniMax approximate
+
+    // DeepSeek models
+    m_opencodeGoPricing["deepseek-v4-pro"]   = { 1.0, 0.1, 1.0, 4.0 };    // DeepSeek V4 Pro approximate
+
+    // Kimi for coding models (used by kimi-for-coding provider)
+    m_opencodeGoPricing["k2p6"]             = { 1.0, 0.1, 1.25, 5.0 };    // Kimi K2.6 for coding
 }
 
 QString CostUsageScanner::normalizeCodexModel(const QString& raw) {
@@ -151,6 +177,11 @@ double CostUsageScanner::costForCodexModel(const Pricing& p, int inputTokens, in
 }
 
 CostUsageScanner::Pricing CostUsageScanner::priceForModel(const QString& modelName) {
+    // Check OpenCode Go pricing first (includes deepseek, kimi, etc.)
+    for (auto mit = CostUsageScanner::opencodeGoPricingMap().constBegin(); mit != CostUsageScanner::opencodeGoPricingMap().constEnd(); ++mit) {
+        if (modelName.contains(mit.key(), Qt::CaseInsensitive)) return mit.value();
+    }
+
     QString normCodex = normalizeCodexModel(modelName);
     auto cit = CostUsageScanner::codexPricingMap().constFind(normCodex);
     if (cit != CostUsageScanner::codexPricingMap().constEnd()) return cit.value();
@@ -793,5 +824,173 @@ CostUsageScanner::PiScanResult CostUsageScanner::scanPi(const QDate& since, cons
 
     result.codex = buildSnapshot("codex", false);
     result.claude = buildSnapshot("claude", true);
+    return result;
+}
+
+CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QDate& since, const QDate& until) {
+    OpenCodeGoScanResult result;
+    result.opencodego.updatedAt = QDateTime::currentDateTime();
+    result.deepseek.updatedAt = QDateTime::currentDateTime();
+    result.kimi.updatedAt = QDateTime::currentDateTime();
+
+    // OpenCode Go stores session data in SQLite at ~/.local/share/opencode/opencode.db
+    QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+    QString dbPath = home + "/.local/share/opencode/opencode.db";
+
+    // Windows fallback: check AppData/Local or AppData/Roaming
+    if (!QFile::exists(dbPath)) {
+        QString localAppData = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+        dbPath = localAppData + "/opencode/opencode.db";
+    }
+
+    if (!QFile::exists(dbPath)) {
+        result.opencodego.errorMessage = "OpenCode Go database not found at ~/.local/share/opencode/opencode.db";
+        return result;
+    }
+
+    const QString connName = "opencode_go_scan";
+    if (QSqlDatabase::contains(connName)) {
+        QSqlDatabase::removeDatabase(connName);
+    }
+
+    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", connName);
+    db.setDatabaseName(dbPath);
+    if (!db.open()) {
+        result.opencodego.errorMessage = "Failed to open OpenCode Go database: " + db.lastError().text();
+        QSqlDatabase::removeDatabase(connName);
+        return result;
+    }
+
+    // Query correlates assistant messages (with tokens) to the most recent user message (with model info)
+    // within the same session. Groups by provider, date, and model.
+    // Filters out baiduqianfancodingplan (discarded per user decision).
+    QString sql = R"(
+        WITH user_models AS (
+            SELECT
+                session_id,
+                time_created,
+                json_extract(data, '$.model.providerID') AS provider,
+                json_extract(data, '$.model.modelID') AS model
+            FROM message
+            WHERE json_extract(data, '$.role') = 'user'
+              AND json_extract(data, '$.model') IS NOT NULL
+        ),
+        assistant_tokens AS (
+            SELECT
+                session_id,
+                time_created,
+                json_extract(data, '$.tokens.input') AS input_tokens,
+                json_extract(data, '$.tokens.output') AS output_tokens,
+                json_extract(data, '$.tokens.cache.read') AS cache_read
+            FROM message
+            WHERE json_extract(data, '$.role') = 'assistant'
+              AND json_extract(data, '$.tokens') IS NOT NULL
+        )
+        SELECT
+            um.provider AS provider_id,
+            DATE(a.time_created / 1000, 'unixepoch') AS day,
+            um.provider || '/' || um.model AS model_name,
+            COUNT(*) AS message_count,
+            SUM(a.input_tokens) AS input_tokens,
+            SUM(a.output_tokens) AS output_tokens,
+            SUM(a.cache_read) AS cache_read
+        FROM assistant_tokens a
+        LEFT JOIN user_models um
+            ON a.session_id = um.session_id
+            AND um.time_created = (
+                SELECT MAX(time_created)
+                FROM user_models
+                WHERE session_id = a.session_id
+                  AND time_created <= a.time_created
+            )
+        WHERE um.provider IS NOT NULL
+          AND um.provider != 'baiduqianfancodingplan'
+        GROUP BY um.provider, day, um.model
+        ORDER BY um.provider, day, input_tokens DESC
+    )";
+
+    QSqlQuery query(db);
+    query.prepare(sql);
+    if (!query.exec()) {
+        result.opencodego.errorMessage = "Failed to query OpenCode Go database: " + query.lastError().text();
+        db.close();
+        QSqlDatabase::removeDatabase(connName);
+        return result;
+    }
+
+    // Group by provider
+    struct ProviderData {
+        QHash<QString, QHash<QString, CostUsageModelBreakdown>> dayModels;
+    };
+    QHash<QString, ProviderData> providerData;
+
+    while (query.next()) {
+        QString providerId = query.value("provider_id").toString();
+        QString day = query.value("day").toString();
+        QString model = query.value("model_name").toString();
+        int inputTokens = query.value("input_tokens").toInt();
+        int outputTokens = query.value("output_tokens").toInt();
+        int cacheRead = query.value("cache_read").toInt();
+
+        auto& mb = providerData[providerId].dayModels[day][model];
+        mb.modelName = model;
+        mb.inputTokens += qMax(0, inputTokens);
+        mb.outputTokens += qMax(0, outputTokens);
+        mb.cacheReadTokens += qMax(0, cacheRead);
+    }
+
+    db.close();
+    QSqlDatabase::removeDatabase(connName);
+
+    // Build snapshots for each provider
+    auto buildSnapshot = [&](const QString& providerId) -> CostUsageSnapshot {
+        CostUsageSnapshot snap;
+        snap.updatedAt = QDateTime::currentDateTime();
+
+        auto it = providerData.constFind(providerId);
+        if (it == providerData.constEnd()) return snap;
+
+        QHash<QString, CostUsageDailyEntry> dayMap;
+        for (auto dit = it->dayModels.constBegin(); dit != it->dayModels.constEnd(); ++dit) {
+            CostUsageDailyEntry entry;
+            entry.date = dit.key();
+            for (auto mit = dit.value().constBegin(); mit != dit.value().constEnd(); ++mit) {
+                auto mb = mit.value();
+                Pricing p = priceForModel(mb.modelName);
+                double cost = costForCodexModel(p, mb.inputTokens, mb.cacheReadTokens, mb.outputTokens);
+                mb.costUSD = cost;
+                entry.inputTokens += mb.inputTokens;
+                entry.cacheReadTokens += mb.cacheReadTokens;
+                entry.outputTokens += mb.outputTokens;
+                entry.costUSD += cost;
+                entry.models.append(mb);
+            }
+            dayMap[entry.date] = entry;
+        }
+
+        QString today = QDate::currentDate().toString("yyyy-MM-dd");
+        int total30 = 0;
+        double cost30 = 0;
+        for (auto cit = dayMap.constBegin(); cit != dayMap.constEnd(); ++cit) {
+            auto& entry = cit.value();
+            snap.daily.append(entry);
+            total30 += entry.totalTokens();
+            cost30 += entry.costUSD;
+            if (entry.date == today) {
+                snap.sessionTokens += entry.totalTokens();
+                snap.sessionCostUSD += entry.costUSD;
+            }
+        }
+        std::sort(snap.daily.begin(), snap.daily.end(),
+                  [](const CostUsageDailyEntry& a, const CostUsageDailyEntry& b) { return a.date < b.date; });
+        snap.last30DaysTokens = total30;
+        snap.last30DaysCostUSD = cost30;
+        return snap;
+    };
+
+    result.opencodego = buildSnapshot("opencode-go");
+    result.deepseek = buildSnapshot("deepseek");
+    result.kimi = buildSnapshot("kimi-for-coding");
+
     return result;
 }

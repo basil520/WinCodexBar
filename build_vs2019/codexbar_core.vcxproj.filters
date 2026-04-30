@@ -1,0 +1,339 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\build_vs2019\codexbar_core_autogen\mocs_compilation_Debug.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\models\RateWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\models\UsageSnapshot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\models\UsagePace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\models\ProviderCostSnapshot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\models\CreditsSnapshot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\models\ProviderIdentitySnapshot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\models\ProviderDescriptor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\models\WidgetSnapshot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\models\ZaiUsageSnapshot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\models\OpenRouterUsageSnapshot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\models\MiniMaxUsageSnapshot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\models\PlanUtilizationHistory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\models\CodexUsageResponse.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\models\ClaudeUsageSnapshot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\models\CursorUsageSummary.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\ProviderRegistry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\ProviderPipeline.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\shared\ProviderCredentialStore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\zai\ZaiProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\openrouter\OpenRouterProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\copilot\CopilotProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\kimik2\KimiK2Provider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\kilo\KiloProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\kiro\KiroProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\mistral\MistralProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\ollama\OllamaProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\codex\CodexProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\claude\ClaudeProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\cursor\CursorProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\kimi\KimiProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\opencode\OpenCodeProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\opencode\OpenCodeGoProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\opencode\OpenCodeUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\network\NetworkManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\app\CodexBarApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\app\SettingsStore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\app\UsageStore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\app\CredentialAccessGate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\app\PlanUtilizationHistoryStore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\app\SessionQuotaNotifications.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\app\LanguageManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\app\Localization.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\tray\StatusItemController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\tray\TrayPopupPositioner.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\tray\TrayIconRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\util\TextParser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\util\BinaryLocator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\util\CostUsageScanner.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\util\UsagePaceText.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\shared\WindowsCredentialStore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\shared\CookieImporter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\shared\ConPTYSession.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\providers\shared\BrowserDetection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\build_vs2019\codexbar_core_autogen\mocs_compilation_Release.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\build_vs2019\codexbar_core_autogen\mocs_compilation_MinSizeRel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\build_vs2019\codexbar_core_autogen\mocs_compilation_RelWithDebInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\RateWindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\UsageSnapshot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\UsagePace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\ProviderCostSnapshot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\CreditsSnapshot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\ProviderIdentitySnapshot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\ProviderDescriptor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\WidgetSnapshot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\CostUsageReport.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\ZaiUsageSnapshot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\OpenRouterUsageSnapshot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\MiniMaxUsageSnapshot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\CursorRequestUsage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\CursorUsageSummary.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\PlanUtilizationHistory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\CodexUsageResponse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\ClaudeUsageSnapshot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\kimi\KimiProvider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\opencode\OpenCodeProvider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\opencode\OpenCodeGoProvider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\opencode\OpenCodeUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\IProvider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\IFetchStrategy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\ProviderRegistry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\ProviderFetchContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\ProviderFetchResult.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\ProviderPipeline.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\ProviderSettingsSnapshot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\ProviderFetchKind.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\ProviderSourceMode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\shared\WindowsCredentialStore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\shared\ProviderCredentialStore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\shared\CookieImporter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\shared\ConPTYSession.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\providers\shared\BrowserDetection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\network\NetworkManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\app\CodexBarApp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\app\SettingsStore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\app\UsageStore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\app\CredentialAccessGate.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\app\PlanUtilizationHistoryStore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\app\SessionQuotaNotifications.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\app\Localization.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\tray\StatusItemController.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\tray\TrayPopupPositioner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\tray\TrayIconRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\util\TextParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\util\BinaryLocator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\util\CostUsageScanner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\util\UsagePaceText.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\CodexBar\WinCodexBar\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{A5D271D9-8616-3836-97AB-A8434A79C263}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{864047F7-F69E-3CA8-B871-22DA2FC9F23C}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

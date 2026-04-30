@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\CodexBar\WinCodexBar\build_vs2019\CMakeFiles\26fc69564e8ffe61bf12394c358e14a2\RUN_TESTS_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{C5C88FE2-B0A9-33DE-A43C-9422EE4B4194}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_ZaiProvider_autogen\mocs_compilation_Debug.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\tests\tst_ZaiProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_ZaiProvider_autogen\mocs_compilation_Release.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_ZaiProvider_autogen\mocs_compilation_MinSizeRel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_ZaiProvider_autogen\mocs_compilation_RelWithDebInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\CodexBar\WinCodexBar\tests\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{864047F7-F69E-3CA8-B871-22DA2FC9F23C}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

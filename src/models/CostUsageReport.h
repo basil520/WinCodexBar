@@ -35,3 +35,9 @@ struct CostUsageSnapshot {
     QDateTime updatedAt;
     QString errorMessage;
 };
+
+struct ProviderCostUsageSnapshot {
+    QString providerId;
+    CostUsageSnapshot snapshot;
+    QVector<CostUsageModelBreakdown> modelSummary;
+};

@@ -1,0 +1,439 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{B3B58338-5B66-3B20-9559-B3DDA0E20ADB}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>tst_Localization</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\CodexBar\WinCodexBar\build_vs2019\tests\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">tst_Localization.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">tst_Localization</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\CodexBar\WinCodexBar\build_vs2019\tests\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">tst_Localization.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">tst_Localization</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\CodexBar\WinCodexBar\build_vs2019\tests\MinSizeRel\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">tst_Localization.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">tst_Localization</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\CodexBar\WinCodexBar\build_vs2019\tests\RelWithDebInfo\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">tst_Localization.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">tst_Localization</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_Localization_autogen\include_Debug;D:\CodexBar\WinCodexBar\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtCore" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include" /external:I "D:/QT_5152/6.5.2/msvc2019_64/mkspecs/win32-msvc" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtTest" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtQml" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtQmlIntegration" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtNetwork" -Zc:__cplusplus -utf-8</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <ConformanceMode>true</ConformanceMode>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NOMINMAX;TEST_TRANSLATION_DIR="D:/CodexBar/WinCodexBar/build_vs2019/translations";QT_CORE_LIB;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;_WIN64;UNICODE;_UNICODE;QT_TESTLIB_LIB;QT_TESTCASE_BUILDDIR="D:/CodexBar/WinCodexBar/build_vs2019/tests";QT_TESTCASE_SOURCEDIR="D:/CodexBar/WinCodexBar/tests";QT_QML_LIB;QT_QMLINTEGRATION_LIB;QT_NETWORK_LIB;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;NOMINMAX;TEST_TRANSLATION_DIR=\"D:/CodexBar/WinCodexBar/build_vs2019/translations\";QT_CORE_LIB;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;_WIN64;UNICODE;_UNICODE;QT_TESTLIB_LIB;QT_TESTCASE_BUILDDIR=\"D:/CodexBar/WinCodexBar/build_vs2019/tests\";QT_TESTCASE_SOURCEDIR=\"D:/CodexBar/WinCodexBar/tests\";QT_QML_LIB;QT_QMLINTEGRATION_LIB;QT_NETWORK_LIB;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_Localization_autogen\include_Debug;D:\CodexBar\WinCodexBar\src;D:\QT_5152\6.5.2\msvc2019_64\include\QtCore;D:\QT_5152\6.5.2\msvc2019_64\include;D:\QT_5152\6.5.2\msvc2019_64\mkspecs\win32-msvc;D:\QT_5152\6.5.2\msvc2019_64\include\QtTest;D:\QT_5152\6.5.2\msvc2019_64\include\QtQml;D:\QT_5152\6.5.2\msvc2019_64\include\QtQmlIntegration;D:\QT_5152\6.5.2\msvc2019_64\include\QtNetwork;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_Localization_autogen\include_Debug;D:\CodexBar\WinCodexBar\src;D:\QT_5152\6.5.2\msvc2019_64\include\QtCore;D:\QT_5152\6.5.2\msvc2019_64\include;D:\QT_5152\6.5.2\msvc2019_64\mkspecs\win32-msvc;D:\QT_5152\6.5.2\msvc2019_64\include\QtTest;D:\QT_5152\6.5.2\msvc2019_64\include\QtQml;D:\QT_5152\6.5.2\msvc2019_64\include\QtQmlIntegration;D:\QT_5152\6.5.2\msvc2019_64\include\QtNetwork;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PreBuildEvent>
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message>Automatic MOC and UIC for target tst_Localization</Message>
+      <Command>setlocal
+cd D:\CodexBar\WinCodexBar\build_vs2019\tests
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E cmake_autogen D:/CodexBar/WinCodexBar/build_vs2019/tests/CMakeFiles/tst_Localization_autogen.dir/AutogenInfo.json Debug
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PreBuildEvent>
+    <Link>
+      <AdditionalDependencies>D:\QT_5152\6.5.2\msvc2019_64\lib\Qt6Testd.lib;D:\QT_5152\6.5.2\msvc2019_64\lib\Qt6Qmld.lib;D:\QT_5152\6.5.2\msvc2019_64\lib\Qt6Networkd.lib;D:\QT_5152\6.5.2\msvc2019_64\lib\Qt6Cored.lib;mpr.lib;userenv.lib;ws2_32.lib;shell32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>D:/CodexBar/WinCodexBar/build_vs2019/tests/Debug/tst_Localization.lib</ImportLibrary>
+      <ProgramDataBaseFile>D:/CodexBar/WinCodexBar/build_vs2019/tests/Debug/tst_Localization.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_Localization_autogen\include_Release;D:\CodexBar\WinCodexBar\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtCore" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include" /external:I "D:/QT_5152/6.5.2/msvc2019_64/mkspecs/win32-msvc" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtTest" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtQml" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtQmlIntegration" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtNetwork" -Zc:__cplusplus -utf-8</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ConformanceMode>true</ConformanceMode>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NOMINMAX;TEST_TRANSLATION_DIR="D:/CodexBar/WinCodexBar/build_vs2019/translations";QT_CORE_LIB;QT_NO_DEBUG;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;_WIN64;UNICODE;_UNICODE;QT_TESTLIB_LIB;QT_TESTCASE_BUILDDIR="D:/CodexBar/WinCodexBar/build_vs2019/tests";QT_TESTCASE_SOURCEDIR="D:/CodexBar/WinCodexBar/tests";QT_QML_LIB;QT_QMLINTEGRATION_LIB;QT_NETWORK_LIB;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NOMINMAX;TEST_TRANSLATION_DIR=\"D:/CodexBar/WinCodexBar/build_vs2019/translations\";QT_CORE_LIB;QT_NO_DEBUG;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;_WIN64;UNICODE;_UNICODE;QT_TESTLIB_LIB;QT_TESTCASE_BUILDDIR=\"D:/CodexBar/WinCodexBar/build_vs2019/tests\";QT_TESTCASE_SOURCEDIR=\"D:/CodexBar/WinCodexBar/tests\";QT_QML_LIB;QT_QMLINTEGRATION_LIB;QT_NETWORK_LIB;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_Localization_autogen\include_Release;D:\CodexBar\WinCodexBar\src;D:\QT_5152\6.5.2\msvc2019_64\include\QtCore;D:\QT_5152\6.5.2\msvc2019_64\include;D:\QT_5152\6.5.2\msvc2019_64\mkspecs\win32-msvc;D:\QT_5152\6.5.2\msvc2019_64\include\QtTest;D:\QT_5152\6.5.2\msvc2019_64\include\QtQml;D:\QT_5152\6.5.2\msvc2019_64\include\QtQmlIntegration;D:\QT_5152\6.5.2\msvc2019_64\include\QtNetwork;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_Localization_autogen\include_Release;D:\CodexBar\WinCodexBar\src;D:\QT_5152\6.5.2\msvc2019_64\include\QtCore;D:\QT_5152\6.5.2\msvc2019_64\include;D:\QT_5152\6.5.2\msvc2019_64\mkspecs\win32-msvc;D:\QT_5152\6.5.2\msvc2019_64\include\QtTest;D:\QT_5152\6.5.2\msvc2019_64\include\QtQml;D:\QT_5152\6.5.2\msvc2019_64\include\QtQmlIntegration;D:\QT_5152\6.5.2\msvc2019_64\include\QtNetwork;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PreBuildEvent>
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message>Automatic MOC and UIC for target tst_Localization</Message>
+      <Command>setlocal
+cd D:\CodexBar\WinCodexBar\build_vs2019\tests
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E cmake_autogen D:/CodexBar/WinCodexBar/build_vs2019/tests/CMakeFiles/tst_Localization_autogen.dir/AutogenInfo.json Release
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PreBuildEvent>
+    <Link>
+      <AdditionalDependencies>D:\QT_5152\6.5.2\msvc2019_64\lib\Qt6Test.lib;D:\QT_5152\6.5.2\msvc2019_64\lib\Qt6Qml.lib;D:\QT_5152\6.5.2\msvc2019_64\lib\Qt6Network.lib;D:\QT_5152\6.5.2\msvc2019_64\lib\Qt6Core.lib;mpr.lib;userenv.lib;ws2_32.lib;shell32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>D:/CodexBar/WinCodexBar/build_vs2019/tests/Release/tst_Localization.lib</ImportLibrary>
+      <ProgramDataBaseFile>D:/CodexBar/WinCodexBar/build_vs2019/tests/Release/tst_Localization.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_Localization_autogen\include_MinSizeRel;D:\CodexBar\WinCodexBar\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtCore" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include" /external:I "D:/QT_5152/6.5.2/msvc2019_64/mkspecs/win32-msvc" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtTest" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtQml" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtQmlIntegration" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtNetwork" -Zc:__cplusplus -utf-8</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ConformanceMode>true</ConformanceMode>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NOMINMAX;TEST_TRANSLATION_DIR="D:/CodexBar/WinCodexBar/build_vs2019/translations";QT_CORE_LIB;QT_NO_DEBUG;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;_WIN64;UNICODE;_UNICODE;QT_TESTLIB_LIB;QT_TESTCASE_BUILDDIR="D:/CodexBar/WinCodexBar/build_vs2019/tests";QT_TESTCASE_SOURCEDIR="D:/CodexBar/WinCodexBar/tests";QT_QML_LIB;QT_QMLINTEGRATION_LIB;QT_NETWORK_LIB;CMAKE_INTDIR="MinSizeRel"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NOMINMAX;TEST_TRANSLATION_DIR=\"D:/CodexBar/WinCodexBar/build_vs2019/translations\";QT_CORE_LIB;QT_NO_DEBUG;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;_WIN64;UNICODE;_UNICODE;QT_TESTLIB_LIB;QT_TESTCASE_BUILDDIR=\"D:/CodexBar/WinCodexBar/build_vs2019/tests\";QT_TESTCASE_SOURCEDIR=\"D:/CodexBar/WinCodexBar/tests\";QT_QML_LIB;QT_QMLINTEGRATION_LIB;QT_NETWORK_LIB;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_Localization_autogen\include_MinSizeRel;D:\CodexBar\WinCodexBar\src;D:\QT_5152\6.5.2\msvc2019_64\include\QtCore;D:\QT_5152\6.5.2\msvc2019_64\include;D:\QT_5152\6.5.2\msvc2019_64\mkspecs\win32-msvc;D:\QT_5152\6.5.2\msvc2019_64\include\QtTest;D:\QT_5152\6.5.2\msvc2019_64\include\QtQml;D:\QT_5152\6.5.2\msvc2019_64\include\QtQmlIntegration;D:\QT_5152\6.5.2\msvc2019_64\include\QtNetwork;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_Localization_autogen\include_MinSizeRel;D:\CodexBar\WinCodexBar\src;D:\QT_5152\6.5.2\msvc2019_64\include\QtCore;D:\QT_5152\6.5.2\msvc2019_64\include;D:\QT_5152\6.5.2\msvc2019_64\mkspecs\win32-msvc;D:\QT_5152\6.5.2\msvc2019_64\include\QtTest;D:\QT_5152\6.5.2\msvc2019_64\include\QtQml;D:\QT_5152\6.5.2\msvc2019_64\include\QtQmlIntegration;D:\QT_5152\6.5.2\msvc2019_64\include\QtNetwork;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PreBuildEvent>
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message>Automatic MOC and UIC for target tst_Localization</Message>
+      <Command>setlocal
+cd D:\CodexBar\WinCodexBar\build_vs2019\tests
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E cmake_autogen D:/CodexBar/WinCodexBar/build_vs2019/tests/CMakeFiles/tst_Localization_autogen.dir/AutogenInfo.json MinSizeRel
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PreBuildEvent>
+    <Link>
+      <AdditionalDependencies>D:\QT_5152\6.5.2\msvc2019_64\lib\Qt6Test.lib;D:\QT_5152\6.5.2\msvc2019_64\lib\Qt6Qml.lib;D:\QT_5152\6.5.2\msvc2019_64\lib\Qt6Network.lib;D:\QT_5152\6.5.2\msvc2019_64\lib\Qt6Core.lib;mpr.lib;userenv.lib;ws2_32.lib;shell32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>D:/CodexBar/WinCodexBar/build_vs2019/tests/MinSizeRel/tst_Localization.lib</ImportLibrary>
+      <ProgramDataBaseFile>D:/CodexBar/WinCodexBar/build_vs2019/tests/MinSizeRel/tst_Localization.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_Localization_autogen\include_RelWithDebInfo;D:\CodexBar\WinCodexBar\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtCore" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include" /external:I "D:/QT_5152/6.5.2/msvc2019_64/mkspecs/win32-msvc" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtTest" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtQml" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtQmlIntegration" /external:I "D:/QT_5152/6.5.2/msvc2019_64/include/QtNetwork" -Zc:__cplusplus -utf-8</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ConformanceMode>true</ConformanceMode>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NOMINMAX;TEST_TRANSLATION_DIR="D:/CodexBar/WinCodexBar/build_vs2019/translations";QT_CORE_LIB;QT_NO_DEBUG;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;_WIN64;UNICODE;_UNICODE;QT_TESTLIB_LIB;QT_TESTCASE_BUILDDIR="D:/CodexBar/WinCodexBar/build_vs2019/tests";QT_TESTCASE_SOURCEDIR="D:/CodexBar/WinCodexBar/tests";QT_QML_LIB;QT_QMLINTEGRATION_LIB;QT_NETWORK_LIB;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NOMINMAX;TEST_TRANSLATION_DIR=\"D:/CodexBar/WinCodexBar/build_vs2019/translations\";QT_CORE_LIB;QT_NO_DEBUG;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;_WIN64;UNICODE;_UNICODE;QT_TESTLIB_LIB;QT_TESTCASE_BUILDDIR=\"D:/CodexBar/WinCodexBar/build_vs2019/tests\";QT_TESTCASE_SOURCEDIR=\"D:/CodexBar/WinCodexBar/tests\";QT_QML_LIB;QT_QMLINTEGRATION_LIB;QT_NETWORK_LIB;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_Localization_autogen\include_RelWithDebInfo;D:\CodexBar\WinCodexBar\src;D:\QT_5152\6.5.2\msvc2019_64\include\QtCore;D:\QT_5152\6.5.2\msvc2019_64\include;D:\QT_5152\6.5.2\msvc2019_64\mkspecs\win32-msvc;D:\QT_5152\6.5.2\msvc2019_64\include\QtTest;D:\QT_5152\6.5.2\msvc2019_64\include\QtQml;D:\QT_5152\6.5.2\msvc2019_64\include\QtQmlIntegration;D:\QT_5152\6.5.2\msvc2019_64\include\QtNetwork;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_Localization_autogen\include_RelWithDebInfo;D:\CodexBar\WinCodexBar\src;D:\QT_5152\6.5.2\msvc2019_64\include\QtCore;D:\QT_5152\6.5.2\msvc2019_64\include;D:\QT_5152\6.5.2\msvc2019_64\mkspecs\win32-msvc;D:\QT_5152\6.5.2\msvc2019_64\include\QtTest;D:\QT_5152\6.5.2\msvc2019_64\include\QtQml;D:\QT_5152\6.5.2\msvc2019_64\include\QtQmlIntegration;D:\QT_5152\6.5.2\msvc2019_64\include\QtNetwork;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PreBuildEvent>
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message>Automatic MOC and UIC for target tst_Localization</Message>
+      <Command>setlocal
+cd D:\CodexBar\WinCodexBar\build_vs2019\tests
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E cmake_autogen D:/CodexBar/WinCodexBar/build_vs2019/tests/CMakeFiles/tst_Localization_autogen.dir/AutogenInfo.json RelWithDebInfo
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PreBuildEvent>
+    <Link>
+      <AdditionalDependencies>D:\QT_5152\6.5.2\msvc2019_64\lib\Qt6Test.lib;D:\QT_5152\6.5.2\msvc2019_64\lib\Qt6Qml.lib;D:\QT_5152\6.5.2\msvc2019_64\lib\Qt6Network.lib;D:\QT_5152\6.5.2\msvc2019_64\lib\Qt6Core.lib;mpr.lib;userenv.lib;ws2_32.lib;shell32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>D:/CodexBar/WinCodexBar/build_vs2019/tests/RelWithDebInfo/tst_Localization.lib</ImportLibrary>
+      <ProgramDataBaseFile>D:/CodexBar/WinCodexBar/build_vs2019/tests/RelWithDebInfo/tst_Localization.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\CodexBar\WinCodexBar\tests\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/CodexBar/WinCodexBar/tests/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/CodexBar/WinCodexBar -BD:/CodexBar/WinCodexBar/build_vs2019 --check-stamp-file D:/CodexBar/WinCodexBar/build_vs2019/tests/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CheckCXXCompilerFlag.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CheckCXXSourceCompiles.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CheckIncludeFileCXX.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CheckLibraryExists.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindThreads.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6Config.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6ConfigExtras.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6ConfigVersion.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6ConfigVersionImpl.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6Dependencies.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6Targets.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6VersionlessTargets.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtFeature.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtFeatureCommon.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicAppleHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicCMakeHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicCMakeVersionHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicDependencyHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicFinalizerHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicFindPackageHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicPluginHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicTargetHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicTestHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicToolHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicWalkLibsHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestAdditionalTargetInfo.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestConfig.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestConfigVersion.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestConfigVersionImpl.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestDependencies.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestTargets-debug.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestTargets-relwithdebinfo.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestTargets.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestVersionlessTargets.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\CodexBar\WinCodexBar\build_vs2019\tests\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/CodexBar/WinCodexBar/tests/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/CodexBar/WinCodexBar -BD:/CodexBar/WinCodexBar/build_vs2019 --check-stamp-file D:/CodexBar/WinCodexBar/build_vs2019/tests/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CheckCXXCompilerFlag.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CheckCXXSourceCompiles.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CheckIncludeFileCXX.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CheckLibraryExists.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindThreads.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6Config.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6ConfigExtras.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6ConfigVersion.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6ConfigVersionImpl.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6Dependencies.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6Targets.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6VersionlessTargets.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtFeature.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtFeatureCommon.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicAppleHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicCMakeHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicCMakeVersionHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicDependencyHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicFinalizerHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicFindPackageHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicPluginHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicTargetHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicTestHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicToolHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicWalkLibsHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestAdditionalTargetInfo.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestConfig.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestConfigVersion.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestConfigVersionImpl.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestDependencies.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestTargets-debug.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestTargets-relwithdebinfo.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestTargets.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestVersionlessTargets.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\CodexBar\WinCodexBar\build_vs2019\tests\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule D:/CodexBar/WinCodexBar/tests/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/CodexBar/WinCodexBar -BD:/CodexBar/WinCodexBar/build_vs2019 --check-stamp-file D:/CodexBar/WinCodexBar/build_vs2019/tests/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CheckCXXCompilerFlag.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CheckCXXSourceCompiles.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CheckIncludeFileCXX.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CheckLibraryExists.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindThreads.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6Config.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6ConfigExtras.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6ConfigVersion.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6ConfigVersionImpl.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6Dependencies.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6Targets.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6VersionlessTargets.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtFeature.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtFeatureCommon.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicAppleHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicCMakeHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicCMakeVersionHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicDependencyHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicFinalizerHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicFindPackageHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicPluginHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicTargetHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicTestHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicToolHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicWalkLibsHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestAdditionalTargetInfo.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestConfig.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestConfigVersion.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestConfigVersionImpl.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestDependencies.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestTargets-debug.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestTargets-relwithdebinfo.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestTargets.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestVersionlessTargets.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\CodexBar\WinCodexBar\build_vs2019\tests\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule D:/CodexBar/WinCodexBar/tests/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/CodexBar/WinCodexBar -BD:/CodexBar/WinCodexBar/build_vs2019 --check-stamp-file D:/CodexBar/WinCodexBar/build_vs2019/tests/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CheckCXXCompilerFlag.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CheckCXXSourceCompiles.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CheckIncludeFileCXX.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CheckLibraryExists.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindThreads.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6Config.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6ConfigExtras.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6ConfigVersion.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6ConfigVersionImpl.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6Dependencies.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6Targets.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\Qt6VersionlessTargets.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtFeature.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtFeatureCommon.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicAppleHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicCMakeHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicCMakeVersionHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicDependencyHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicFinalizerHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicFindPackageHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicPluginHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicTargetHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicTestHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicToolHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6\QtPublicWalkLibsHelpers.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestAdditionalTargetInfo.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestConfig.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestConfigVersion.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestConfigVersionImpl.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestDependencies.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestTargets-debug.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestTargets-relwithdebinfo.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestTargets.cmake;D:\QT_5152\6.5.2\msvc2019_64\lib\cmake\Qt6Test\Qt6TestVersionlessTargets.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\CodexBar\WinCodexBar\build_vs2019\tests\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_Localization_autogen\mocs_compilation_Debug.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\tests\tst_Localization.cpp" />
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\app\LanguageManager.cpp" />
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\app\LanguageManager.h" />
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\app\Localization.cpp" />
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\app\Localization.h" />
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\models\UsagePace.cpp" />
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\models\UsagePace.h" />
+    <ClCompile Include="D:\CodexBar\WinCodexBar\src\util\UsagePaceText.cpp" />
+    <ClInclude Include="D:\CodexBar\WinCodexBar\src\util\UsagePaceText.h" />
+    <ClCompile Include="D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_Localization_autogen\mocs_compilation_Release.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_Localization_autogen\mocs_compilation_MinSizeRel.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="D:\CodexBar\WinCodexBar\build_vs2019\tests\tst_Localization_autogen\mocs_compilation_RelWithDebInfo.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="D:\CodexBar\WinCodexBar\build_vs2019\ZERO_CHECK.vcxproj">
+      <Project>{9BCE8F49-1EA8-3727-97E1-8408E65C71D7}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\CodexBar\WinCodexBar\build_vs2019\translations.vcxproj">
+      <Project>{F1DE5C80-5449-3041-BF96-51E8D7E042F2}</Project>
+      <Name>translations</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

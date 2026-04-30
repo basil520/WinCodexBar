@@ -63,6 +63,8 @@ public:
 
     Q_INVOKABLE void refreshCostUsage();
     Q_INVOKABLE QVariantMap costUsageData() const;
+    Q_INVOKABLE QVariantList providerCostUsageList() const;
+    Q_INVOKABLE QVariantMap providerCostUsageData(const QString& providerId) const;
 
     Q_INVOKABLE QVariantList utilizationChartData(const QString& providerId, const QString& seriesName) const;
 
@@ -120,6 +122,8 @@ private:
     bool m_costUsageEnabled = false;
     bool m_costUsageRefreshing = false;
     CostUsageSnapshot m_costUsage;
+    QHash<QString, CostUsageSnapshot> m_perProviderCostUsage;
+    QVector<ProviderCostUsageSnapshot> m_allProviderCostUsage;
     ProviderPipeline* m_pipeline = nullptr;
     SettingsStore* m_settingsStore = nullptr;
     PlanUtilizationHistoryStore* m_historyStore = nullptr;

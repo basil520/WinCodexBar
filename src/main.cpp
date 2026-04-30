@@ -58,6 +58,7 @@ static void fileMessageHandler(QtMsgType type, const QMessageLogContext& context
 #include "providers/kimi/KimiProvider.h"
 #include "providers/opencode/OpenCodeProvider.h"
 #include "providers/opencode/OpenCodeGoProvider.h"
+#include "providers/deepseek/DeepSeekProvider.h"
 
 #ifdef Q_OS_WIN
 static void applyRoundedWindowRegion(QWindow* window, int radius) {
@@ -279,6 +280,7 @@ int main(int argc, char* argv[]) {
     ProviderRegistry::instance().registerProvider(new KimiProvider());
     ProviderRegistry::instance().registerProvider(new OpenCodeProvider());
     ProviderRegistry::instance().registerProvider(new OpenCodeGoProvider());
+    ProviderRegistry::instance().registerProvider(new DeepSeekProvider());
 
     SettingsStore* settings = new SettingsStore();
     UsageStore* usageStore = new UsageStore();

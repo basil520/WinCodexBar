@@ -1,5 +1,8 @@
 #include <QtTest>
 #include <QDir>
+#include <QDebug>
+#include <QFile>
+#include <QTextStream>
 
 #include "util/CostUsageScanner.h"
 
@@ -19,6 +22,42 @@ private slots:
         QCOMPARE(snapshot.daily.first().inputTokens, 1500);
         QCOMPARE(snapshot.daily.first().cacheReadTokens, 250);
         QCOMPARE(snapshot.daily.first().outputTokens, 80);
+    }
+
+    void testOpenCodeGoScan() {
+        CostUsageScanner scanner;
+        auto result = scanner.scanOpenCodeGo(QDate::currentDate().addDays(-29), QDate::currentDate());
+        
+        QFile logFile(QDir::tempPath() + "/opencode_go_scan.log");
+        logFile.open(QIODevice::WriteOnly | QIODevice::Text);
+        QTextStream log(&logFile);
+        log << "OpenCode Go scan result:\n";
+        log << "  opencodego tokens: " << result.opencodego.last30DaysTokens << "\n";
+        log << "  deepseek tokens: " << result.deepseek.last30DaysTokens << "\n";
+        log << "  kimi tokens: " << result.kimi.last30DaysTokens << "\n";
+        
+        auto dumpSnapshot = [&](const QString& name, const CostUsageSnapshot& snap) {
+            log << "\n" << name << ":\n";
+            log << "  last30DaysTokens: " << snap.last30DaysTokens << "\n";
+            log << "  last30DaysCostUSD: " << snap.last30DaysCostUSD << "\n";
+            log << "  daily count: " << snap.daily.size() << "\n";
+            log << "  error: " << snap.errorMessage << "\n";
+            for (auto& d : snap.daily) {
+                log << "  day: " << d.date << " tokens: " << d.totalTokens() << " models: " << d.models.size() << "\n";
+                for (auto& m : d.models) {
+                    log << "    model: " << m.modelName << " tokens: " << m.totalTokens() << "\n";
+                }
+            }
+        };
+        
+        dumpSnapshot("opencodego", result.opencodego);
+        dumpSnapshot("deepseek", result.deepseek);
+        dumpSnapshot("kimi", result.kimi);
+        logFile.close();
+        
+        QVERIFY(result.opencodego.last30DaysTokens > 0 || !result.opencodego.errorMessage.isEmpty()
+                || result.deepseek.last30DaysTokens > 0 || !result.deepseek.errorMessage.isEmpty()
+                || result.kimi.last30DaysTokens > 0 || !result.kimi.errorMessage.isEmpty());
     }
 };
 

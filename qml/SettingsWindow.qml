@@ -17,6 +17,7 @@ Rectangle {
         var items = [
             { label: qsTr("General"), icon: "G" },
             { label: qsTr("Providers"), icon: "P" },
+            { label: qsTr("Token Usage"), icon: "T" },
             { label: qsTr("Display"), icon: "D" },
             { label: qsTr("Advanced"), icon: "A" },
             { label: qsTr("About"), icon: "i" }
@@ -303,6 +304,7 @@ Rectangle {
                         }
                     }
 
+                    TokenUsagePane {}
                     DisplayPane {}
                     AdvancedPane {}
                     AboutPane {}

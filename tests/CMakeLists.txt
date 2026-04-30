@@ -109,7 +109,7 @@ target_compile_definitions(tst_CostUsageScanner PRIVATE
     ${COMMON_DEFINES}
     TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
 )
-target_link_libraries(tst_CostUsageScanner PRIVATE Qt6::Core Qt6::Test)
+target_link_libraries(tst_CostUsageScanner PRIVATE Qt6::Core Qt6::Test Qt6::Sql)
 add_wincodexbar_test(tst_CostUsageScanner tst_CostUsageScanner)
 
 add_executable(tst_ProviderPipeline
@@ -143,3 +143,20 @@ target_include_directories(tst_ConPTYSession PRIVATE ${COMMON_INCLUDE})
 target_compile_definitions(tst_ConPTYSession PRIVATE ${COMMON_DEFINES})
 target_link_libraries(tst_ConPTYSession PRIVATE codexbar_core Qt6::Core Qt6::Test)
 add_wincodexbar_test(tst_ConPTYSession tst_ConPTYSession)
+
+add_executable(tst_PerProviderCostUsage
+    tst_PerProviderCostUsage.cpp
+)
+target_include_directories(tst_PerProviderCostUsage PRIVATE ${COMMON_INCLUDE})
+target_compile_definitions(tst_PerProviderCostUsage PRIVATE ${COMMON_DEFINES})
+target_link_libraries(tst_PerProviderCostUsage PRIVATE Qt6::Core Qt6::Test)
+add_wincodexbar_test(tst_PerProviderCostUsage tst_PerProviderCostUsage)
+
+# Temporary debug test for OpenCode Go SQLite
+add_executable(opencode_debug_test
+    opencode_debug_test.cpp
+)
+target_include_directories(opencode_debug_test PRIVATE ${COMMON_INCLUDE})
+target_compile_definitions(opencode_debug_test PRIVATE ${COMMON_DEFINES})
+target_link_libraries(opencode_debug_test PRIVATE Qt6::Core Qt6::Test Qt6::Sql)
+add_wincodexbar_test(opencode_debug_test opencode_debug_test)

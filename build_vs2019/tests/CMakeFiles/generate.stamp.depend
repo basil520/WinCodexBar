@@ -1,0 +1,39 @@
+# CMake generation dependency list for this directory.
+C:/Program Files/CMake/share/cmake-3.24/Modules/CMakeFindDependencyMacro.cmake
+C:/Program Files/CMake/share/cmake-3.24/Modules/CheckCXXCompilerFlag.cmake
+C:/Program Files/CMake/share/cmake-3.24/Modules/CheckCXXSourceCompiles.cmake
+C:/Program Files/CMake/share/cmake-3.24/Modules/CheckIncludeFileCXX.cmake
+C:/Program Files/CMake/share/cmake-3.24/Modules/CheckLibraryExists.cmake
+C:/Program Files/CMake/share/cmake-3.24/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake/share/cmake-3.24/Modules/FindPackageMessage.cmake
+C:/Program Files/CMake/share/cmake-3.24/Modules/FindThreads.cmake
+D:/CodexBar/WinCodexBar/tests/CMakeLists.txt
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/Qt6Config.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/Qt6ConfigExtras.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/Qt6ConfigVersion.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/Qt6ConfigVersionImpl.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/Qt6Dependencies.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/Qt6Targets.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/Qt6VersionlessTargets.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/QtFeature.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/QtFeatureCommon.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/QtPublicAppleHelpers.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/QtPublicCMakeHelpers.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/QtPublicCMakeVersionHelpers.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/QtPublicDependencyHelpers.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/QtPublicFinalizerHelpers.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/QtPublicFindPackageHelpers.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/QtPublicPluginHelpers.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/QtPublicTargetHelpers.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/QtPublicTestHelpers.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/QtPublicToolHelpers.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6/QtPublicWalkLibsHelpers.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6Test/Qt6TestAdditionalTargetInfo.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6Test/Qt6TestConfig.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6Test/Qt6TestConfigVersion.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6Test/Qt6TestConfigVersionImpl.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6Test/Qt6TestDependencies.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6Test/Qt6TestTargets-debug.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6Test/Qt6TestTargets-relwithdebinfo.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6Test/Qt6TestTargets.cmake
+D:/QT_5152/6.5.2/msvc2019_64/lib/cmake/Qt6Test/Qt6TestVersionlessTargets.cmake

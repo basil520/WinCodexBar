@@ -387,50 +387,156 @@ void UsageStore::refreshCostUsage() {
         QDate today = QDate::currentDate();
         QDate since = today.addDays(-29);
 
-        // Pass empty to let scanner auto-detect via env vars
         CostUsageSnapshot claude = scanner.scanClaude({}, since, today);
         CostUsageSnapshot codex = scanner.scanCodex({}, since, today);
-
-        // P1: Merge Pi agent session data (codex + claude portions)
         auto piResult = scanner.scanPi(since, today);
 
+        // Per-provider storage
+        QHash<QString, CostUsageSnapshot> perProvider;
+
+        // Claude (merge claude scan + pi claude)
+        CostUsageSnapshot mergedClaude;
+        mergedClaude.updatedAt = QDateTime::currentDateTime();
+        mergedClaude.sessionTokens = claude.sessionTokens + piResult.claude.sessionTokens;
+        mergedClaude.sessionCostUSD = claude.sessionCostUSD + piResult.claude.sessionCostUSD;
+        mergedClaude.last30DaysTokens = claude.last30DaysTokens + piResult.claude.last30DaysTokens;
+        mergedClaude.last30DaysCostUSD = claude.last30DaysCostUSD + piResult.claude.last30DaysCostUSD;
+        {
+            QHash<QString, CostUsageDailyEntry> dayMap;
+            auto mergeDaily = [&](const QVector<CostUsageDailyEntry>& daily) {
+                for (auto& d : daily) {
+                    auto& e = dayMap[d.date];
+                    e.date = d.date;
+                    e.inputTokens += d.inputTokens;
+                    e.cacheReadTokens += d.cacheReadTokens;
+                    e.cacheCreationTokens += d.cacheCreationTokens;
+                    e.outputTokens += d.outputTokens;
+                    e.costUSD += d.costUSD;
+                    for (auto& m : d.models) e.models.append(m);
+                }
+            };
+            mergeDaily(claude.daily);
+            mergeDaily(piResult.claude.daily);
+            for (auto it = dayMap.constBegin(); it != dayMap.constEnd(); ++it)
+                mergedClaude.daily.append(it.value());
+            std::sort(mergedClaude.daily.begin(), mergedClaude.daily.end(),
+                      [](const CostUsageDailyEntry& a, const CostUsageDailyEntry& b) { return a.date < b.date; });
+        }
+        if (mergedClaude.last30DaysTokens > 0)
+            perProvider["claude"] = mergedClaude;
+
+        // Codex (merge codex scan + pi codex)
+        CostUsageSnapshot mergedCodex;
+        mergedCodex.updatedAt = QDateTime::currentDateTime();
+        mergedCodex.sessionTokens = codex.sessionTokens + piResult.codex.sessionTokens;
+        mergedCodex.sessionCostUSD = codex.sessionCostUSD + piResult.codex.sessionCostUSD;
+        mergedCodex.last30DaysTokens = codex.last30DaysTokens + piResult.codex.last30DaysTokens;
+        mergedCodex.last30DaysCostUSD = codex.last30DaysCostUSD + piResult.codex.last30DaysCostUSD;
+        {
+            QHash<QString, CostUsageDailyEntry> dayMap;
+            auto mergeDaily = [&](const QVector<CostUsageDailyEntry>& daily) {
+                for (auto& d : daily) {
+                    auto& e = dayMap[d.date];
+                    e.date = d.date;
+                    e.inputTokens += d.inputTokens;
+                    e.cacheReadTokens += d.cacheReadTokens;
+                    e.cacheCreationTokens += d.cacheCreationTokens;
+                    e.outputTokens += d.outputTokens;
+                    e.costUSD += d.costUSD;
+                    for (auto& m : d.models) e.models.append(m);
+                }
+            };
+            mergeDaily(codex.daily);
+            mergeDaily(piResult.codex.daily);
+            for (auto it = dayMap.constBegin(); it != dayMap.constEnd(); ++it)
+                mergedCodex.daily.append(it.value());
+            std::sort(mergedCodex.daily.begin(), mergedCodex.daily.end(),
+                      [](const CostUsageDailyEntry& a, const CostUsageDailyEntry& b) { return a.date < b.date; });
+        }
+        if (mergedCodex.last30DaysTokens > 0)
+            perProvider["codex"] = mergedCodex;
+
+        // OpenCode Go (multi-provider scan)
+        auto ocgResult = scanner.scanOpenCodeGo(since, today);
+        
+        // Code Plan providers: merge with existing provider data
+        if (ocgResult.opencodego.last30DaysTokens > 0)
+            perProvider["opencodego"] = ocgResult.opencodego;
+        if (ocgResult.kimi.last30DaysTokens > 0)
+            perProvider["kimi"] = ocgResult.kimi;
+        
+        // API providers: add as independent providers
+        if (ocgResult.deepseek.last30DaysTokens > 0)
+            perProvider["deepseek"] = ocgResult.deepseek;
+
+        // Global aggregate (backward compat)
         CostUsageSnapshot combined;
         combined.updatedAt = QDateTime::currentDateTime();
-        combined.sessionTokens = claude.sessionTokens + codex.sessionTokens
-                               + piResult.codex.sessionTokens + piResult.claude.sessionTokens;
-        combined.sessionCostUSD = claude.sessionCostUSD + codex.sessionCostUSD
-                                + piResult.codex.sessionCostUSD + piResult.claude.sessionCostUSD;
-        combined.last30DaysTokens = claude.last30DaysTokens + codex.last30DaysTokens
-                                  + piResult.codex.last30DaysTokens + piResult.claude.last30DaysTokens;
-        combined.last30DaysCostUSD = claude.last30DaysCostUSD + codex.last30DaysCostUSD
-                                   + piResult.codex.last30DaysCostUSD + piResult.claude.last30DaysCostUSD;
+        combined.sessionTokens = mergedClaude.sessionTokens + mergedCodex.sessionTokens 
+            + ocgResult.opencodego.sessionTokens + ocgResult.deepseek.sessionTokens + ocgResult.kimi.sessionTokens;
+        combined.sessionCostUSD = mergedClaude.sessionCostUSD + mergedCodex.sessionCostUSD 
+            + ocgResult.opencodego.sessionCostUSD + ocgResult.deepseek.sessionCostUSD + ocgResult.kimi.sessionCostUSD;
+        combined.last30DaysTokens = mergedClaude.last30DaysTokens + mergedCodex.last30DaysTokens 
+            + ocgResult.opencodego.last30DaysTokens + ocgResult.deepseek.last30DaysTokens + ocgResult.kimi.last30DaysTokens;
+        combined.last30DaysCostUSD = mergedClaude.last30DaysCostUSD + mergedCodex.last30DaysCostUSD 
+            + ocgResult.opencodego.last30DaysCostUSD + ocgResult.deepseek.last30DaysCostUSD + ocgResult.kimi.last30DaysCostUSD;
+        {
+            QHash<QString, CostUsageDailyEntry> dayMap;
+            auto mergeDaily = [&](const QVector<CostUsageDailyEntry>& daily) {
+                for (auto& d : daily) {
+                    auto& e = dayMap[d.date];
+                    e.date = d.date;
+                    e.inputTokens += d.inputTokens;
+                    e.cacheReadTokens += d.cacheReadTokens;
+                    e.cacheCreationTokens += d.cacheCreationTokens;
+                    e.outputTokens += d.outputTokens;
+                    e.costUSD += d.costUSD;
+                    for (auto& m : d.models) e.models.append(m);
+                }
+            };
+            mergeDaily(mergedClaude.daily);
+            mergeDaily(mergedCodex.daily);
+            mergeDaily(ocgResult.opencodego.daily);
+            mergeDaily(ocgResult.deepseek.daily);
+            mergeDaily(ocgResult.kimi.daily);
+            for (auto it = dayMap.constBegin(); it != dayMap.constEnd(); ++it)
+                combined.daily.append(it.value());
+            std::sort(combined.daily.begin(), combined.daily.end(),
+                      [](const CostUsageDailyEntry& a, const CostUsageDailyEntry& b) { return a.date < b.date; });
+        }
 
-        // Merge all daily entries by date
-        QHash<QString, CostUsageDailyEntry> dayMap;
-        auto mergeDailyInto = [&](const QVector<CostUsageDailyEntry>& daily) {
-            for (auto& d : daily) {
-                auto& e = dayMap[d.date];
-                e.date = d.date;
-                e.inputTokens += d.inputTokens;
-                e.cacheReadTokens += d.cacheReadTokens;
-                e.cacheCreationTokens += d.cacheCreationTokens;
-                e.outputTokens += d.outputTokens;
-                e.costUSD += d.costUSD;
-                for (auto& m : d.models) e.models.append(m);
+        // Build model summaries per provider
+        QVector<ProviderCostUsageSnapshot> allProviders;
+        for (auto it = perProvider.constBegin(); it != perProvider.constEnd(); ++it) {
+            ProviderCostUsageSnapshot pcs;
+            pcs.providerId = it.key();
+            pcs.snapshot = it.value();
+            QHash<QString, CostUsageModelBreakdown> modelMap;
+            for (auto& entry : it.value().daily) {
+                for (auto& model : entry.models) {
+                    auto& agg = modelMap[model.modelName];
+                    agg.modelName = model.modelName;
+                    agg.inputTokens += model.inputTokens;
+                    agg.cacheReadTokens += model.cacheReadTokens;
+                    agg.cacheCreationTokens += model.cacheCreationTokens;
+                    agg.outputTokens += model.outputTokens;
+                    agg.costUSD += model.costUSD;
+                }
             }
-        };
-        mergeDailyInto(claude.daily);
-        mergeDailyInto(codex.daily);
-        mergeDailyInto(piResult.codex.daily);
-        mergeDailyInto(piResult.claude.daily);
+            pcs.modelSummary = modelMap.values();
+            std::sort(pcs.modelSummary.begin(), pcs.modelSummary.end(),
+                      [](const CostUsageModelBreakdown& a, const CostUsageModelBreakdown& b) { return a.costUSD > b.costUSD; });
+            allProviders.append(pcs);
+        }
+        std::sort(allProviders.begin(), allProviders.end(),
+                  [](const ProviderCostUsageSnapshot& a, const ProviderCostUsageSnapshot& b) {
+                      return a.snapshot.last30DaysCostUSD > b.snapshot.last30DaysCostUSD;
+                  });
 
-        for (auto it = dayMap.constBegin(); it != dayMap.constEnd(); ++it)
-            combined.daily.append(it.value());
-        std::sort(combined.daily.begin(), combined.daily.end(),
-                  [](const CostUsageDailyEntry& a, const CostUsageDailyEntry& b) { return a.date < b.date; });
-
-        QMetaObject::invokeMethod(this, [this, combined]() {
+        QMetaObject::invokeMethod(this, [this, combined, perProvider, allProviders]() {
             m_costUsage = combined;
+            m_perProviderCostUsage = perProvider;
+            m_allProviderCostUsage = allProviders;
             m_costUsageRefreshing = false;
             emit costUsageRefreshingChanged();
             emit costUsageChanged();
@@ -467,6 +573,96 @@ QVariantMap UsageStore::costUsageData() const {
         dailyList.append(dm);
     }
     m["daily"] = dailyList;
+    return m;
+}
+
+QVariantList UsageStore::providerCostUsageList() const {
+    QVariantList result;
+    for (auto& pcs : m_allProviderCostUsage) {
+        QVariantMap m;
+        m["providerId"] = pcs.providerId;
+        m["sessionTokens"] = pcs.snapshot.sessionTokens;
+        m["sessionCostUSD"] = pcs.snapshot.sessionCostUSD;
+        m["last30DaysTokens"] = pcs.snapshot.last30DaysTokens;
+        m["last30DaysCostUSD"] = pcs.snapshot.last30DaysCostUSD;
+
+        QVariantList models;
+        for (auto& model : pcs.modelSummary) {
+            QVariantMap mm;
+            mm["name"] = model.modelName;
+            mm["tokens"] = model.totalTokens();
+            mm["costUSD"] = model.costUSD;
+            models.append(mm);
+        }
+        m["models"] = models;
+
+        QVariantList daily;
+        for (auto& d : pcs.snapshot.daily) {
+            if (d.totalTokens() == 0) continue;
+            QVariantMap dm;
+            dm["date"] = d.date;
+            dm["totalTokens"] = d.totalTokens();
+            dm["costUSD"] = d.costUSD;
+            daily.append(dm);
+        }
+        m["daily"] = daily;
+        result.append(m);
+    }
+    return result;
+}
+
+QVariantMap UsageStore::providerCostUsageData(const QString& providerId) const {
+    auto it = m_perProviderCostUsage.constFind(providerId);
+    if (it == m_perProviderCostUsage.constEnd()) return QVariantMap();
+
+    CostUsageSnapshot snap = it.value();
+    QVariantMap m;
+    m["providerId"] = providerId;
+    m["sessionTokens"] = snap.sessionTokens;
+    m["sessionCostUSD"] = snap.sessionCostUSD;
+    m["last30DaysTokens"] = snap.last30DaysTokens;
+    m["last30DaysCostUSD"] = snap.last30DaysCostUSD;
+    m["hasData"] = snap.last30DaysTokens > 0;
+    m["updatedAt"] = snap.updatedAt.toMSecsSinceEpoch();
+
+    QVariantList daily;
+    for (auto& d : snap.daily) {
+        if (d.totalTokens() == 0) continue;
+        QVariantMap dm;
+        dm["date"] = d.date;
+        dm["totalTokens"] = d.totalTokens();
+        dm["costUSD"] = d.costUSD;
+        QVariantList models;
+        for (auto& md : d.models) {
+            QVariantMap mm;
+            mm["name"] = md.modelName;
+            mm["tokens"] = md.totalTokens();
+            mm["costUSD"] = md.costUSD;
+            models.append(mm);
+        }
+        dm["models"] = models;
+        daily.append(dm);
+    }
+    m["daily"] = daily;
+
+    for (auto& pcs : m_allProviderCostUsage) {
+        if (pcs.providerId == providerId) {
+            QVariantList models;
+            for (auto& model : pcs.modelSummary) {
+                QVariantMap mm;
+                mm["name"] = model.modelName;
+                mm["tokens"] = model.totalTokens();
+                mm["costUSD"] = model.costUSD;
+                models.append(mm);
+            }
+            m["models"] = models;
+            break;
+        }
+    }
+
+    if (!snap.errorMessage.isEmpty())
+        m["errorMessage"] = snap.errorMessage;
+
     return m;
 }
 
