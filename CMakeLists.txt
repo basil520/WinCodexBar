@@ -46,6 +46,22 @@ set(CORE_SOURCES
     src/providers/mistral/MistralProvider.cpp
     src/providers/ollama/OllamaProvider.cpp
     src/providers/codex/CodexProvider.cpp
+    src/providers/codex/CodexIdentity.cpp
+    src/providers/codex/CodexRateWindowNormalizer.cpp
+    src/providers/codex/CodexReconciledState.cpp
+    src/providers/codex/CodexTokenRefresher.cpp
+    src/providers/codex/CodexOAuthUsageFetcher.cpp
+    src/providers/codex/CodexStatusProbe.cpp
+    src/providers/codex/CodexDashboardAuthority.cpp
+    src/providers/codex/CodexSystemAccountObserver.cpp
+    src/providers/codex/ManagedCodexAccount.cpp
+    src/providers/codex/CodexAccountReconciliation.cpp
+    src/providers/codex/CodexHomeScope.cpp
+    src/providers/codex/CodexOpenAIWorkspaceResolver.cpp
+    src/providers/codex/CodexOpenAIWorkspaceIdentityCache.cpp
+    src/providers/codex/CodexPlanFormatting.cpp
+    src/providers/codex/CodexProviderSettingsBuilder.cpp
+    src/providers/codex/CodexUsageDataSource.cpp
     src/providers/claude/ClaudeProvider.cpp
     src/providers/cursor/CursorProvider.cpp
     src/providers/kimi/KimiProvider.cpp
@@ -72,6 +88,7 @@ set(CORE_SOURCES
     src/util/TextParser.cpp
     src/util/BinaryLocator.cpp
     src/util/CostUsageScanner.cpp
+    src/util/SingleInstanceGuard.cpp
     src/util/UsagePaceText.cpp
 )
 
@@ -95,6 +112,22 @@ set(CORE_HEADERS
     src/models/CodexUsageResponse.h
     src/models/ClaudeUsageSnapshot.h
 
+    src/providers/codex/CodexIdentity.h
+    src/providers/codex/CodexRateWindowNormalizer.h
+    src/providers/codex/CodexReconciledState.h
+    src/providers/codex/CodexTokenRefresher.h
+    src/providers/codex/CodexOAuthUsageFetcher.h
+    src/providers/codex/CodexStatusProbe.h
+    src/providers/codex/CodexDashboardAuthority.h
+    src/providers/codex/CodexSystemAccountObserver.h
+    src/providers/codex/ManagedCodexAccount.h
+    src/providers/codex/CodexAccountReconciliation.h
+    src/providers/codex/CodexHomeScope.h
+    src/providers/codex/CodexOpenAIWorkspaceResolver.h
+    src/providers/codex/CodexOpenAIWorkspaceIdentityCache.h
+    src/providers/codex/CodexPlanFormatting.h
+    src/providers/codex/CodexProviderSettingsBuilder.h
+    src/providers/codex/CodexUsageDataSource.h
     src/providers/kimi/KimiProvider.h
     src/providers/opencode/OpenCodeProvider.h
     src/providers/opencode/OpenCodeGoProvider.h
@@ -134,6 +167,7 @@ set(CORE_HEADERS
     src/util/TextParser.h
     src/util/BinaryLocator.h
     src/util/CostUsageScanner.h
+    src/util/SingleInstanceGuard.h
     src/util/UsagePaceText.h
 )
 
