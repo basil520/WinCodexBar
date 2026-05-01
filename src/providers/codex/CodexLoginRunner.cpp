@@ -85,6 +85,13 @@ void CodexLoginRunner::start(const QString& homePath, int timeoutMs)
     connect(m_timeoutTimer, &QTimer::timeout, this, &CodexLoginRunner::onTimeout);
     m_timeoutTimer->start(timeoutMs);
 
+    // Start progress timer to keep UI updated during long waits
+    m_elapsedSeconds = 0;
+    m_progressTimer = new QTimer(this);
+    m_progressTimer->setInterval(30000); // every 30 seconds
+    connect(m_progressTimer, &QTimer::timeout, this, &CodexLoginRunner::onProgressTick);
+    m_progressTimer->start();
+
     qDebug() << "CodexLoginRunner: process started, waiting for completion...";
 }
 
@@ -96,6 +103,12 @@ void CodexLoginRunner::cancel()
         m_timeoutTimer->stop();
         delete m_timeoutTimer;
         m_timeoutTimer = nullptr;
+    }
+
+    if (m_progressTimer) {
+        m_progressTimer->stop();
+        delete m_progressTimer;
+        m_progressTimer = nullptr;
     }
 
     if (m_process) {
@@ -202,6 +215,12 @@ void CodexLoginRunner::onProcessFinished(int exitCode, QProcess::ExitStatus exit
         m_timeoutTimer = nullptr;
     }
 
+    if (m_progressTimer) {
+        m_progressTimer->stop();
+        delete m_progressTimer;
+        m_progressTimer = nullptr;
+    }
+
     Result result = collectResult(exitCode, exitStatus);
 
     delete m_process;
@@ -222,6 +241,12 @@ void CodexLoginRunner::onProcessError(QProcess::ProcessError error)
         m_timeoutTimer = nullptr;
     }
 
+    if (m_progressTimer) {
+        m_progressTimer->stop();
+        delete m_progressTimer;
+        m_progressTimer = nullptr;
+    }
+
     Result result;
     result.outcome = Result::Failed;
     QString processError = m_process ? m_process->errorString() : QStringLiteral("Unknown error");
@@ -236,6 +261,30 @@ void CodexLoginRunner::onProcessError(QProcess::ProcessError error)
     emit finished(result);
 }
 
+void CodexLoginRunner::onProgressTick()
+{
+    if (m_cancelled || m_promptEmitted) return;
+
+    m_elapsedSeconds += 30;
+
+    if (m_output.isEmpty()) {
+        // No output at all — server is not responding
+        if (m_elapsedSeconds <= 60) {
+            emit progressUpdate(QStringLiteral("Connecting to Codex authentication server..."));
+        } else if (m_elapsedSeconds <= 120) {
+            emit progressUpdate(QStringLiteral("Still waiting for Codex server response (%1s)...")
+                .arg(m_elapsedSeconds));
+        } else {
+            emit progressUpdate(QStringLiteral("Codex server not responding after %1s. Check network/proxy settings.")
+                .arg(m_elapsedSeconds));
+        }
+    } else {
+        // Output received but no device code yet
+        emit progressUpdate(QStringLiteral("Received response but no device code. Retrying... (%1s)")
+            .arg(m_elapsedSeconds));
+    }
+}
+
 void CodexLoginRunner::onTimeout()
 {
     if (m_cancelled) return;
@@ -248,6 +297,12 @@ void CodexLoginRunner::onTimeout()
         m_process->waitForFinished(3000);
         delete m_process;
         m_process = nullptr;
+    }
+
+    if (m_progressTimer) {
+        m_progressTimer->stop();
+        delete m_progressTimer;
+        m_progressTimer = nullptr;
     }
 
     Result result;

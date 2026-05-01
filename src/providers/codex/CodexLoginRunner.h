@@ -41,10 +41,13 @@ private slots:
     void onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void onProcessError(QProcess::ProcessError error);
     void onTimeout();
+    void onProgressTick();
 
 private:
     QProcess* m_process = nullptr;
     QTimer* m_timeoutTimer = nullptr;
+    QTimer* m_progressTimer = nullptr;
+    int m_elapsedSeconds = 0;
     QString m_homePath;
     QString m_output;
     bool m_cancelled = false;
