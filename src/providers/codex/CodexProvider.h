@@ -10,6 +10,7 @@
 #include <QObject>
 #include <QString>
 #include <QFuture>
+#include <QJsonObject>
 
 class CodexProvider : public IProvider {
     Q_OBJECT
@@ -32,10 +33,13 @@ public:
     QString brandColor() const override { return "#49A3B0"; }
 
     QVector<ProviderSettingsDescriptor> settingsDescriptors() const override {
-        return { {"sourceMode", "Data source", "picker", QVariant(QStringLiteral("auto")),
-                   { {"auto", "Auto"}, {"oauth", "OAuth"}, {"cli", "CLI"} } } };
+        return {
+            {"sourceMode", "Data source", "picker", QVariant(QStringLiteral("auto")),
+             { {"auto", "Auto"}, {"oauth", "OAuth"}, {"cli", "CLI"}, {"web", "Web Dashboard"} }},
+            {"manualCookieHeader", "Manual cookie header", "secret", QVariant()}
+        };
     }
-    QVector<QString> supportedSourceModes() const override { return {"auto", "oauth", "cli"}; }
+    QVector<QString> supportedSourceModes() const override { return {"auto", "oauth", "cli", "web"}; }
 };
 
 class CodexOAuthStrategy : public IFetchStrategy {
@@ -55,17 +59,45 @@ private:
         const CodexOAuthCredentials& creds, const QHash<QString, QString>& env);
 };
 
-class CodexCLIStrategy : public IFetchStrategy {
+class CodexAppServerStrategy : public IFetchStrategy {
     Q_OBJECT
 public:
-    explicit CodexCLIStrategy(QObject* parent = nullptr);
+    explicit CodexAppServerStrategy(QObject* parent = nullptr);
 
-    QString id() const override { return "codex.cli"; }
+    QString id() const override { return "codex.cli.rpc"; }
     int kind() const override { return ProviderFetchKind::CLI; }
     bool isAvailable(const ProviderFetchContext& ctx) const override;
     ProviderFetchResult fetchSync(const ProviderFetchContext& ctx) override;
     bool shouldFallback(const ProviderFetchResult& result, const ProviderFetchContext& ctx) const override;
 
+    static ProviderFetchResult mapRpcResult(const QJsonObject& rateLimitsResult,
+                                            const QJsonObject& accountResult = {});
+    static ProviderFetchResult mapRpcError(const QJsonObject& errorObject);
+};
+
+class CodexCLIPtyStrategy : public IFetchStrategy {
+    Q_OBJECT
+public:
+    explicit CodexCLIPtyStrategy(QObject* parent = nullptr);
+
+    QString id() const override { return "codex.cli.pty"; }
+    int kind() const override { return ProviderFetchKind::CLI; }
+    bool isAvailable(const ProviderFetchContext& ctx) const override;
+    ProviderFetchResult fetchSync(const ProviderFetchContext& ctx) override;
+    bool shouldFallback(const ProviderFetchResult& result, const ProviderFetchContext& ctx) const override;
+};
+
+class CodexWebDashboardStrategy : public IFetchStrategy {
+    Q_OBJECT
+public:
+    explicit CodexWebDashboardStrategy(QObject* parent = nullptr);
+
+    QString id() const override { return "codex.web"; }
+    int kind() const override { return ProviderFetchKind::WebDashboard; }
+    bool isAvailable(const ProviderFetchContext& ctx) const override;
+    ProviderFetchResult fetchSync(const ProviderFetchContext& ctx) override;
+    bool shouldFallback(const ProviderFetchResult& result, const ProviderFetchContext& ctx) const override;
+
 private:
-    static UsageSnapshot parseCLIOutput(const QString& output);
+    static UsageSnapshot parseDashboardHTML(const QString& html);
 };

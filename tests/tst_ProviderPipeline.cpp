@@ -7,6 +7,8 @@
 
 class FakeStrategy : public IFetchStrategy {
 public:
+    static int destroyedCount;
+
     FakeStrategy(QString id, bool available, bool success, bool fallback,
                  int kind = ProviderFetchKind::APIToken)
         : m_id(std::move(id))
@@ -15,6 +17,10 @@ public:
         , m_fallback(fallback)
         , m_kind(kind)
     {}
+
+    ~FakeStrategy() override {
+        ++destroyedCount;
+    }
 
     QString id() const override { return m_id; }
     int kind() const override { return m_kind; }
@@ -45,6 +51,8 @@ private:
     int m_kind;
 };
 
+int FakeStrategy::destroyedCount = 0;
+
 class SourceProvider : public IProvider {
 public:
     QString id() const override { return "source"; }
@@ -58,6 +66,23 @@ public:
             new FakeStrategy("oauth", true, true, false, ProviderFetchKind::OAuth),
             new FakeStrategy("web", true, true, false, ProviderFetchKind::Web),
             new FakeStrategy("api", true, true, false, ProviderFetchKind::APIToken)
+        };
+    }
+};
+
+class CleanupProvider : public IProvider {
+public:
+    QString id() const override { return "cleanup"; }
+    QString displayName() const override { return "Cleanup"; }
+    QString sessionLabel() const override { return "Session"; }
+    QString weeklyLabel() const override { return "Weekly"; }
+    bool defaultEnabled() const override { return false; }
+
+    QVector<IFetchStrategy*> createStrategies(const ProviderFetchContext&) override {
+        return {
+            new FakeStrategy("first", true, false, true, ProviderFetchKind::CLI),
+            new FakeStrategy("second", true, true, false, ProviderFetchKind::CLI),
+            new FakeStrategy("web-filtered", true, true, false, ProviderFetchKind::Web)
         };
     }
 };
@@ -121,6 +146,20 @@ private slots:
         QCOMPARE(strategies.size(), 1);
         QCOMPARE(strategies.first()->id(), QString("web"));
         qDeleteAll(strategies);
+    }
+
+    void executeProviderOwnsAndDestroysResolvedStrategies() {
+        ProviderPipeline pipeline;
+        ProviderFetchContext ctx;
+        ctx.sourceMode = ProviderSourceMode::CLI;
+        CleanupProvider provider;
+        FakeStrategy::destroyedCount = 0;
+
+        ProviderFetchResult result = pipeline.executeProvider(&provider, ctx);
+
+        QVERIFY(result.success);
+        QCOMPARE(result.strategyID, QString("second"));
+        QCOMPARE(FakeStrategy::destroyedCount, 3);
     }
 };
 

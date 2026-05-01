@@ -326,5 +326,18 @@ LRESULT CALLBACK StatusItemController::messageWindowProc(
             }
         }
     }
+
+    // Handle Windows Explorer restart: recreate tray icon
+    static UINT s_wmTaskbarCreated = RegisterWindowMessageW(L"TaskbarCreated");
+    if (msg == s_wmTaskbarCreated) {
+        StatusItemController* self =
+            reinterpret_cast<StatusItemController*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+        if (self) {
+            self->destroyTrayIcon();
+            self->createTrayIcon();
+        }
+        return 0;
+    }
+
     return DefWindowProcW(hwnd, msg, wParam, lParam);
 }

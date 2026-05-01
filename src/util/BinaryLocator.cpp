@@ -30,7 +30,22 @@ QString BinaryLocator::resolve(const QString& name) {
         return pathInPath;
     }
 
-    return name + ".exe";
+    // On Windows, also check for .cmd, .bat, and .ps1 wrappers (e.g., npm global packages)
+    // Prefer .cmd/.bat over .ps1 because ConPTY/cmd can execute them directly
+    QString wrapperPath = QStandardPaths::findExecutable(name + ".cmd");
+    if (!wrapperPath.isEmpty()) {
+        return wrapperPath;
+    }
+    wrapperPath = QStandardPaths::findExecutable(name + ".bat");
+    if (!wrapperPath.isEmpty()) {
+        return wrapperPath;
+    }
+    wrapperPath = QStandardPaths::findExecutable(name + ".ps1");
+    if (!wrapperPath.isEmpty()) {
+        return wrapperPath;
+    }
+
+    return QString();
 }
 
 std::optional<QString> BinaryLocator::version(const QString& binaryPath) {

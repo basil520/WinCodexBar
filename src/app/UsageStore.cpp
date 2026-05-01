@@ -778,20 +778,9 @@ void UsageStore::refreshProvider(const QString& providerId) {
         return;
     }
 
-    auto strategies = m_pipeline->resolveStrategies(provider, ctx);
-    if (strategies.isEmpty()) {
-        m_errors[providerId] = "no available fetch strategy";
-        emit errorOccurred(providerId, providerError(providerId));
-        m_pendingRefreshes--;
-        if (m_pendingRefreshes <= 0) {
-            m_isRefreshing = false;
-            emit refreshingChanged();
-        }
-        return;
-    }
-
-    QtConcurrent::run([this, providerId, strategies, ctx]() {
-        ProviderFetchResult result = m_pipeline->execute(strategies, ctx);
+    QtConcurrent::run([this, providerId, provider, ctx]() {
+        ProviderPipeline pipeline;
+        ProviderFetchResult result = pipeline.executeProvider(provider, ctx);
 
         QMetaObject::invokeMethod(this, [this, providerId, result]() {
             if (result.success) {
@@ -1153,12 +1142,6 @@ void UsageStore::testProviderConnection(const QString& providerId) {
         return;
     }
 
-    auto strategies = m_pipeline->resolveStrategies(provider, ctx);
-    if (strategies.isEmpty()) {
-        failNow("No available fetch strategy");
-        return;
-    }
-
     setProviderConnectionTest(providerId, {
         {"state", "testing"},
         {"message", "Testing connection..."},
@@ -1167,9 +1150,9 @@ void UsageStore::testProviderConnection(const QString& providerId) {
         {"finishedAt", 0},
         {"durationMs", 0}
     });
-    QtConcurrent::run([this, providerId, strategies, ctx, startedAt]() {
+    QtConcurrent::run([this, providerId, provider, ctx, startedAt]() {
         ProviderPipeline pipeline;
-        ProviderFetchResult result = pipeline.execute(strategies, ctx);
+        ProviderFetchResult result = pipeline.executeProvider(provider, ctx);
         QMetaObject::invokeMethod(this, [this, providerId, result, startedAt]() {
             const qint64 finishedAt = QDateTime::currentDateTime().toMSecsSinceEpoch();
             if (result.success) {

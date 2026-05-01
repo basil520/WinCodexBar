@@ -46,6 +46,7 @@ SettingsGroupBox {
             Layout.fillWidth: true
             visible: root.expanded
             maximumLineCount: 10
+            elide: Text.ElideRight
         }
 
         RowLayout {
