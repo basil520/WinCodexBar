@@ -4,10 +4,24 @@
 #include "../src/app/UsageStore.h"
 #include "../src/providers/ProviderRegistry.h"
 #include "../src/providers/claude/ClaudeProvider.h"
+#include "../src/providers/codex/CodexProvider.h"
 #include "../src/providers/zai/ZaiProvider.h"
 #include "../src/providers/shared/ProviderCredentialStore.h"
 
+#include <QDir>
+#include <QFile>
+#include <QStandardPaths>
+#include <QTemporaryDir>
 #include <memory>
+
+namespace {
+
+QString managedAccountStorePath()
+{
+    return QDir::currentPath() + "/fetch-context-managed-codex-accounts.json";
+}
+
+} // namespace
 
 class DisplaySettingsStrategy : public IFetchStrategy {
 public:
@@ -63,18 +77,31 @@ class tst_FetchContext : public QObject {
     Q_OBJECT
 private slots:
     void initTestCase() {
+        QStandardPaths::setTestModeEnabled(true);
+        qputenv("CODEXBAR_MANAGED_CODEX_ACCOUNTS_PATH",
+                QDir::toNativeSeparators(managedAccountStorePath()).toUtf8());
         ProviderRegistry::instance().registerProvider(new ClaudeProvider());
+        ProviderRegistry::instance().registerProvider(new CodexProvider());
         ProviderRegistry::instance().registerProvider(new ZaiProvider());
         ProviderRegistry::instance().registerProvider(new DisplaySettingsProvider());
     }
 
     void init() {
         ProviderCredentialStore::setBackendForTesting(std::make_shared<InMemoryCredentialBackend>());
+        QFile::remove(managedAccountStorePath());
     }
 
     void cleanup() {
         ProviderCredentialStore::resetBackendForTesting();
         qunsetenv("Z_AI_API_KEY");
+        QFile::remove(managedAccountStorePath());
+        QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+             + "/managed-codex-homes").removeRecursively();
+    }
+
+    void cleanupTestCase() {
+        qunsetenv("CODEXBAR_MANAGED_CODEX_ACCOUNTS_PATH");
+        QFile::remove(managedAccountStorePath());
     }
 
     void injectsEnvironmentAndZaiRegion() {
@@ -126,6 +153,27 @@ private slots:
         QVERIFY(ctx.manualCookieHeader.has_value());
         QCOMPARE(*ctx.manualCookieHeader, QString("sessionKey=sk-ant-credential"));
         QCOMPARE(ctx.settings.get("manualCookieHeader").toString(), QString("sessionKey=sk-ant-credential"));
+    }
+
+    void codexActiveManagedAccountScopesFetchContext() {
+        QTemporaryDir codexHome(QDir::currentPath() + "/fetch-context-codex-home-XXXXXX");
+        QVERIFY(codexHome.isValid());
+
+        SettingsStore settings;
+        UsageStore store;
+        store.setSettingsStore(&settings);
+
+        QVERIFY(store.addCodexAccount("dev@example.com", codexHome.path()));
+
+        QVariantMap state = store.codexAccountState();
+        QCOMPARE(state.value("activeAccountID").toString(),
+                 store.codexActiveAccountID());
+
+        ProviderFetchContext ctx = store.buildFetchContextForProvider("codex");
+
+        QCOMPARE(ctx.providerId, QString("codex"));
+        QCOMPARE(ctx.env.value("CODEX_HOME"), codexHome.path());
+        QCOMPARE(ctx.accountID, store.codexActiveAccountID());
     }
 
     void envSecretBeatsStoredCredential() {

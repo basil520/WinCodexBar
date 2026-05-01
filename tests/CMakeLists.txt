@@ -136,6 +136,14 @@ target_compile_definitions(tst_CodexProvider PRIVATE ${COMMON_DEFINES})
 target_link_libraries(tst_CodexProvider PRIVATE codexbar_core Qt6::Core Qt6::Test)
 add_wincodexbar_test(tst_CodexProvider tst_CodexProvider)
 
+add_executable(tst_CodexLoginRunner
+    tst_CodexLoginRunner.cpp
+)
+target_include_directories(tst_CodexLoginRunner PRIVATE ${COMMON_INCLUDE})
+target_compile_definitions(tst_CodexLoginRunner PRIVATE ${COMMON_DEFINES})
+target_link_libraries(tst_CodexLoginRunner PRIVATE codexbar_core Qt6::Core Qt6::Test)
+add_wincodexbar_test(tst_CodexLoginRunner tst_CodexLoginRunner)
+
 add_executable(tst_FetchContext
     tst_FetchContext.cpp
 )

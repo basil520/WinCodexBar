@@ -14,8 +14,6 @@
 #include <QFuture>
 #include <QJsonObject>
 
-class ManagedCodexAccountService;
-
 class CodexProvider : public IProvider {
     Q_OBJECT
 public:
@@ -44,6 +42,7 @@ public:
         };
     }
     QVector<QString> supportedSourceModes() const override { return {"auto", "oauth", "cli", "web"}; }
+
 };
 
 class CodexOAuthStrategy : public IFetchStrategy {

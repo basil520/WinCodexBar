@@ -29,6 +29,7 @@ class UsageStore : public QObject {
     Q_PROPERTY(bool costUsageRefreshing READ costUsageRefreshing NOTIFY costUsageRefreshingChanged)
     Q_PROPERTY(int snapshotRevision READ snapshotRevision NOTIFY snapshotRevisionChanged)
     Q_PROPERTY(int statusRevision READ statusRevision NOTIFY statusRevisionChanged)
+    Q_PROPERTY(QVariantMap codexAccountState READ codexAccountState NOTIFY codexAccountStateChanged)
 
 public:
     explicit UsageStore(QObject* parent = nullptr);
@@ -70,9 +71,11 @@ public:
 
     // Codex multi-account management
     Q_INVOKABLE QVariantList codexAccounts() const;
+    Q_INVOKABLE QVariantMap codexAccountState() const;
     Q_INVOKABLE QString codexActiveAccountID() const;
     Q_INVOKABLE void setCodexActiveAccount(const QString& accountID);
     Q_INVOKABLE bool addCodexAccount(const QString& email, const QString& homePath);
+    Q_INVOKABLE void cancelCodexAuthentication();
     Q_INVOKABLE bool removeCodexAccount(const QString& accountID);
     Q_INVOKABLE bool reauthenticateCodexAccount(const QString& accountID);
     Q_INVOKABLE bool isCodexAuthenticating() const;
@@ -119,6 +122,7 @@ signals:
     void codexAuthenticationFinished(const QString& accountID, bool success);
     void codexRemovalStarted(const QString& accountID);
     void codexRemovalFinished(const QString& accountID, bool success);
+    void codexAccountStateChanged();
 
 private:
     std::optional<ProviderSettingsDescriptor> settingDescriptor(const QString& providerId,

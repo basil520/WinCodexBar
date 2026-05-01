@@ -1,5 +1,4 @@
 #include "CodexProvider.h"
-#include "ManagedCodexAccountService.h"
 #include "CodexHomeScope.h"
 #include "../../network/NetworkManager.h"
 #include "../../util/BinaryLocator.h"
@@ -22,11 +21,6 @@
 #include <QVariant>
 
 CodexProvider::CodexProvider(QObject* parent) : IProvider(parent) {}
-
-void CodexProvider::setAccountService(ManagedCodexAccountService* service)
-{
-    m_accountService = service;
-}
 
 QVector<IFetchStrategy*> CodexProvider::createStrategies(const ProviderFetchContext& ctx) {
     QVector<IFetchStrategy*> strategies;
@@ -138,14 +132,17 @@ ProviderFetchResult CodexOAuthStrategy::fetchSync(const ProviderFetchContext& ct
     result.strategyKind = kind();
     result.sourceLabel = "oauth";
 
+    qDebug() << "[CodexOAuth] Starting OAuth fetch...";
     auto credsOpt = CodexOAuthCredentials::load(ctx.env);
     if (!credsOpt.has_value()) {
         result.success = false;
         result.errorMessage = "Codex auth.json not found. Run `codex` to log in.";
+        qDebug() << "[CodexOAuth] auth.json not found";
         return result;
     }
 
     CodexOAuthCredentials creds = *credsOpt;
+    qDebug() << "[CodexOAuth] Loaded credentials, accountId:" << creds.accountId;
 
     if (creds.needsRefresh()) {
         auto refreshed = attemptTokenRefresh(creds, ctx.env);
@@ -192,6 +189,7 @@ ProviderFetchResult CodexOAuthStrategy::fetchSync(const ProviderFetchContext& ct
     }
 
     QString fullURL = baseURL + usagePath;
+    qDebug() << "[CodexOAuth] Fetching URL:" << fullURL;
 
     QHash<QString, QString> headers;
     headers["Authorization"] = "Bearer " + creds.accessToken;
@@ -203,6 +201,7 @@ ProviderFetchResult CodexOAuthStrategy::fetchSync(const ProviderFetchContext& ct
     }
 
     QJsonObject json = NetworkManager::instance().getJsonSync(QUrl(fullURL), headers, ctx.networkTimeoutMs);
+    qDebug() << "[CodexOAuth] Response received, isEmpty:" << json.isEmpty();
     if (json.isEmpty()) {
         result.success = false;
         result.errorMessage = "empty or invalid response from Codex API";
@@ -215,10 +214,13 @@ ProviderFetchResult CodexOAuthStrategy::fetchSync(const ProviderFetchContext& ct
         if (errorMsg.isEmpty()) errorMsg = "API error";
         result.success = false;
         result.errorMessage = errorMsg;
+        qDebug() << "[CodexOAuth] API error:" << errorMsg;
         return result;
     }
 
     CodexUsageResponse usageResp = CodexUsageResponse::fromJson(json);
+    qDebug() << "[CodexOAuth] Parsed response, primaryWindow:" << usageResp.primaryWindow.has_value()
+             << "secondaryWindow:" << usageResp.secondaryWindow.has_value();
     if (!usageResp.primaryWindow.has_value() && !usageResp.secondaryWindow.has_value()) {
         result.success = false;
         result.errorMessage = "no rate limit data in response";
@@ -228,6 +230,7 @@ ProviderFetchResult CodexOAuthStrategy::fetchSync(const ProviderFetchContext& ct
     QString email = resolveAccountEmail(creds);
     result.usage = usageResp.toUsageSnapshot(email);
     result.success = true;
+    qDebug() << "[CodexOAuth] Success!";
     return result;
 }
 
@@ -805,7 +808,7 @@ static UsageSnapshot parseCodexCLIOutput(const QString& raw) {
     return snap;
 }
 
-ProviderFetchResult CodexCLIPtyStrategy::fetchSync(const ProviderFetchContext&) {
+ProviderFetchResult CodexCLIPtyStrategy::fetchSync(const ProviderFetchContext& ctx) {
     ProviderFetchResult result;
     result.strategyID = "codex.cli.pty";
     result.strategyKind = ProviderFetchKind::CLI;
@@ -834,9 +837,18 @@ ProviderFetchResult CodexCLIPtyStrategy::fetchSync(const ProviderFetchContext&) 
     QStringList args;
     args << "--no-alt-screen";
 
+    QProcessEnvironment env;
+    if (ctx.env.isEmpty()) {
+        env = QProcessEnvironment::systemEnvironment();
+    } else {
+        for (auto it = ctx.env.constBegin(); it != ctx.env.constEnd(); ++it) {
+            env.insert(it.key(), it.value());
+        }
+    }
+
     ConPTYSession session;
     qDebug() << "[CodexCLI] Starting ConPTY session:" << binary << args.join(' ');
-    if (!session.start(binary, args)) {
+    if (!session.start(binary, args, env)) {
         result.errorMessage = "Failed to start ConPTY session for codex CLI";
         return result;
     }

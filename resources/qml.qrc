@@ -21,6 +21,7 @@
         <file alias="qml/components/SecretInput.qml">../qml/components/SecretInput.qml</file>
         <file alias="qml/components/ConnectionStatus.qml">../qml/components/ConnectionStatus.qml</file>
         <file alias="qml/components/ProviderErrorCard.qml">../qml/components/ProviderErrorCard.qml</file>
+        <file alias="qml/components/CodexAccountsPane.qml">../qml/components/CodexAccountsPane.qml</file>
         <file alias="qml/panes/GeneralPane.qml">../qml/panes/GeneralPane.qml</file>
         <file alias="qml/panes/ProvidersPane.qml">../qml/panes/ProvidersPane.qml</file>
         <file alias="qml/panes/TokenUsagePane.qml">../qml/panes/TokenUsagePane.qml</file>

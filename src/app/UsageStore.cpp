@@ -73,16 +73,35 @@ UsageStore::UsageStore(QObject* parent)
     m_codexAccountService = new ManagedCodexAccountService(env, this);
     QObject::connect(m_codexAccountService, &ManagedCodexAccountService::accountsChanged,
                      this, &UsageStore::codexAccountsChanged);
+    QObject::connect(m_codexAccountService, &ManagedCodexAccountService::accountsChanged,
+                     this, &UsageStore::codexAccountStateChanged);
     QObject::connect(m_codexAccountService, &ManagedCodexAccountService::activeAccountChanged,
                      this, &UsageStore::codexActiveAccountChanged);
+    QObject::connect(m_codexAccountService, &ManagedCodexAccountService::activeAccountChanged,
+                     this, [this](const QString&) {
+        emit codexAccountStateChanged();
+    });
     QObject::connect(m_codexAccountService, &ManagedCodexAccountService::authenticationStarted,
                      this, &UsageStore::codexAuthenticationStarted);
+    QObject::connect(m_codexAccountService, &ManagedCodexAccountService::authenticationStarted,
+                     this, [this](const QString&) { emit codexAccountStateChanged(); });
     QObject::connect(m_codexAccountService, &ManagedCodexAccountService::authenticationFinished,
                      this, &UsageStore::codexAuthenticationFinished);
+    QObject::connect(m_codexAccountService, &ManagedCodexAccountService::authenticationFinished,
+                     this, [this](const QString&, bool success) {
+        emit codexAccountStateChanged();
+        Q_UNUSED(success)
+    });
+    QObject::connect(m_codexAccountService, &ManagedCodexAccountService::authenticationStateChanged,
+                     this, &UsageStore::codexAccountStateChanged);
     QObject::connect(m_codexAccountService, &ManagedCodexAccountService::removalStarted,
                      this, &UsageStore::codexRemovalStarted);
+    QObject::connect(m_codexAccountService, &ManagedCodexAccountService::removalStarted,
+                     this, [this](const QString&) { emit codexAccountStateChanged(); });
     QObject::connect(m_codexAccountService, &ManagedCodexAccountService::removalFinished,
                      this, &UsageStore::codexRemovalFinished);
+    QObject::connect(m_codexAccountService, &ManagedCodexAccountService::removalFinished,
+                     this, [this](const QString&, bool) { emit codexAccountStateChanged(); });
 }
 
 void UsageStore::setSettingsStore(SettingsStore* s) {
@@ -221,6 +240,18 @@ ProviderFetchContext UsageStore::buildFetchContextForProvider(const QString& pro
 
     QString accountId = addSetting("accountID", "").toString().trimmed();
     ctx.accountID = accountId;
+
+    if (providerId == "codex" && m_codexAccountService) {
+        const QString activeId = m_codexAccountService->activeAccountID();
+        if (!activeId.isEmpty()) {
+            ctx.accountID = activeId;
+        }
+
+        const QString managedHome = m_codexAccountService->activeManagedHomePath();
+        if (!managedHome.isEmpty()) {
+            ctx.env["CODEX_HOME"] = managedHome;
+        }
+    }
 
     bool ok = false;
     int timeout = addSetting("networkTimeoutMs", ProviderPipeline::STRATEGY_TIMEOUT_MS).toInt(&ok);
@@ -1163,6 +1194,7 @@ void UsageStore::testProviderConnection(const QString& providerId) {
         return;
     }
 
+    qDebug() << "[TestConnection] Starting test for provider:" << providerId;
     setProviderConnectionTest(providerId, {
         {"state", "testing"},
         {"message", "Testing connection..."},
@@ -1176,6 +1208,7 @@ void UsageStore::testProviderConnection(const QString& providerId) {
         ProviderFetchResult result = pipeline.executeProvider(provider, ctx);
         QMetaObject::invokeMethod(this, [this, providerId, result, startedAt]() {
             const qint64 finishedAt = QDateTime::currentDateTime().toMSecsSinceEpoch();
+            qDebug() << "[TestConnection] Provider:" << providerId << "success:" << result.success << "error:" << result.errorMessage;
             if (result.success) {
                 m_snapshots[providerId] = result.usage;
                 m_errors.remove(providerId);
@@ -1416,6 +1449,45 @@ QVariantList UsageStore::codexAccounts() const
     return result;
 }
 
+QVariantMap UsageStore::codexAccountState() const
+{
+    QVariantMap state;
+    state["accounts"] = codexAccounts();
+    state["activeAccountID"] = codexActiveAccountID();
+    state["isAuthenticating"] = isCodexAuthenticating();
+    state["isRemoving"] = isCodexRemoving();
+    state["authenticatingAccountID"] = codexAuthenticatingAccountID();
+    state["removingAccountID"] = codexRemovingAccountID();
+    state["hasUnreadableStore"] = hasCodexUnreadableStore();
+
+    QString authState = "idle";
+    if (m_codexAccountService) {
+        if (m_codexAccountService->isAuthenticating()) {
+            authState = m_codexAccountService->authUserCode().isEmpty()
+                ? QStringLiteral("starting")
+                : QStringLiteral("verification");
+        } else if (!m_codexAccountService->authError().isEmpty()) {
+            authState = QStringLiteral("failed");
+        } else if (!m_codexAccountService->authMessage().isEmpty()) {
+            authState = QStringLiteral("succeeded");
+        }
+
+        state["authState"] = authState;
+        state["authMessage"] = m_codexAccountService->authMessage();
+        state["authError"] = m_codexAccountService->authError();
+        state["verificationUri"] = m_codexAccountService->authVerificationUri();
+        state["userCode"] = m_codexAccountService->authUserCode();
+    } else {
+        state["authState"] = authState;
+        state["authMessage"] = QString();
+        state["authError"] = QString();
+        state["verificationUri"] = QString();
+        state["userCode"] = QString();
+    }
+
+    return state;
+}
+
 QString UsageStore::codexActiveAccountID() const
 {
     if (!m_codexAccountService) return "live-system";
@@ -1431,7 +1503,19 @@ void UsageStore::setCodexActiveAccount(const QString& accountID)
 bool UsageStore::addCodexAccount(const QString& email, const QString& homePath)
 {
     if (!m_codexAccountService) return false;
+
+    // If email is empty, use interactive login flow
+    if (email.isEmpty()) {
+        return m_codexAccountService->authenticateNewAccount();
+    }
+
     return m_codexAccountService->addAccount(email, homePath);
+}
+
+void UsageStore::cancelCodexAuthentication()
+{
+    if (!m_codexAccountService) return;
+    m_codexAccountService->cancelAuthentication();
 }
 
 bool UsageStore::removeCodexAccount(const QString& accountID)

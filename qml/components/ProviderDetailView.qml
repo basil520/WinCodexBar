@@ -27,9 +27,15 @@ ScrollView {
 
     clip: true
     contentWidth: availableWidth
+    contentHeight: body.implicitHeight + 48
     ScrollBar.vertical.policy: ScrollBar.AsNeeded
+    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
     onProviderIdChanged: detailsExpanded = false
+
+    property var codexAccountState: root.providerId === "codex"
+        ? UsageStore.codexAccountState
+        : ({})
 
     function statusText(state) {
         if (state === "ok") return qsTr("Operational")
@@ -74,7 +80,7 @@ ScrollView {
 
     Item {
         width: root.availableWidth
-        height: body.implicitHeight + 48
+        height: root.contentHeight
 
         ColumnLayout {
             id: body
@@ -540,24 +546,37 @@ ScrollView {
 
                     CodexAccountsPane {
                         Layout.fillWidth: true
+                        Layout.minimumHeight: 200
                         Layout.preferredHeight: 280
                         visible: root.providerId === "codex"
-                        
-                        accounts: UsageStore.codexAccounts()
-                        activeAccountID: UsageStore.codexActiveAccountID()
-                        isAuthenticating: UsageStore.isCodexAuthenticating()
-                        isRemoving: UsageStore.isCodexRemoving()
-                        authenticatingAccountID: UsageStore.codexAuthenticatingAccountID()
-                        removingAccountID: UsageStore.codexRemovingAccountID()
-                        hasUnreadableStore: UsageStore.hasCodexUnreadableStore()
+
+                        accounts: root.codexAccountState.accounts || []
+                        activeAccountID: root.codexAccountState.activeAccountID || ""
+                        isAuthenticating: root.codexAccountState.isAuthenticating || false
+                        isRemoving: root.codexAccountState.isRemoving || false
+                        authenticatingAccountID: root.codexAccountState.authenticatingAccountID || ""
+                        removingAccountID: root.codexAccountState.removingAccountID || ""
+                        hasUnreadableStore: root.codexAccountState.hasUnreadableStore || false
+                        authState: root.codexAccountState.authState || "idle"
+                        authMessage: root.codexAccountState.authMessage || ""
+                        authError: root.codexAccountState.authError || ""
+                        verificationUri: root.codexAccountState.verificationUri || ""
+                        userCode: root.codexAccountState.userCode || ""
 
                         onSetActiveAccount: function(accountID) {
                             UsageStore.setCodexActiveAccount(accountID)
                         }
                         onAddAccount: function() {
-                            var email = "user@example.com"
-                            var homePath = ""
-                            UsageStore.addCodexAccount(email, homePath)
+                            UsageStore.addCodexAccount("", "")
+                        }
+                        onCancelAuthentication: function() {
+                            UsageStore.cancelCodexAuthentication()
+                        }
+                        onOpenVerificationUrl: function(url) {
+                            AppController.openExternalUrl(url)
+                        }
+                        onCopyText: function(text) {
+                            AppController.copyText(text)
                         }
                         onRemoveAccount: function(accountID) {
                             UsageStore.removeCodexAccount(accountID)

@@ -34,9 +34,9 @@ class ManagedCodexAccountStore {
 public:
     ManagedCodexAccountStore();
 
-    QVector<ManagedCodexAccount> loadAccounts();
+    QVector<ManagedCodexAccount> loadAccounts() const;
     void saveAccounts(const QVector<ManagedCodexAccount>& accounts);
-    std::optional<ManagedCodexAccount> account(const QString& id);
+    std::optional<ManagedCodexAccount> account(const QString& id) const;
     void addAccount(const ManagedCodexAccount& account);
     void updateAccount(const ManagedCodexAccount& account);
     void removeAccount(const QString& id);

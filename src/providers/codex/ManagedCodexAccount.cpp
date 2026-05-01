@@ -52,7 +52,7 @@ ManagedCodexAccountStore::ManagedCodexAccountStore()
 {
 }
 
-QVector<ManagedCodexAccount> ManagedCodexAccountStore::loadAccounts()
+QVector<ManagedCodexAccount> ManagedCodexAccountStore::loadAccounts() const
 {
     QVector<ManagedCodexAccount> accounts;
 
@@ -109,7 +109,7 @@ void ManagedCodexAccountStore::saveAccounts(const QVector<ManagedCodexAccount>& 
     }
 }
 
-std::optional<ManagedCodexAccount> ManagedCodexAccountStore::account(const QString& id)
+std::optional<ManagedCodexAccount> ManagedCodexAccountStore::account(const QString& id) const
 {
     auto accounts = loadAccounts();
     for (const auto& account : accounts) {
@@ -155,6 +155,9 @@ QString ManagedCodexAccountStore::storePath() const
 
 QString ManagedCodexAccountStore::defaultStorePath()
 {
+    QString overridePath = qEnvironmentVariable("CODEXBAR_MANAGED_CODEX_ACCOUNTS_PATH").trimmed();
+    if (!overridePath.isEmpty()) return overridePath;
+
     QString base = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     if (base.isEmpty()) base = QDir::homePath() + "/.codexbar";
     return base + "/managed-codex-accounts.json";

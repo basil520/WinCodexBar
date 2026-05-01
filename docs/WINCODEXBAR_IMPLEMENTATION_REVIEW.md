@@ -20,7 +20,7 @@ Date: 2026-05-01
 
 ## 执行摘要
 
-2026-05-01 复审确认：当前 `WinCodexBar` 已不再是旧审查里描述的 8 provider MVP。源码在 `WinCodexBar/src/main.cpp` 注册了 14 个 provider：
+2026-05-01 复审确认：当前 `WinCodexBar` 已不再是旧审查里描述的 8 provider MVP。源码在 `WinCodexBar/src/main.cpp` 注册了 15 个 provider：
 
 - Codex
 - Claude
@@ -36,10 +36,10 @@ Date: 2026-05-01
 - Kimi（普通，2026-04-30 新增）
 - OpenCode（2026-04-30 新增）
 - OpenCode Go（2026-04-30 新增）
+- Alibaba（API/Web Cookie best-effort，2026-05-01 复审确认已注册）
 
-原版 macOS CodexBar 的 `UsageProvider` 定义了 27 个 provider。因此当前 Windows 覆盖为 14/27，仍有 13 个 provider 完全缺失：
+原版 macOS CodexBar 的 `UsageProvider` 定义了 27 个 provider。因此当前 Windows 覆盖为 15/27，仍有 12 个 provider 完全缺失：
 
-- Alibaba
 - Factory/Droid
 - Gemini
 - Antigravity
@@ -55,11 +55,11 @@ Date: 2026-05-01
 
 功能差异复审结论：
 
-- Provider 覆盖差异仍是最大缺口：Windows 端已覆盖 Codex、Claude、Cursor、Copilot、z.ai、OpenRouter、Kimi K2、Kilo、Kiro、Mistral、Ollama、Kimi、OpenCode、OpenCode Go；尚未覆盖 Alibaba、Factory/Droid、Gemini、Antigravity、MiniMax、Vertex AI、Augment、JetBrains AI、Amp、Synthetic、Warp、Perplexity、Abacus AI。
-- 已覆盖 provider 多数仍是“窄路径”实现：Codex 主要是 OAuth/backend usage API；Claude 是 OAuth/Web cookie；Cursor 是 Web cookie；Kilo 是 API；Kiro 是非交互 CLI；Mistral/Ollama 是基础 Web cookie 形状。原版对应 provider 通常还包含 richer descriptor、fallback/source planner、status probe、CLI/Web/credential prompt policy 或 provider-specific settings。
+- Provider 覆盖差异仍是最大缺口：Windows 端已覆盖 Codex、Claude、Cursor、Copilot、z.ai、OpenRouter、Kimi K2、Kilo、Kiro、Mistral、Ollama、Kimi、OpenCode、OpenCode Go、Alibaba；尚未覆盖 Factory/Droid、Gemini、Antigravity、MiniMax、Vertex AI、Augment、JetBrains AI、Amp、Synthetic、Warp、Perplexity、Abacus AI。
+- 已覆盖 provider 多数仍是“窄路径”实现：Codex 已补齐 OAuth、CLI RPC、CLI PTY、Web fallback 和基础 managed account 设置链路；Claude 是 OAuth/Web cookie；Cursor 是 Web cookie；Kilo 是 API；Kiro 是非交互 CLI；Mistral/Ollama 是基础 Web cookie 形状；Alibaba 是 DashScope/API 与控制台 Cookie 的 best-effort 形状。原版对应 provider 通常还包含 richer descriptor、fallback/source planner、status probe、CLI/Web/credential prompt policy 或 provider-specific settings。
 - 原版 merged icon 下的 provider switcher、Overview tab、Codex account switcher、token account switcher、OpenAI dashboard chart submenus、credits/usage breakdown/cost history hosted submenus，在 Windows 托盘 QML 面板中尚未功能对等。Windows 端已有 merged tray icon 与 provider 列表，但交互模型更简单。
 - 原版 `codexbar` CLI、WidgetKit widget、Sparkle/appcast/release scripts、配置校验/JSON 输出、token account CLI 等生态能力，Windows 端当前仍缺 CLI executable、IPC/shared snapshot、updater、installer、signing/release automation。WidgetKit 属于 macOS 专属能力，不计为 Windows 缺陷。
-- 默认 CTest 覆盖当前是 12 个测试目标；真实账号 E2E 是 `BUILD_E2E_TESTS=ON` 的 opt-in 目标（5 个），不属于默认构建。仍缺自动化 QML visual regression、真实托盘点击、真实 WinCred 交互、真实浏览器 profile 与更多 provider E2E。
+- 默认 CTest 覆盖当前是 15 个测试目标；真实账号 E2E 是 `BUILD_E2E_TESTS=ON` 的 opt-in 目标（5 个），不属于默认构建。仍缺自动化 QML visual regression、真实托盘点击、真实 WinCred 交互、真实浏览器 profile 与更多 provider E2E。
 
 2026-04-30 的 P0 基础设施实现后，旧文档中关于 cookie/browser、ConPTY、provider pipeline 和 fetch context 的阻塞性结论已经过期。当前 P0 基础能力已经落地并有 QtTest 覆盖：
 
@@ -75,7 +75,7 @@ Date: 2026-05-01
 - ProviderDescriptor registry：provider 注册时自动生成 string-id descriptor，包含 display name、labels、dashboard/status URL、source modes 等 metadata。
 - Provider settings UI：`SettingsWindow.qml` 改为 descriptor-driven，picker 使用 provider options，secret field 使用密码输入框，Dashboard/Status/Test Connection/Login action 从 QML 调用 `UsageStore`。
 - Secret/credential：新增 `ProviderCredentialStore` facade，生产使用 Windows Credential Manager，测试可注入 in-memory backend；API key/manual cookie 通过 WinCred 管理，环境变量优先级高于 WinCred。
-- Source planner：`ProviderPipeline::resolveStrategies()` 按 `ProviderSourceMode` 过滤 strategy；unsupported mode 会产生明确错误。
+- Source planner：`ProviderPipeline::resolveStrategies()` 按 `ProviderSourceMode` 过滤 strategy；`ProviderPipeline::executeProvider()` 在 worker 线程内创建、执行并销毁 strategy，避免后台刷新/Test Connection 泄漏；unsupported mode 会产生明确错误。
 - Copilot foreground login：新增 GitHub device-code 前台登录流程，显示 user code / verification URL，成功后写入 `com.codexbar.oauth.copilot` 并触发连接测试；后台刷新保持 non-interactive。
 - Status polling / merged icon：新增 statuspage-style `/api/v2/status.json` polling，provider status model 暴露给 UI；merged tray icon 以所有 enabled providers 中最低 remaining 渲染，并在 tooltip 中显示最紧张 provider 与异常状态。
 
@@ -85,6 +85,8 @@ Date: 2026-05-01
 
 2026-04-30 后续曾尝试接入 Windows 原生背景视觉层。实际验证结论是该路径依赖系统级视觉开关，强行打开会对其他软件产生显示副作用；相关源码、构建项、窗口初始化调用和 QML 半透明背景变量已经全部移除。当前 Settings 与 tray popup 回到普通深色实色窗口。
 
+2026-05-01 后续补齐了 Codex Settings 账号管理主链路：Provider detail 内容区可滚动，Account Management 不再在默认 `900x640` 或最大化窗口中溢出；Add Account 改为前台 `codex login --device-auth` 设备码流程，使用独立 managed `CODEX_HOME`；active managed account 会注入 Codex OAuth/RPC/PTY fetch context。设备码解析也修复了把 `AUTHORIZATION` 当作 user code 的回归。更详细的连接、账号和排查说明见 `docs/CODEX_PROVIDER.md`。
+
 这意味着 P0/P1 已从“阻塞基础设施与主流程 UI”转为“真实账号验证与 provider parity”。剩余主要工作集中在 P2-P3：Codex/Claude/Kiro 等核心 provider parity、缺失 provider、QML/tray 交互测试、真实 OAuth/WinCred/浏览器 profile 端到端测试、CLI/IPC/release 生态和 Windows 发布链路。
 
 ## 当前已实现功能
@@ -92,8 +94,9 @@ Date: 2026-05-01
 ### 应用外壳
 
 - Qt Widgets + Qt Quick/QML 应用入口。
-- `QSharedMemory` 单实例保护。
+- Windows Mutex 单实例保护（`CreateMutexW`），进程终止时自动释放，避免 `QSharedMemory` 僵尸锁问题。
 - `QApplication::setQuitOnLastWindowClosed(false)` 常驻托盘。
+- 应用退出时后台线程清理：`aboutToQuit` 中设置 `NetworkManager::setShuttingDown(true)` 和 `CostUsageScanner::setShuttingDown(true)`，取消线程池等待队列；`app.exec()` 返回后 `waitForDone(1500ms)`，超时使用 `ExitProcess()` 强制终止，防止托盘消失但进程残留。
 - Win32 tray icon 与右键菜单，包含刷新、设置、关于、退出等基础动作。
 - QML `TrayPanel.qml` 作为托盘弹窗。
 - QML `SettingsWindow.qml` 作为设置窗口。
@@ -105,9 +108,9 @@ Date: 2026-05-01
 
 - `IProvider` / `IFetchStrategy` / `ProviderPipeline` 基础接口。
 - `IFetchStrategy::fetchSync()` 作为 pipeline 主路径；`fetch()` 作为兼容 wrapper。
-- 11 个已注册 provider strategy 已迁移到同步 fetch 路径。
+- 已注册 provider 的 strategy 已迁移到同步 fetch 路径。
 - `ProviderRegistry::registerProvider()` 会自动注册 string-id `ProviderDescriptor`，descriptor 已用于 display metadata、dashboard/status URL 和 source modes。
-- `ProviderPipeline::execute()` 直接调用 `fetchSync()`，按 `shouldFallback` 决定是否继续尝试下一个 strategy。
+- `ProviderPipeline::execute()` 直接调用 `fetchSync()`，按 `shouldFallback` 决定是否继续尝试下一个 strategy；`executeProvider()` 负责 resolve + execute + cleanup 的 owning 路径。
 - `ProviderPipeline::resolveStrategies()` 已根据 `ProviderSourceMode` 过滤 OAuth/Web/CLI/API strategy。
 - `UsageStore` 提供 QML 可访问的 provider list、snapshot、错误、刷新状态。
 - `UsageStore` 提供 QML 可访问的 provider descriptor、secret status、Test Connection、Copilot foreground login、provider status polling 状态。
@@ -115,6 +118,21 @@ Date: 2026-05-01
 - 自动刷新计时器根据 `SettingsStore::refreshFrequency()` 启停。
 - 手动刷新会触发成本扫描和 provider 刷新。
 - session quota transition notification 基础逻辑已接入。
+
+### Codex Provider 连接路径
+
+Codex provider 当前按原版 CodexBar 的主路径重构为 OAuth 优先、CLI RPC 次之、PTY `/status` 兜底：
+
+- `auto` source mode 顺序：OAuth API → `codex.cli.rpc` → `codex.cli.pty` → Web Dashboard。
+- `cli` source mode 顺序：`codex.cli.rpc` → `codex.cli.pty`，不会尝试 OAuth/Web。
+- CLI RPC 启动命令：`codex -s read-only -a untrusted app-server --listen stdio://`。
+- CLI RPC 发送 `initialize`、`initialized`、`account/rateLimits/read`、`account/read`；`rateLimitsByLimitId.codex` 优先，缺失时回退到历史 `rateLimits`。
+- `primary`/`secondary` 映射为 `UsageSnapshot` 窗口；非 unlimited credits 同步到 `ProviderFetchResult.credits` 和现有 UI 兼容字段 `UsageSnapshot.providerCost`。
+- Settings -> Providers -> Codex 的 Account Management 已使用可通知的 `UsageStore.codexAccountState`；Add Account 通过 `codex login --device-auth` 在独立 `CODEX_HOME` 下登录，active managed account 会注入 OAuth/RPC/PTY fetch context。
+- device-auth 输出解析已收紧，避免把说明文本里的 `authorization` 误当成设备码；该回归由 `tst_CodexLoginRunner::ignoresAuthorizationTextBeforeRealDeviceCode` 覆盖。
+- 原始 CLI stdout/stderr、TUI 控制序列和 JSON-RPC error body 只进入 debug log 或解析恢复路径；Settings 连接失败卡片显示短错误，避免原始 TUI 输出撑破布局。
+- 常用排查命令：`codex --help`、`codex app-server --help`、`codex app-server generate-json-schema --out build\codex-app-schema --experimental`。
+- 详细说明见 `docs/CODEX_PROVIDER.md`。
 
 ### Fetch Context 与网络
 
@@ -192,7 +210,7 @@ Date: 2026-05-01
 - `WindowsCredentialStore` 对 Windows Credential Manager 提供 read/write/remove/exists 简单封装。
 - `ProviderCredentialStore` facade 封装生产 WinCred backend 和测试 in-memory backend。
 - 若干 provider 可读取环境变量或 Windows Credential Manager 中的 API key/token。
-- z.ai、OpenRouter、Kimi K2、Kilo API key，以及 Claude/Cursor/Mistral/Ollama manual cookie header，可通过 settings UI 写入/清除 WinCred；敏感值不写入 `config.json`。
+- z.ai、OpenRouter、Kimi K2、Kilo、Alibaba API key，以及 Claude/Cursor/Mistral/Ollama/Alibaba manual cookie header，可通过 settings UI 写入/清除 WinCred；敏感值不写入 `config.json`。
 - 非敏感 provider settings 现在由 `SettingsStore::setProviderSetting()` 即时持久化。
 - `SettingsStore` 已补齐 `checkForUpdates` 和 `resetToDefaults()`；`UsageStore` 已补齐 QML-facing `setProviderSetting()`、`refreshAll()`、`clearCache()`，避免 Settings/Debug 页面调用缺失接口。
 
@@ -205,15 +223,18 @@ Date: 2026-05-01
 
 ### 测试
 
-当前 WinCodexBar 默认 CTest/QtTest 覆盖 12 个目标：
+当前 WinCodexBar 默认 CTest/QtTest 覆盖 15 个目标：
 
 - `tst_RateWindow`
 - `tst_UsagePace`
 - `tst_Localization`
 - `tst_TextParser`
+- `tst_SingleInstanceGuard`
 - `tst_ZaiProvider`
 - `tst_CostUsageScanner`
 - `tst_ProviderPipeline`
+- `tst_CodexProvider`
+- `tst_CodexLoginRunner`
 - `tst_FetchContext`
 - `tst_CookieImporter`
 - `tst_ConPTYSession`
@@ -238,7 +259,7 @@ Date: 2026-05-01
 
 | Provider | 当前可用程度 | 当前依赖 / 数据源 | 主要剩余缺口 | 与原版差异 |
 | --- | --- | --- | --- | --- |
-| Codex | 部分可用；OAuth 路径已有历史 E2E 记录 | `~/.codex/auth.json` / `CODEX_HOME` OAuth token；ChatGPT backend usage API；source mode 支持 `auto/oauth` | 缺 CLI、Web dashboard、managed account reconciliation、code review remaining、credits history、多账号调和 | 原版有 OAuth、CLI dashboard authority、Web dashboard、workspace identity cache、managed account observer |
+| Codex | 部分可用；OAuth 路径已有历史 E2E 记录，CLI RPC 优先，Settings managed account 主链路已实现 | `~/.codex/auth.json` / `CODEX_HOME` OAuth token；ChatGPT backend usage API；source mode 支持 `auto/oauth/cli/web`；CLI 优先使用 `codex -s read-only -a untrusted app-server --listen stdio://` JSON-RPC，失败后再用 ConPTY `/status` fallback；Web Dashboard 使用 HTTP + Cookie 直接请求；Account Management 可创建独立 managed `CODEX_HOME`，active account 注入 OAuth/RPC/PTY fetch context | 仍需真实 Add Account/OAuth 首次登录 E2E、code review remaining、credits history、Web dashboard extras 并行合并；多账号 reconciliation 需要更多真实账号验证和持久化 polish | 原版有 OAuth、CLI RPC/PTY、Web dashboard、workspace identity cache、managed account observer |
 | Claude | 部分可用 | Claude OAuth credentials 或 Claude Web cookie；支持 browser/manual cookie；source mode 支持 `auto/oauth/web` | 缺 CLI、Keychain prompt/delegated refresh policy、web extras 完整 parity；真实账号 Web/OAuth 组合仍需继续验证 | 原版支持 `.auto/.web/.cli/.oauth` source planner，Keychain/CLI/Web 多路径更完整 |
 | Cursor | 部分可用但仍需验证 | Cursor Web cookie；usage-summary/auth/subscription API；支持 browser/manual cookie；settings UI 已支持 cookie source 与 manual cookie | 缺 Safari/WebKit fallback；真实账号端到端仍需验证 | 原版有 browser cookie order、CursorRequestUsage、CursorStatusProbe 和更完整 web session 处理 |
 | Copilot | 首次登录流程已具备 UI；OAuth 路径已有历史 E2E 记录 | WinCred `com.codexbar.oauth.copilot`；GitHub device flow foreground UI；Copilot internal API | 缺 token refresh/错误模型 polish、device flow 失败/取消场景测试 | 原版有更完整的 `CopilotDeviceFlow` 状态模型和集成体验 |
@@ -252,12 +273,12 @@ Date: 2026-05-01
 | OpenCode Go | Web Cookie 路径已新增；有 opt-in E2E 目标 | `auth`/`__Host-auth` cookie；workspace ID → Go 页面抓取；JSON + regex 双路径解析；支持 manual cookie / browser import / workspace ID override；5-hour/weekly/monthly 三窗口 | 仍需真实账号/subscription 端到端记录、错误模型 polish | 原版有 `OpenCodeGoUsageFetcher`、`OpenCodeGoUsageSnapshot`、descriptor |
 | Mistral | 有基础 Web fetch 形状，端到端未验证 | Web cookie；admin billing API；支持 browser/manual cookie；settings UI 可写入/清除 manual cookie | 缺真实账号验证、错误模型、cookie source 体验 | 原版有 `MistralCookieImporter`、usage fetcher、models/errors |
 | Ollama | 有基础 Web fetch 形状，端到端未验证 | Web cookie；ollama.com settings/usage HTML/API；支持 browser/manual cookie；settings UI 可写入/清除 manual cookie | 缺真实账号验证，HTML/API 解析路径仍脆弱 | 原版有 Ollama usage fetcher/parser/snapshot 和 descriptor |
+| Alibaba | API/Web Cookie best-effort 路径已注册 | `ALIBABA_API_KEY` 或 WinCred `com.codexbar.apikey.alibaba`；manual cookie / browser cookie import；`apiRegion` 支持 International/China；source mode 支持 `auto/api/web` | 真实账号端到端未验证；DashScope quota/user endpoint 和控制台登录探测仍是通用 best-effort；错误模型、本地证书/网络错误处理仍需 polish | 原版有 `AlibabaCodingPlanCookieImporter`、更细的 Coding Plan usage fetcher 和 provider-specific settings |
 
-## 完全缺失的 13 个 provider
+## 完全缺失的 12 个 provider
 
 | Provider | 原版主要数据源 / 实现 | Windows 需要补的适配层 |
 | --- | --- | --- |
-| Alibaba | Web cookie + API token 双路径，国际/中国 region，`AlibabaCodingPlanCookieImporter` | region settings、API token storage、browser cookie/manual cookie、本地证书/网络错误处理 |
 | Factory/Droid | local storage importer、Factory status probe | Windows local storage/browser profile detection、status probe、cookie/local storage 解密 |
 | Gemini | Gemini descriptor、status probe、CLI/OAuth 相关路径 | Google/Gemini OAuth or CLI credentials、status polling、source planner |
 | Antigravity | 本地运行实例 status probe，端口/CSRF/本地 API 探测 | Windows 进程/端口发现、CSRF 提取、本地 API 探测、错误映射 |
@@ -285,7 +306,7 @@ P 级表示“修复/实现优先级”，不是 bug 严重性或发布阻断标
 | 功能 | 当前状态 | 后续注意事项 |
 | --- | --- | --- |
 | `CookieImporter` / `BrowserDetection` | 已实现 Windows browser detection、Chromium/Firefox cookie DB 读取、DPAPI、`v10/v11` AES-GCM、manual cookie context | Chrome App-Bound/`v20` 仍按设计跳过；需要真实浏览器 profile 和真实账号 provider 端到端验证 |
-| `ConPTYSession` | 已实现真实 ConPTY 优先、`QProcess` fallback、stdin/stdout、pattern wait、terminate；测试断言子进程看到非 redirected console handles | Codex/Claude/Kiro/Gemini/Augment 等 provider 仍需逐步接入 ConPTY strategy |
+| `ConPTYSession` | 已实现真实 ConPTY 优先、`QProcess` fallback、stdin/stdout、pattern wait、terminate；测试断言子进程看到非 redirected console handles | Codex 已接入 ConPTY strategy（自动处理交互 prompt）；Claude/Kiro/Gemini/Augment 等 provider 仍需逐步接入 |
 | `ProviderPipeline` 并发模型 | pipeline 主路径已同步化，strategy 直接 `fetchSync()`；NetworkManager 提供 sync 方法 | 仍需补更完整 timeout/cancellation 语义和压力测试 |
 | `ProviderFetchContext` 通用注入 | 已集中注入 provider id、settings snapshot、source/manual cookie、manual cookie header、timeout、系统 env、z.ai region 映射；secret resolver / WinCred facade / Copilot foreground auth intent 已接入 | 仍需真实账号端到端验证、prompt policy 和 provider-specific 错误模型 polish |
 
@@ -296,11 +317,11 @@ P 级表示“修复/实现优先级”，不是 bug 严重性或发布阻断标
 | ProviderDescriptor registry | 已改为 string-id descriptor；`registerProvider()` 自动注册 metadata、dashboard/status URL、source modes，并由 QML/策略消费 | 后续可继续扩展 richer descriptor metadata，但 P1 阻塞已解除 |
 | API key / token UI 与 WinCred 写入 | 已通过 descriptor-driven settings UI 支持 secret field、WinCred 写入/清除、env-var 状态、Test Connection；敏感值不写入 `config.json` | 仍需真实账号端到端验证和错误提示 polish |
 | Copilot foreground login | 已新增 foreground GitHub device-code UI，显示 user code / verification URL，支持 open/copy/cancel，成功后写入 WinCred；后台 refresh 保持 non-interactive | 仍需真实账号端到端验证、错误状态 polish |
-| Codex | OAuth/API 路径部分实现 | 缺 CLI、Web dashboard、managed account、多账号调和等原版核心能力 |
+| Codex | OAuth/API、CLI RPC、CLI PTY fallback、Web Dashboard 四路径已实现；Settings Account Management 已支持 foreground device-auth、managed `CODEX_HOME`、active account 注入 fetch context | 真实 Add Account/OAuth 首次登录、更多多账号 reconciliation、Web dashboard extras 并行合并等仍需端到端验证 |
 | Claude | OAuth/Web 路径和 `auto/oauth/web` source planner 已有基础 | 缺 CLI/Credential prompt/delegated refresh parity；真实账号端到端仍需验证 |
 | Cursor | Web API、cookie source/manual cookie UX 和 statuspage polling 已有基础 | 缺 Safari/WebKit fallback；真实账号端到端仍需验证 |
 | Mistral / Ollama | Web provider 已注册，manual cookie secret UI 已可用 | 缺真实账号验证、错误模型和解析健壮性 |
-| z.ai / OpenRouter / Kimi K2 / Kilo | API fetch、secret UI、WinCred 管理、Test Connection 和 `api` source mode 已有基础 | 仍需真实账号端到端验证和 provider-specific error polish |
+| z.ai / OpenRouter / Kimi K2 / Kilo / Alibaba | API fetch、secret UI、WinCred 管理、Test Connection 和 `api` source mode 已有基础 | 仍需真实账号端到端验证和 provider-specific error polish；Alibaba 的 API/Web quota 解析仍是 best-effort |
 | Status polling / incident indicator | 已新增 statuspage-style `/api/v2/status.json` polling、provider status model 和 QML 状态展示 | Google Workspace-specific status 留给 Gemini/Vertex；incident badge polish 仍可继续 |
 | Merge Icons | 已按所有 enabled providers 中最低 primary/secondary remaining 渲染 merged icon，tooltip 显示最紧张 provider 和异常状态 | 图标视觉 polish、tray 真实交互测试仍需补充 |
 
@@ -315,7 +336,7 @@ P 级表示“修复/实现优先级”，不是 bug 严重性或发布阻断标
 | QML Display 设置消费 | 多个 display toggle 已存储 | `usageBarsShowUsed`、`resetTimesShowAbsolute`、`showOptionalCreditsAndExtraUsage` 等未全部影响 UI |
 | provider ordering / drag persistence | order 存储雏形存在 | settings/UI 体验与原版 provider 顺序管理仍不完整 |
 | Windows 原生背景视觉试验 | 已从源码中移除，Settings/tray 回到普通深色实色窗口 | 后续如果重新尝试，必须提供应用内开关并避免要求用户修改系统全局视觉设置 |
-| 测试覆盖 | 默认 CTest 当前覆盖 12 个目标；E2E 目标 5 个，需 `BUILD_E2E_TESTS=ON`；SettingsWindow 有 `--show-settings --qml-log=...` runtime smoke | 仍缺自动化 QML 渲染测试、真实网络、真实 OAuth 首次登录、WinCred 交互、tray interaction、真实浏览器 profile、更多 provider 端到端 |
+| 测试覆盖 | 默认 CTest 当前覆盖 15 个目标；E2E 目标 5 个，需 `BUILD_E2E_TESTS=ON`；SettingsWindow 有 `--show-settings --qml-log=...` runtime smoke | 仍缺自动化 QML 渲染测试、真实网络、真实 OAuth 首次登录、WinCred 交互、tray interaction、真实浏览器 profile、更多 provider 端到端 |
 
 ### P2/P3 缺失 provider
 
@@ -326,7 +347,6 @@ P 级表示“修复/实现优先级”，不是 bug 严重性或发布阻断标
 | P2 | Vertex AI | 与 Google OAuth/token refresh/provider settings 相关，可复用 Gemini 能力 |
 | P2 | Augment | 原版有 CLI + Web 双路径和 session keepalive，依赖 ConPTY/CookieImporter |
 | P2 | JetBrains AI | 需要 Windows IDE/config path 探测，属于本地 parity 能力 |
-| P2 | Alibaba | Web cookie + API token + region 双路径，依赖 CookieImporter、API key UI、region settings |
 | P2 | MiniMax | API/cookie/local storage/manual auth 多模式，依赖 settings、CookieImporter、secret UI |
 | P2 | Perplexity | Web cookie/manual header provider，依赖 CookieImporter 与 settings UX |
 | P2 | ~~OpenCode~~ ✅ 已完成 | Web cookie support、usage fetcher、CookieImporter/manual cookie |
@@ -368,7 +388,7 @@ WinCodexBar 已将 `ProviderDescriptor` 调整为 string-id 驱动，`ProviderRe
 
 原版每个 provider 的 source mode 和 strategy ordering 由 descriptor/fetch plan/source planner 管理。例如 Claude 有 `.auto/.web/.cli/.oauth`，Codex 有 OAuth、CLI、Web dashboard、managed account 等组合逻辑。
 
-WinCodexBar 当前已有 `ProviderSourceMode`、fetch context 注入和 pipeline source filtering。`auto` 保持 provider 自身 strategy 顺序，`oauth/web/cli/api` 会过滤到对应 strategy kind；当前实现模式覆盖 Codex `auto/oauth`、Claude `auto/oauth/web`、Cursor `auto/web`、Kiro `cli`、z.ai/OpenRouter/Kimi K2/Kilo `api`、Mistral/Ollama `web`。与原版相比，策略排序、fallback 条件和 foreground/background prompt policy 仍更分散。
+WinCodexBar 当前已有 `ProviderSourceMode`、fetch context 注入和 pipeline source filtering。`auto` 保持 provider 自身 strategy 顺序，`oauth/web/cli/api` 会过滤到对应 strategy kind；当前实现模式覆盖 Codex `auto/oauth/cli/web`、Claude `auto/oauth/web`、Cursor `auto/web`、Kiro `cli`、z.ai/OpenRouter/Kimi K2/Kilo `api`、Mistral/Ollama `web`、Alibaba `auto/api/web`。与原版相比，策略排序、fallback 条件和 foreground/background prompt policy 仍更分散。
 
 ### Credentials 与 prompt policy
 
@@ -398,12 +418,12 @@ WinCodexBar 当前主要是桌面 app。缺少 Windows CLI executable、named pi
 
 1. P1 收尾验证：
    - 回归验证 Copilot foreground login 的首次登录、取消、失败和 token refresh 场景。
-   - 真实账号验证 z.ai / OpenRouter / Kimi K2 / Kilo API key UX 与 Test Connection。
+   - 真实账号验证 z.ai / OpenRouter / Kimi K2 / Kilo / Alibaba API key UX 与 Test Connection。
    - 真实账号验证 Claude/Cursor/Mistral/Ollama manual cookie 与 browser cookie 路径。
    - 为 OpenCode/OpenCode Go 补有 subscription workspace 的真实账号 PASS 记录。
    - 将现有 SettingsWindow runtime smoke 固化为自动化测试，并继续补 WinCred interaction、tray interaction 测试。
 2. P1/P2 provider parity：
-   - Codex CLI/Web dashboard/managed account。
+   - Codex Web dashboard extras/managed account。
    - Claude CLI/source planner/delegated refresh。
    - Kiro ConPTY 接入。
    - Gemini/Vertex。
@@ -416,12 +436,13 @@ WinCodexBar 当前主要是桌面 app。缺少 Windows CLI executable、named pi
    - 继续打磨普通深色实色窗口下的 Settings/tray 视觉一致性。
    - 后续任何系统级视觉试验都必须可关闭，且不得依赖用户修改系统全局视觉设置。
 5. P2/P3 provider backlog：
-   - Alibaba、MiniMax、Perplexity、Amp。
+   - MiniMax、Perplexity、Amp。
    - Augment、Antigravity、JetBrains、Factory/Droid。
    - Synthetic、Warp、Abacus AI。
    - ~~Kimi~~ ✅ 已完成（Web Cookie 路径，2026-04-30）。
    - ~~OpenCode~~ ✅ 已完成（Web Cookie 路径，2026-04-30）。
    - ~~OpenCode Go~~ ✅ 已完成（Web Cookie 路径，2026-04-30）。
+   - ~~Alibaba~~ ✅ 已注册（API/Web Cookie best-effort 路径，2026-05-01 复审确认）。
 6. P3 应用生态：
    - CLI executable。
    - named pipe IPC。
@@ -443,7 +464,7 @@ ctest --test-dir cmake-build-codex-release -C Release --output-on-failure
 
 执行目录：`D:\CodexBar\WinCodexBar`
 
-结果：12/12 通过。该命令验证默认构建当前只包含 12 个 CTest 目标；真实账号 E2E 仍需 `BUILD_E2E_TESTS=ON` 单独配置。
+结果：12/12 通过。该历史命令记录的是当时的默认测试集；当前默认 CTest 已扩展到 15 个目标。真实账号 E2E 仍需 `BUILD_E2E_TESTS=ON` 单独配置。
 
 2026-04-30 P0/P1/P2 实现后记录的验证命令：
 
@@ -557,12 +578,38 @@ Get-Content -Raw $log
 
 结果：通过。`SettingsWindow` 状态为 `QQuickView::Ready`，root item 尺寸为 `900x640`，QML 日志不包含 SettingsWindow 加载错误。该 smoke 同时覆盖 frameless titlebar、Settings redesigned layout 和 provider pane 基础加载路径。
 
+2026-05-01 Codex CLI RPC、Account Management、device-auth 解析修复后记录：
+
+```powershell
+cmake --build build --config Release --target tst_CodexLoginRunner -- /m /v:minimal /clp:ErrorsOnly
+ctest --test-dir build -C Release -R tst_CodexLoginRunner --output-on-failure
+cmake --build build --config Release --target WinCodexBar -- /m /v:minimal /clp:ErrorsOnly
+ctest --test-dir build -C Release --output-on-failure
+```
+
+执行目录：`D:\CodexBar\WinCodexBar`
+
+结果：通过。`tst_CodexLoginRunner` 覆盖 device-auth 标准输出、ANSI 输出、缺失 code、失败退出、id token email 解析，以及 `AUTHORIZATION` 被误当作设备码的回归；完整默认 CTest 为 15/15 通过。验证中曾遇到运行中的 `WinCodexBar.exe` 锁住 Release 输出文件，停止进程后构建通过。
+
+```powershell
+$log = 'D:\CodexBar\WinCodexBar\build\qml_settings.log'
+$args = '--show-settings --qml-log=' + $log
+$p = Start-Process -FilePath 'D:\CodexBar\WinCodexBar\build\Release\WinCodexBar.exe' -ArgumentList $args -PassThru
+Start-Sleep -Seconds 8
+if (!$p.HasExited) { Stop-Process -Id $p.Id }
+Get-Content -Raw $log
+```
+
+执行目录：`D:\CodexBar\WinCodexBar`
+
+结果：通过。`SettingsWindow` 状态为 `QQuickView::Ready`，root item 尺寸为 `900x640`，用于确认 Providers/Codex 详情页加载路径仍正常。Codex Account Management 的真实首次 Add Account/OAuth 授权仍需手工账号验证。
+
 源码检查结果：系统原生背景视觉层相关 helper、窗口调用、构建项和 QML glass 变量已从 `WinCodexBar/` 源码中移除。
 
 当前测试覆盖不足之处：
 
 - QML runtime 真实渲染目前只有手动/脚本 smoke，尚未纳入自动 QtTest。
-- 默认构建只运行 12 个 CTest 目标；真实账号 E2E 需要显式 `BUILD_E2E_TESTS=ON` 和账号环境变量。
+- 默认构建运行 15 个 CTest 目标；真实账号 E2E 需要显式 `BUILD_E2E_TESTS=ON` 和账号环境变量。
 - 未覆盖真实网络 API。
 - 未覆盖真实 Chrome App-Bound cookie profile。
 - 未覆盖真实 OAuth 首次登录。

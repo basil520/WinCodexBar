@@ -5,6 +5,8 @@
 #include "CodexSystemAccountObserver.h"
 #include "CodexOpenAIWorkspaceResolver.h"
 #include "CodexOpenAIWorkspaceIdentityCache.h"
+#include "CodexLoginRunner.h"
+#include "../../models/CodexUsageResponse.h"
 
 #include <QObject>
 #include <QString>
@@ -28,6 +30,7 @@ class ManagedCodexAccountService : public QObject {
 
 public:
     explicit ManagedCodexAccountService(const QHash<QString, QString>& env, QObject* parent = nullptr);
+    ~ManagedCodexAccountService() override;
 
     // Account operations
     QVector<CodexVisibleAccount> visibleAccounts() const;
@@ -36,9 +39,11 @@ public:
 
     // Account management
     bool addAccount(const QString& email, const QString& homePath);
+    bool authenticateNewAccount();
     bool removeAccount(const QString& accountID);
     bool setActiveAccount(const QString& accountID);
     bool reauthenticateAccount(const QString& accountID);
+    void cancelAuthentication();
 
     // State
     bool isAuthenticating() const;
@@ -46,6 +51,11 @@ public:
     QString authenticatingAccountID() const;
     QString removingAccountID() const;
     bool hasUnreadableStore() const;
+    QString authMessage() const;
+    QString authError() const;
+    QString authVerificationUri() const;
+    QString authUserCode() const;
+    QString activeManagedHomePath() const;
 
     // Reconciliation
     void refresh();
@@ -56,8 +66,12 @@ signals:
     void activeAccountChanged(const QString& accountID);
     void authenticationStarted(const QString& accountID);
     void authenticationFinished(const QString& accountID, bool success);
+    void authenticationStateChanged();
     void removalStarted(const QString& accountID);
     void removalFinished(const QString& accountID, bool success);
+
+private slots:
+    void onLoginFinished(const CodexLoginRunner::Result& result);
 
 private:
     QHash<QString, QString> m_env;
@@ -70,8 +84,19 @@ private:
     bool m_isRemoving;
     QString m_authenticatingAccountID;
     QString m_removingAccountID;
+    QString m_authMessage;
+    QString m_authError;
+    QString m_authVerificationUri;
+    QString m_authUserCode;
+
+    CodexLoginRunner* m_loginRunner = nullptr;
+    QString m_pendingHomePath;
 
     void updateVisibleAccounts();
     QString resolveDisplayName(const ManagedCodexAccount& account) const;
     QString resolveDisplayName(const ObservedSystemCodexAccount& account) const;
+    QString resolveEmailFromCredentials(const CodexOAuthCredentials& credentials) const;
+    void resetAuthenticationStatus();
+    void finalizeLoginSuccess(const QString& homePath);
+    void finalizeLoginFailure(const QString& homePath, const QString& message = QString());
 };

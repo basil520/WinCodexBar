@@ -1,4 +1,5 @@
 #include "CodexAccountReconciliation.h"
+#include "CodexHomeScope.h"
 #include "../../models/CodexUsageResponse.h"
 
 CodexIdentity CodexAccountReconciliationSnapshot::runtimeIdentity(const ManagedCodexAccount& account) const
@@ -39,8 +40,23 @@ CodexAccountReconciliationSnapshot CodexAccountReconciliation::loadSnapshot()
     QHash<QString, QString> runtimeEmails;
 
     for (const auto& account : accounts) {
-        auto credentials = CodexOAuthCredentials::load(m_env);
+        QHash<QString, QString> scopedEnv = account.managedHomePath.isEmpty()
+            ? m_env
+            : CodexHomeScope::scopedEnvironment(m_env, account.managedHomePath);
+        auto credentials = CodexOAuthCredentials::load(scopedEnv);
         QString email = normalizeEmail(account.email);
+        if (email.isEmpty() && credentials.has_value() && !credentials->idToken.isEmpty()) {
+            QJsonObject payload = parseJWTPayload(credentials->idToken);
+            email = payload.value("email").toString().trimmed();
+            if (email.isEmpty()) {
+                email = payload.value("https://api.openai.com/profile")
+                            .toObject()
+                            .value("email")
+                            .toString()
+                            .trimmed();
+            }
+            email = normalizeEmail(email);
+        }
         CodexIdentity identity = CodexIdentityResolver::resolve(QString(), email);
         runtimeIdentities[account.id] = identity;
         runtimeEmails[account.id] = email;

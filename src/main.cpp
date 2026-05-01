@@ -347,7 +347,7 @@ int main(int argc, char* argv[]) {
     ProviderRegistry::instance().registerProvider(new MistralProvider());
     ProviderRegistry::instance().registerProvider(new OllamaProvider());
     
-    // Register CodexProvider and set up account service
+    // Register providers.
     CodexProvider* codexProvider = new CodexProvider();
     ProviderRegistry::instance().registerProvider(codexProvider);
     
@@ -362,10 +362,11 @@ int main(int argc, char* argv[]) {
     UsageStore* usageStore = new UsageStore();
     usageStore->setSettingsStore(settings);
     
-    // Connect CodexProvider with account service from UsageStore
-    // The account service is initialized in UsageStore constructor
-    QObject::connect(usageStore, &UsageStore::codexAccountsChanged, [codexProvider, usageStore]() {
+    QObject::connect(usageStore, &UsageStore::codexAccountsChanged, [usageStore]() {
         // Refresh Codex data when accounts change
+        usageStore->refreshProvider("codex");
+    });
+    QObject::connect(usageStore, &UsageStore::codexActiveAccountChanged, [usageStore](const QString&) {
         usageStore->refreshProvider("codex");
     });
 
