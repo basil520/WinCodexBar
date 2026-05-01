@@ -9,12 +9,63 @@
 
 #include <memory>
 
+class DisplaySettingsStrategy : public IFetchStrategy {
+public:
+    QString id() const override { return "display-test.strategy"; }
+    int kind() const override { return ProviderFetchKind::APIToken; }
+    bool isAvailable(const ProviderFetchContext&) const override { return true; }
+
+    ProviderFetchResult fetchSync(const ProviderFetchContext&) override {
+        UsageSnapshot snapshot;
+        snapshot.updatedAt = QDateTime::fromString("2026-05-01T09:00:00", Qt::ISODate);
+
+        RateWindow primary;
+        primary.usedPercent = 25.0;
+        primary.resetsAt = QDateTime::fromString("2026-05-01T12:34:00", Qt::ISODate);
+        primary.resetDescription = "in 3 hours";
+        snapshot.primary = primary;
+
+        ProviderCostSnapshot providerCost;
+        providerCost.used = 12.5;
+        providerCost.limit = 50.0;
+        providerCost.currencyCode = "USD";
+        snapshot.providerCost = providerCost;
+
+        ProviderFetchResult result;
+        result.success = true;
+        result.strategyID = id();
+        result.strategyKind = kind();
+        result.usage = snapshot;
+        return result;
+    }
+
+    bool shouldFallback(const ProviderFetchResult&, const ProviderFetchContext&) const override {
+        return false;
+    }
+};
+
+class DisplaySettingsProvider : public IProvider {
+public:
+    QString id() const override { return "display-test"; }
+    QString displayName() const override { return "Display Test"; }
+    QString sessionLabel() const override { return "Session"; }
+    QString weeklyLabel() const override { return "Weekly"; }
+    bool defaultEnabled() const override { return false; }
+
+    QVector<IFetchStrategy*> createStrategies(const ProviderFetchContext&) override {
+        return { new DisplaySettingsStrategy() };
+    }
+
+    QVector<QString> supportedSourceModes() const override { return {"api"}; }
+};
+
 class tst_FetchContext : public QObject {
     Q_OBJECT
 private slots:
     void initTestCase() {
         ProviderRegistry::instance().registerProvider(new ClaudeProvider());
         ProviderRegistry::instance().registerProvider(new ZaiProvider());
+        ProviderRegistry::instance().registerProvider(new DisplaySettingsProvider());
     }
 
     void init() {
@@ -113,6 +164,64 @@ private slots:
         QCOMPARE(desc->id, QString("zai"));
         QCOMPARE(desc->metadata.displayName, QString("z.ai"));
         QVERIFY(desc->fetchPlan.allowedSourceModes.contains("api"));
+    }
+
+    void displaySettingsAffectSnapshotData() {
+        SettingsStore settings;
+        settings.setUsageBarsShowUsed(false);
+        settings.setResetTimesShowAbsolute(false);
+        settings.setShowOptionalCreditsAndExtraUsage(true);
+
+        UsageStore store;
+        store.setSettingsStore(&settings);
+
+        QSignalSpy spy(&store, &UsageStore::snapshotChanged);
+        store.refreshProvider("display-test");
+        QTRY_VERIFY_WITH_TIMEOUT(spy.count() > 0, 5000);
+
+        QVariantMap remainingData = store.snapshotData("display-test");
+        QCOMPARE(remainingData.value("primaryDisplayPercent").toDouble(), 75.0);
+        QCOMPARE(remainingData.value("primaryDisplayIsUsed").toBool(), false);
+        QCOMPARE(remainingData.value("primaryResetDesc").toString(), QString("in 3 hours"));
+        QCOMPARE(remainingData.value("hasProviderCost").toBool(), true);
+
+        settings.setUsageBarsShowUsed(true);
+        settings.setResetTimesShowAbsolute(true);
+        QVariantMap usedAbsoluteData = store.snapshotData("display-test");
+        QCOMPARE(usedAbsoluteData.value("primaryDisplayPercent").toDouble(), 25.0);
+        QCOMPARE(usedAbsoluteData.value("primaryDisplayIsUsed").toBool(), true);
+        QCOMPARE(usedAbsoluteData.value("primaryResetDesc").toString(),
+                 QDateTime::fromString("2026-05-01T12:34:00", Qt::ISODate)
+                    .toLocalTime()
+                    .toString("yyyy-MM-dd hh:mm"));
+
+        settings.setShowOptionalCreditsAndExtraUsage(false);
+        QVariantMap hiddenExtrasData = store.snapshotData("display-test");
+        QCOMPARE(hiddenExtrasData.value("hasProviderCost").toBool(), false);
+        QVERIFY(!hiddenExtrasData.contains("providerCost"));
+    }
+
+    void displaySettingsNotifySnapshotConsumers() {
+        SettingsStore settings;
+        settings.setUsageBarsShowUsed(false);
+        settings.setResetTimesShowAbsolute(false);
+        settings.setShowOptionalCreditsAndExtraUsage(true);
+
+        UsageStore store;
+        store.setSettingsStore(&settings);
+
+        QSignalSpy revisionSpy(&store, &UsageStore::snapshotRevisionChanged);
+        QSignalSpy snapshotSpy(&store, &UsageStore::snapshotChanged);
+
+        settings.setUsageBarsShowUsed(true);
+        QCOMPARE(revisionSpy.count(), 1);
+        QVERIFY(snapshotSpy.count() > 0);
+
+        settings.setResetTimesShowAbsolute(true);
+        QCOMPARE(revisionSpy.count(), 2);
+
+        settings.setShowOptionalCreditsAndExtraUsage(false);
+        QCOMPARE(revisionSpy.count(), 3);
     }
 };
 

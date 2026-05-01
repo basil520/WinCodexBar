@@ -1,5 +1,6 @@
 # Build products
 /build/
+/build_vs2019/
 /cmake-build-*/
 /CMakeFiles/
 /CMakeCache.txt
@@ -25,6 +26,8 @@
 /docs/
 
 # Logs and test output
+/*.txt
+!/CMakeLists.txt
 /out.txt
 /plugins.log
 /test_*.txt

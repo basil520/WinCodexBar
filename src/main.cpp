@@ -58,6 +58,7 @@ static void fileMessageHandler(QtMsgType type, const QMessageLogContext& context
 #include "providers/kimi/KimiProvider.h"
 #include "providers/opencode/OpenCodeProvider.h"
 #include "providers/opencode/OpenCodeGoProvider.h"
+#include "providers/alibaba/AlibabaProvider.h"
 
 #ifdef Q_OS_WIN
 static void applyRoundedWindowRegion(QWindow* window, int radius) {
@@ -89,11 +90,13 @@ class AppController : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool settingsVisible READ isSettingsVisible NOTIFY settingsVisibleChanged)
     Q_PROPERTY(bool settingsMaximized READ isSettingsMaximized NOTIFY settingsMaximizedChanged)
+    Q_PROPERTY(bool usageVisible READ isUsageVisible NOTIFY usageVisibleChanged)
 public:
     explicit AppController(QObject* parent = nullptr) : QObject(parent) {}
 
     QQuickView* settingsView = nullptr;
     QQuickView* trayView = nullptr;
+    QQuickView* usageView = nullptr;
 
     Q_INVOKABLE void openSettings() {
         if (!settingsView) return;
@@ -137,6 +140,46 @@ public:
         emit settingsVisibleChanged();
     }
 
+    Q_INVOKABLE void openUsage() {
+        if (!usageView) return;
+        usageView->show();
+        usageView->raise();
+        usageView->requestActivate();
+        emit usageVisibleChanged();
+    }
+
+    Q_INVOKABLE void closeUsage() {
+        if (!usageView) return;
+        usageView->hide();
+        emit usageVisibleChanged();
+    }
+
+    Q_INVOKABLE void toggleUsage() {
+        if (!usageView) return;
+        if (usageView->isVisible()) {
+            usageView->hide();
+        } else {
+            openUsage();
+        }
+        emit usageVisibleChanged();
+    }
+
+    Q_INVOKABLE void startUsageMove() {
+        if (!usageView) return;
+        usageView->startSystemMove();
+    }
+
+    Q_INVOKABLE void startUsageResize(int edges) {
+        if (!usageView) return;
+        usageView->startSystemResize(Qt::Edges(edges));
+    }
+
+    Q_INVOKABLE void minimizeUsage() {
+        if (!usageView) return;
+        usageView->showMinimized();
+        emit usageVisibleChanged();
+    }
+
     Q_INVOKABLE void moveTrayPanel(int deltaX, int deltaY) {
         if (!trayView) return;
         QPoint pos = trayView->position();
@@ -175,9 +218,14 @@ public:
         return settingsView && (settingsView->windowState() & Qt::WindowMaximized);
     }
 
+    bool isUsageVisible() const {
+        return usageView && usageView->isVisible();
+    }
+
 signals:
     void settingsVisibleChanged();
     void settingsMaximizedChanged();
+    void usageVisibleChanged();
 };
 
 static QVariantMap makeAppTheme() {
@@ -279,6 +327,7 @@ int main(int argc, char* argv[]) {
     ProviderRegistry::instance().registerProvider(new KimiProvider());
     ProviderRegistry::instance().registerProvider(new OpenCodeProvider());
     ProviderRegistry::instance().registerProvider(new OpenCodeGoProvider());
+    ProviderRegistry::instance().registerProvider(new AlibabaProvider());
 
     SettingsStore* settings = new SettingsStore();
     UsageStore* usageStore = new UsageStore();
@@ -439,6 +488,42 @@ int main(int argc, char* argv[]) {
     settingsView.setSource(QUrl("qrc:/qml/SettingsWindow.qml"));
 
     appController->settingsView = &settingsView;
+    QObject::connect(&settingsView, &QWindow::windowStateChanged, appController,
+                     [appController]() {
+                         emit appController->settingsMaximizedChanged();
+                     });
+
+    QQuickView usageView(&qmlEngine, nullptr);
+    usageView.setTitle(QCoreApplication::translate("App", "Usage Details"));
+    usageView.resize(800, 600);
+    usageView.setMinimumSize(QSize(720, 480));
+    usageView.setResizeMode(QQuickView::SizeRootObjectToView);
+    usageView.setFlags(Qt::Window | Qt::FramelessWindowHint);
+    usageView.setColor(QColor("#1a1a2e"));
+
+    QObject::connect(&usageView, &QQuickView::statusChanged, &usageView, [&usageView](QQuickView::Status status) {
+        if (status != QQuickView::Error) return;
+        QStringList messages;
+        for (const QQmlError& error : usageView.errors()) {
+            messages.append(error.toString());
+        }
+        const QString detail = messages.isEmpty()
+            ? QCoreApplication::translate("App", "Unknown QML loading error.")
+            : messages.join(QLatin1Char('\n'));
+        qWarning() << "Failed to load usage window:" << detail;
+    });
+    usageView.setSource(QUrl("qrc:/qml/UsageWindow.qml"));
+
+    appController->usageView = &usageView;
+    QObject::connect(&usageView, &QWindow::windowStateChanged, appController,
+                     [appController]() {
+                         emit appController->usageVisibleChanged();
+                     });
+    QObject::connect(&usageView, &QWindow::visibleChanged, appController,
+                     [appController]() {
+                         emit appController->usageVisibleChanged();
+                     });
+
     QObject::connect(&settingsView, &QWindow::windowStateChanged, appController,
                      [appController]() {
                          emit appController->settingsMaximizedChanged();

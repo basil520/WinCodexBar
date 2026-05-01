@@ -824,12 +824,17 @@ CostUsageScanner::PiScanResult CostUsageScanner::scanPi(const QDate& since, cons
     return result;
 }
 
-CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QDate& since, const QDate& until) {
-    OpenCodeGoScanResult result;
-    result.opencodego.updatedAt = QDateTime::currentDateTime();
-    result.kimi.updatedAt = QDateTime::currentDateTime();
+CostUsageSnapshot CostUsageScanner::scanOpenCodeGo(const QDate& since, const QDate& until) {
+    Q_UNUSED(since)
+    Q_UNUSED(until)
+    // TODO: Implement OpenCode Go-specific scanning (not via opencode.db)
+    return CostUsageSnapshot();
+}
 
-    // OpenCode Go stores session data in SQLite at ~/.local/share/opencode/opencode.db
+QHash<QString, CostUsageSnapshot> CostUsageScanner::scanOpenCodeDB(const QDate& since, const QDate& until) {
+    QHash<QString, CostUsageSnapshot> result;
+
+    // OpenCode stores session data in SQLite at ~/.local/share/opencode/opencode.db
     QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
     QString dbPath = home + "/.local/share/opencode/opencode.db";
 
@@ -840,11 +845,10 @@ CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QD
     }
 
     if (!QFile::exists(dbPath)) {
-        result.opencodego.errorMessage = "OpenCode Go database not found at ~/.local/share/opencode/opencode.db";
         return result;
     }
 
-    const QString connName = "opencode_go_scan";
+    const QString connName = "opencode_db_scan";
     if (QSqlDatabase::contains(connName)) {
         QSqlDatabase::removeDatabase(connName);
     }
@@ -852,7 +856,6 @@ CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QD
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", connName);
     db.setDatabaseName(dbPath);
     if (!db.open()) {
-        result.opencodego.errorMessage = "Failed to open OpenCode Go database: " + db.lastError().text();
         QSqlDatabase::removeDatabase(connName);
         return result;
     }
@@ -908,7 +911,6 @@ CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QD
     QSqlQuery query(db);
     query.prepare(sql);
     if (!query.exec()) {
-        result.opencodego.errorMessage = "Failed to query OpenCode Go database: " + query.lastError().text();
         db.close();
         QSqlDatabase::removeDatabase(connName);
         return result;
@@ -938,16 +940,21 @@ CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QD
     db.close();
     QSqlDatabase::removeDatabase(connName);
 
-    // Build snapshots for each provider
-    auto buildSnapshot = [&](const QString& providerId) -> CostUsageSnapshot {
+    // Map raw provider IDs from opencode.db to standard CodexBar provider IDs
+    QHash<QString, QString> providerIdMap;
+    providerIdMap["opencode-go"] = "opencodego";
+    providerIdMap["kimi-for-coding"] = "kimi";
+    providerIdMap["kimi"] = "kimi";
+
+    // Build snapshots for each provider found in the database
+    for (auto pit = providerData.constBegin(); pit != providerData.constEnd(); ++pit) {
+        QString rawProviderId = pit.key();
+        QString providerId = providerIdMap.value(rawProviderId, rawProviderId);
         CostUsageSnapshot snap;
         snap.updatedAt = QDateTime::currentDateTime();
 
-        auto it = providerData.constFind(providerId);
-        if (it == providerData.constEnd()) return snap;
-
         QHash<QString, CostUsageDailyEntry> dayMap;
-        for (auto dit = it->dayModels.constBegin(); dit != it->dayModels.constEnd(); ++dit) {
+        for (auto dit = pit->dayModels.constBegin(); dit != pit->dayModels.constEnd(); ++dit) {
             CostUsageDailyEntry entry;
             entry.date = dit.key();
             for (auto mit = dit.value().constBegin(); mit != dit.value().constEnd(); ++mit) {
@@ -981,11 +988,8 @@ CostUsageScanner::OpenCodeGoScanResult CostUsageScanner::scanOpenCodeGo(const QD
                   [](const CostUsageDailyEntry& a, const CostUsageDailyEntry& b) { return a.date < b.date; });
         snap.last30DaysTokens = total30;
         snap.last30DaysCostUSD = cost30;
-        return snap;
-    };
-
-    result.opencodego = buildSnapshot("opencode-go");
-    result.kimi = buildSnapshot("kimi-for-coding");
+        result[providerId] = snap;
+    }
 
     return result;
 }

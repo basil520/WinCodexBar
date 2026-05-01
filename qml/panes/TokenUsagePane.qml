@@ -235,7 +235,7 @@ Rectangle {
         for (var k = 0; k < root.appProviderList.length; ++k) {
             var appProvider = root.appProviderList[k]
             if (seen[appProvider.id]) continue
-            if (appProvider.enabled === false && !root.alwaysShowProvider(appProvider.id)) continue
+            if (appProvider.enabled === false) continue
 
             var kind = root.providerUsageKind(appProvider)
             if (kind === "") continue
@@ -248,16 +248,6 @@ Rectangle {
         }
 
         return rows
-    }
-
-    function alwaysShowProvider(providerId) {
-        return providerId === "codex"
-            || providerId === "claude"
-            || providerId === "opencodego"
-            || providerId === "kimi"
-            || providerId === "kimik2"
-            || providerId === "copilot"
-            || providerId === "cursor"
     }
 
     function makeTokenRow(providerId, token, provider) {
@@ -299,7 +289,7 @@ Rectangle {
     function providerUsageKind(provider) {
         if (!provider || !provider.id) return ""
         var id = provider.id
-        if (id === "codex" || id === "claude" || id === "opencodego") return "token"
+        if (id === "codex" || id === "claude" || id === "opencodego" || id === "opencode") return "token"
         if (id === "kimi" || id === "kimik2") return "credit"
         if (id === "copilot" || id === "cursor") return "quota"
         if (provider.supportsCredits === true) return "credit"

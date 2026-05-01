@@ -173,6 +173,19 @@ Rectangle {
                             }
                         }
                         Text {
+                            text: qsTr("Details")
+                            color: detailsMouse.containsMouse ? "#aaa" : "#666"
+                            font.pixelSize: 10
+
+                            MouseArea {
+                                id: detailsMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: AppController.openUsage()
+                            }
+                        }
+                        Text {
                             Layout.maximumWidth: 86
                             text: costData.hasData
                                 ? "$" + costData.sessionCostUSD.toFixed(2) + " " + qsTr("today")
@@ -548,7 +561,7 @@ Rectangle {
                             }
                         }
                         Text {
-                            text: snap.primaryRemaining.toFixed(0) + "%"
+                            text: (snap.primaryDisplayPercent !== undefined ? snap.primaryDisplayPercent : snap.primaryRemaining).toFixed(0) + "%"
                             color: snap.primaryRemaining > 50 ? "#4CAF50"
                                  : snap.primaryRemaining > 20 ? "#FFC107"
                                  : "#F44336"
@@ -628,7 +641,7 @@ Rectangle {
                             }
                         }
                         Text {
-                            text: snap.secondaryRemaining.toFixed(0) + "%"
+                            text: (snap.secondaryDisplayPercent !== undefined ? snap.secondaryDisplayPercent : snap.secondaryRemaining).toFixed(0) + "%"
                             color: snap.secondaryRemaining > 50 ? "#2196F3"
                                  : snap.secondaryRemaining > 20 ? "#FFC107"
                                  : "#F44336"
@@ -699,7 +712,9 @@ Rectangle {
                             }
                         }
                         Text {
-                            text: (snap.tertiaryRemaining !== undefined ? snap.tertiaryRemaining : 100).toFixed(0) + "%"
+                            text: (snap.tertiaryDisplayPercent !== undefined
+                                ? snap.tertiaryDisplayPercent
+                                : (snap.tertiaryRemaining !== undefined ? snap.tertiaryRemaining : 100)).toFixed(0) + "%"
                             color: snap.tertiaryRemaining > 50 ? "#9C27B0"
                                  : snap.tertiaryRemaining > 20 ? "#FFC107"
                                  : "#F44336"

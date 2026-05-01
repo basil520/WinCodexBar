@@ -33,9 +33,9 @@ public:
 
     QVector<ProviderSettingsDescriptor> settingsDescriptors() const override {
         return { {"sourceMode", "Data source", "picker", QVariant(QStringLiteral("auto")),
-                   { {"auto", "Auto"}, {"oauth", "OAuth"} } } };
+                   { {"auto", "Auto"}, {"oauth", "OAuth"}, {"cli", "CLI"} } } };
     }
-    QVector<QString> supportedSourceModes() const override { return {"auto", "oauth"}; }
+    QVector<QString> supportedSourceModes() const override { return {"auto", "oauth", "cli"}; }
 };
 
 class CodexOAuthStrategy : public IFetchStrategy {
@@ -53,4 +53,19 @@ private:
     static QString resolveAccountEmail(const CodexOAuthCredentials& creds);
     static std::optional<CodexOAuthCredentials> attemptTokenRefresh(
         const CodexOAuthCredentials& creds, const QHash<QString, QString>& env);
+};
+
+class CodexCLIStrategy : public IFetchStrategy {
+    Q_OBJECT
+public:
+    explicit CodexCLIStrategy(QObject* parent = nullptr);
+
+    QString id() const override { return "codex.cli"; }
+    int kind() const override { return ProviderFetchKind::CLI; }
+    bool isAvailable(const ProviderFetchContext& ctx) const override;
+    ProviderFetchResult fetchSync(const ProviderFetchContext& ctx) override;
+    bool shouldFallback(const ProviderFetchResult& result, const ProviderFetchContext& ctx) const override;
+
+private:
+    static UsageSnapshot parseCLIOutput(const QString& output);
 };

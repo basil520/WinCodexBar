@@ -27,14 +27,15 @@ private slots:
 
     void testOpenCodeGoScan() {
         CostUsageScanner scanner;
-        auto result = scanner.scanOpenCodeGo(QDate::currentDate().addDays(-29), QDate::currentDate());
+        auto result = scanner.scanOpenCodeDB(QDate::currentDate().addDays(-29), QDate::currentDate());
         
         QFile logFile(QDir::tempPath() + "/opencode_go_scan.log");
         logFile.open(QIODevice::WriteOnly | QIODevice::Text);
         QTextStream log(&logFile);
-        log << "OpenCode Go scan result:\n";
-        log << "  opencodego tokens: " << result.opencodego.last30DaysTokens << "\n";
-        log << "  kimi tokens: " << result.kimi.last30DaysTokens << "\n";
+        log << "OpenCode DB scan result:\n";
+        log << "  providers: " << result.size() << "\n";
+        log << "  opencodego tokens: " << result.value("opencodego").last30DaysTokens << "\n";
+        log << "  kimi tokens: " << result.value("kimi").last30DaysTokens << "\n";
         
         auto dumpSnapshot = [&](const QString& name, const CostUsageSnapshot& snap) {
             log << "\n" << name << ":\n";
@@ -50,12 +51,13 @@ private slots:
             }
         };
         
-        dumpSnapshot("opencodego", result.opencodego);
-        dumpSnapshot("kimi", result.kimi);
+        for (auto it = result.constBegin(); it != result.constEnd(); ++it) {
+            dumpSnapshot(it.key(), it.value());
+        }
         logFile.close();
-        
-        QVERIFY(result.opencodego.last30DaysTokens > 0 || !result.opencodego.errorMessage.isEmpty()
-                || result.kimi.last30DaysTokens > 0 || !result.kimi.errorMessage.isEmpty());
+
+        QVERIFY(!result.contains("opencode-go"));
+        QVERIFY(!result.contains("kimi-for-coding"));
     }
 
     void testOpenCodeGoPricingOnlyContainsSupportedModelFamilies() {

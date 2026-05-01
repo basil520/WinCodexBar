@@ -73,6 +73,20 @@ void UsageStore::setSettingsStore(SettingsStore* s) {
     if (m_settingsStore) {
         connect(m_settingsStore, &SettingsStore::statusChecksEnabledChanged,
                 this, &UsageStore::configureStatusPolling);
+        auto notifyDisplaySettingsChanged = [this]() {
+            m_snapshotRevision++;
+            emit snapshotRevisionChanged();
+            const auto ids = ProviderRegistry::instance().providerIDs();
+            for (const auto& id : ids) {
+                emit snapshotChanged(id);
+            }
+        };
+        connect(m_settingsStore, &SettingsStore::usageBarsShowUsedChanged,
+                this, notifyDisplaySettingsChanged);
+        connect(m_settingsStore, &SettingsStore::resetTimesShowAbsoluteChanged,
+                this, notifyDisplaySettingsChanged);
+        connect(m_settingsStore, &SettingsStore::showOptionalCreditsAndExtraUsageChanged,
+                this, notifyDisplaySettingsChanged);
     }
     configureStatusPolling();
 }
@@ -210,6 +224,29 @@ QVariantMap UsageStore::snapshotData(const QString& id) const {
     auto snap = snapshot(id);
     auto* prov = ProviderRegistry::instance().provider(id);
     QVariantMap m;
+    const bool showUsedPercent = m_settingsStore ? m_settingsStore->usageBarsShowUsed() : false;
+    const bool showAbsoluteResetTimes = m_settingsStore ? m_settingsStore->resetTimesShowAbsolute() : false;
+    const bool showOptionalFields = m_settingsStore ? m_settingsStore->showOptionalCreditsAndExtraUsage() : true;
+
+    auto resetDisplay = [&](const RateWindow& rw) -> QString {
+        if (showAbsoluteResetTimes && rw.resetsAt.has_value() && rw.resetsAt->isValid()) {
+            return rw.resetsAt->toLocalTime().toString("yyyy-MM-dd hh:mm");
+        }
+        return rw.resetDescription.value_or(QString());
+    };
+
+    auto addWindowFields = [&](const QString& prefix, const RateWindow& rw) {
+        const double remaining = rw.remainingPercent();
+        m[prefix + "Used"] = rw.usedPercent;
+        m[prefix + "Remaining"] = remaining;
+        m[prefix + "DisplayPercent"] = showUsedPercent ? rw.usedPercent : remaining;
+        m[prefix + "DisplayIsUsed"] = showUsedPercent;
+        if (rw.resetsAt.has_value())
+            m[prefix + "ResetsAt"] = rw.resetsAt->toMSecsSinceEpoch();
+        const QString resetText = resetDisplay(rw);
+        if (!resetText.isEmpty())
+            m[prefix + "ResetDesc"] = resetText;
+    };
 
     m["sessionLabel"] = Localization::providerLabel(prov ? prov->sessionLabel() : "Session");
     m["weeklyLabel"] = Localization::providerLabel(prov ? prov->weeklyLabel() : "Weekly");
@@ -218,35 +255,26 @@ QVariantMap UsageStore::snapshotData(const QString& id) const {
     m["displayName"] = providerDisplayName(id);
 
     if (snap.primary.has_value()) {
-        m["primaryUsed"] = snap.primary->usedPercent;
-        m["primaryRemaining"] = snap.primary->remainingPercent();
-        if (snap.primary->resetsAt.has_value())
-            m["primaryResetsAt"] = snap.primary->resetsAt->toMSecsSinceEpoch();
-        if (snap.primary->resetDescription.has_value())
-            m["primaryResetDesc"] = *snap.primary->resetDescription;
+        addWindowFields("primary", *snap.primary);
     } else {
         m["primaryUsed"] = 0.0;
         m["primaryRemaining"] = 100.0;
+        m["primaryDisplayPercent"] = showUsedPercent ? 0.0 : 100.0;
+        m["primaryDisplayIsUsed"] = showUsedPercent;
     }
     if (snap.secondary.has_value()) {
-        m["secondaryUsed"] = snap.secondary->usedPercent;
-        m["secondaryRemaining"] = snap.secondary->remainingPercent();
+        addWindowFields("secondary", *snap.secondary);
         m["hasSecondary"] = true;
-        if (snap.secondary->resetsAt.has_value())
-            m["secondaryResetsAt"] = snap.secondary->resetsAt->toMSecsSinceEpoch();
-        if (snap.secondary->resetDescription.has_value())
-            m["secondaryResetDesc"] = *snap.secondary->resetDescription;
     } else {
         m["secondaryUsed"] = 0.0;
         m["secondaryRemaining"] = 100.0;
+        m["secondaryDisplayPercent"] = showUsedPercent ? 0.0 : 100.0;
+        m["secondaryDisplayIsUsed"] = showUsedPercent;
         m["hasSecondary"] = false;
     }
     if (snap.tertiary.has_value()) {
-        m["tertiaryUsed"] = snap.tertiary->usedPercent;
-        m["tertiaryRemaining"] = snap.tertiary->remainingPercent();
+        addWindowFields("tertiary", *snap.tertiary);
         m["hasTertiary"] = true;
-        if (snap.tertiary->resetDescription.has_value())
-            m["tertiaryResetDesc"] = *snap.tertiary->resetDescription;
     } else {
         m["hasTertiary"] = false;
     }
@@ -258,7 +286,7 @@ QVariantMap UsageStore::snapshotData(const QString& id) const {
     bool hasUsage = snap.primary.has_value() || snap.secondary.has_value() || snap.tertiary.has_value();
     m["hasUsage"] = hasUsage;
 
-    if (snap.providerCost.has_value()) {
+    if (showOptionalFields && snap.providerCost.has_value()) {
         m["providerCostUsed"] = snap.providerCost->used;
         m["providerCostLimit"] = snap.providerCost->limit;
         m["providerCostCurrency"] = snap.providerCost->currencyCode;
@@ -269,7 +297,7 @@ QVariantMap UsageStore::snapshotData(const QString& id) const {
 
     m["updatedAt"] = snap.updatedAt.toMSecsSinceEpoch();
 
-    if (snap.zaiUsage.has_value()) {
+    if (showOptionalFields && snap.zaiUsage.has_value()) {
         QVariantMap zai;
         const auto& z = *snap.zaiUsage;
         if (z.tokenLimit.has_value()) {
@@ -316,7 +344,7 @@ QVariantMap UsageStore::snapshotData(const QString& id) const {
         m["zaiUsage"] = zai;
     }
 
-    if (snap.openRouterUsage.has_value()) {
+    if (showOptionalFields && snap.openRouterUsage.has_value()) {
         QVariantMap oru;
         const auto& o = *snap.openRouterUsage;
         oru["totalCredits"] = o.totalCredits;
@@ -339,7 +367,7 @@ QVariantMap UsageStore::snapshotData(const QString& id) const {
         m["openRouterUsage"] = oru;
     }
 
-    if (snap.providerCost.has_value()) {
+    if (showOptionalFields && snap.providerCost.has_value()) {
         QVariantMap pc;
         pc["used"] = snap.providerCost->used;
         pc["limit"] = snap.providerCost->limit;
@@ -456,26 +484,54 @@ void UsageStore::refreshCostUsage() {
         if (mergedCodex.last30DaysTokens > 0)
             perProvider["codex"] = mergedCodex;
 
-        // OpenCode Go (multi-provider scan)
-        auto ocgResult = scanner.scanOpenCodeGo(since, today);
-        
-        // Code Plan providers: merge with existing provider data
-        if (ocgResult.opencodego.last30DaysTokens > 0)
-            perProvider["opencodego"] = ocgResult.opencodego;
-        if (ocgResult.kimi.last30DaysTokens > 0)
-            perProvider["kimi"] = ocgResult.kimi;
+        // OpenCode DB (always scan, merge into respective providers)
+        auto openCodeDBResults = scanner.scanOpenCodeDB(since, today);
+        for (auto it = openCodeDBResults.constBegin(); it != openCodeDBResults.constEnd(); ++it) {
+            QString providerId = it.key();
+            CostUsageSnapshot snap = it.value();
+            if (snap.last30DaysTokens <= 0) continue;
+            if (perProvider.contains(providerId)) {
+                // Merge with existing provider data
+                auto& existing = perProvider[providerId];
+                existing.sessionTokens += snap.sessionTokens;
+                existing.sessionCostUSD += snap.sessionCostUSD;
+                existing.last30DaysTokens += snap.last30DaysTokens;
+                existing.last30DaysCostUSD += snap.last30DaysCostUSD;
+                // Merge daily entries
+                QHash<QString, CostUsageDailyEntry> dayMap;
+                for (auto& d : existing.daily) dayMap[d.date] = d;
+                for (auto& d : snap.daily) {
+                    auto& e = dayMap[d.date];
+                    e.date = d.date;
+                    e.inputTokens += d.inputTokens;
+                    e.cacheReadTokens += d.cacheReadTokens;
+                    e.cacheCreationTokens += d.cacheCreationTokens;
+                    e.outputTokens += d.outputTokens;
+                    e.costUSD += d.costUSD;
+                    for (auto& m : d.models) e.models.append(m);
+                }
+                existing.daily = dayMap.values();
+                std::sort(existing.daily.begin(), existing.daily.end(),
+                          [](const CostUsageDailyEntry& a, const CostUsageDailyEntry& b) { return a.date < b.date; });
+            } else {
+                perProvider[providerId] = snap;
+            }
+        }
+
+        // OpenCode Go (separate from opencode.db)
+        CostUsageSnapshot opencodego = scanner.scanOpenCodeGo(since, today);
+        if (opencodego.last30DaysTokens > 0)
+            perProvider["opencodego"] = opencodego;
 
         // Global aggregate (backward compat)
         CostUsageSnapshot combined;
         combined.updatedAt = QDateTime::currentDateTime();
-        combined.sessionTokens = mergedClaude.sessionTokens + mergedCodex.sessionTokens 
-            + ocgResult.opencodego.sessionTokens + ocgResult.kimi.sessionTokens;
-        combined.sessionCostUSD = mergedClaude.sessionCostUSD + mergedCodex.sessionCostUSD 
-            + ocgResult.opencodego.sessionCostUSD + ocgResult.kimi.sessionCostUSD;
-        combined.last30DaysTokens = mergedClaude.last30DaysTokens + mergedCodex.last30DaysTokens 
-            + ocgResult.opencodego.last30DaysTokens + ocgResult.kimi.last30DaysTokens;
-        combined.last30DaysCostUSD = mergedClaude.last30DaysCostUSD + mergedCodex.last30DaysCostUSD 
-            + ocgResult.opencodego.last30DaysCostUSD + ocgResult.kimi.last30DaysCostUSD;
+        for (auto it = perProvider.constBegin(); it != perProvider.constEnd(); ++it) {
+            combined.sessionTokens += it.value().sessionTokens;
+            combined.sessionCostUSD += it.value().sessionCostUSD;
+            combined.last30DaysTokens += it.value().last30DaysTokens;
+            combined.last30DaysCostUSD += it.value().last30DaysCostUSD;
+        }
         {
             QHash<QString, CostUsageDailyEntry> dayMap;
             auto mergeDaily = [&](const QVector<CostUsageDailyEntry>& daily) {
@@ -492,8 +548,9 @@ void UsageStore::refreshCostUsage() {
             };
             mergeDaily(mergedClaude.daily);
             mergeDaily(mergedCodex.daily);
-            mergeDaily(ocgResult.opencodego.daily);
-            mergeDaily(ocgResult.kimi.daily);
+            for (auto it = openCodeDBResults.constBegin(); it != openCodeDBResults.constEnd(); ++it)
+                mergeDaily(it.value().daily);
+            mergeDaily(opencodego.daily);
             for (auto it = dayMap.constBegin(); it != dayMap.constEnd(); ++it)
                 combined.daily.append(it.value());
             std::sort(combined.daily.begin(), combined.daily.end(),
@@ -1268,34 +1325,30 @@ QVariantMap UsageStore::providerUsageSnapshot(const QString& providerId) const {
     QVariantMap result;
     auto it = m_snapshots.find(providerId);
     if (it == m_snapshots.end()) return result;
+
+    const bool showUsedPercent = m_settingsStore ? m_settingsStore->usageBarsShowUsed() : false;
+    auto metricMap = [&](const RateWindow& rw) {
+        QVariantMap metric;
+        const double remaining = rw.remainingPercent();
+        metric["percent"] = showUsedPercent ? rw.usedPercent : remaining;
+        metric["usedPercent"] = rw.usedPercent;
+        metric["remaining"] = remaining;
+        metric["displayIsUsed"] = showUsedPercent;
+        if (rw.resetsAt.has_value() && rw.resetsAt.value().isValid()) {
+            metric["resetsAt"] = rw.resetsAt.value().toString(Qt::ISODate);
+        }
+        return metric;
+    };
     
     const auto& snap = it.value();
     if (snap.primary.has_value()) {
-        QVariantMap primary;
-        primary["percent"] = snap.primary->usedPercent;
-        primary["remaining"] = 100.0 - snap.primary->usedPercent;
-        if (snap.primary->resetsAt.has_value() && snap.primary->resetsAt.value().isValid()) {
-            primary["resetsAt"] = snap.primary->resetsAt.value().toString(Qt::ISODate);
-        }
-        result["primary"] = primary;
+        result["primary"] = metricMap(*snap.primary);
     }
     if (snap.secondary.has_value()) {
-        QVariantMap secondary;
-        secondary["percent"] = snap.secondary->usedPercent;
-        secondary["remaining"] = 100.0 - snap.secondary->usedPercent;
-        if (snap.secondary->resetsAt.has_value() && snap.secondary->resetsAt.value().isValid()) {
-            secondary["resetsAt"] = snap.secondary->resetsAt.value().toString(Qt::ISODate);
-        }
-        result["secondary"] = secondary;
+        result["secondary"] = metricMap(*snap.secondary);
     }
     if (snap.tertiary.has_value()) {
-        QVariantMap tertiary;
-        tertiary["percent"] = snap.tertiary->usedPercent;
-        tertiary["remaining"] = 100.0 - snap.tertiary->usedPercent;
-        if (snap.tertiary->resetsAt.has_value() && snap.tertiary->resetsAt.value().isValid()) {
-            tertiary["resetsAt"] = snap.tertiary->resetsAt.value().toString(Qt::ISODate);
-        }
-        result["tertiary"] = tertiary;
+        result["tertiary"] = metricMap(*snap.tertiary);
     }
     return result;
 }

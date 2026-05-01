@@ -21,11 +21,9 @@ public:
     };
     PiScanResult scanPi(const QDate& since, const QDate& until);
 
-    struct OpenCodeGoScanResult {
-        CostUsageSnapshot opencodego;
-        CostUsageSnapshot kimi;
-    };
-    OpenCodeGoScanResult scanOpenCodeGo(const QDate& since, const QDate& until);
+    // Scan opencode.db and return per-provider snapshots (provider_id -> snapshot)
+    QHash<QString, CostUsageSnapshot> scanOpenCodeDB(const QDate& since, const QDate& until);
+    CostUsageSnapshot scanOpenCodeGo(const QDate& since, const QDate& until);
 
     QString cacheDir();
 

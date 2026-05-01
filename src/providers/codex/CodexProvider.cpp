@@ -1,6 +1,7 @@
 #include "CodexProvider.h"
 #include "../../network/NetworkManager.h"
 #include "../../util/BinaryLocator.h"
+#include "../../util/TextParser.h"
 #include "../../models/CodexUsageResponse.h"
 
 #include <QJsonDocument>
@@ -10,8 +11,18 @@
 CodexProvider::CodexProvider(QObject* parent) : IProvider(parent) {}
 
 QVector<IFetchStrategy*> CodexProvider::createStrategies(const ProviderFetchContext& ctx) {
-    Q_UNUSED(ctx)
-    return { new CodexOAuthStrategy() };
+    QVector<IFetchStrategy*> strategies;
+    
+    QString mode = ctx.settings.get("sourceMode", "auto").toString();
+    
+    if (mode == "auto" || mode == "cli") {
+        strategies.append(new CodexCLIStrategy());
+    }
+    if (mode == "auto" || mode == "oauth") {
+        strategies.append(new CodexOAuthStrategy());
+    }
+    
+    return strategies;
 }
 
 CodexOAuthStrategy::CodexOAuthStrategy(QObject* parent) : IFetchStrategy(parent) {}
@@ -194,6 +205,134 @@ ProviderFetchResult CodexOAuthStrategy::fetchSync(const ProviderFetchContext& ct
 
     QString email = resolveAccountEmail(creds);
     result.usage = usageResp.toUsageSnapshot(email);
+    result.success = true;
+    return result;
+}
+
+// ============================================================================
+// CodexCLIStrategy
+// ============================================================================
+
+CodexCLIStrategy::CodexCLIStrategy(QObject* parent) : IFetchStrategy(parent) {}
+
+bool CodexCLIStrategy::isAvailable(const ProviderFetchContext&) const {
+    return BinaryLocator::isAvailable("codex");
+}
+
+bool CodexCLIStrategy::shouldFallback(const ProviderFetchResult& result,
+                                       const ProviderFetchContext& ctx) const {
+    Q_UNUSED(ctx)
+    return !result.success;
+}
+
+static UsageSnapshot parseCodexCLIOutput(const QString& raw) {
+    QString text = TextParser::stripAnsiEscapes(raw);
+    UsageSnapshot snap;
+    snap.updatedAt = QDateTime::currentDateTime();
+
+    // Parse session usage: "Session: 80% (4,000 / 5,000 tokens)" or similar
+    static QRegularExpression sessionRe(
+        "Session[:：]\\s*"                              // Label
+        "(?:[^\\d]*[█░])?"                             // Optional progress bar
+        "(\\d+(?:\\.\\d+)?)"                           // Percentage
+        "\\%?\\s*"                                     // Optional % sign
+        "(?:\\(([^/]+)/([^)]+)"                        // Optional "(used / limit"
+    );
+    
+    // Parse weekly usage
+    static QRegularExpression weeklyRe(
+        "Weekly[:：]\\s*"
+        "(?:[^\\d]*[█░])?"
+        "(\\d+(?:\\.\\d+)?)"
+        "\\%?\\s*"
+        "(?:\\(([^/]+)/([^)]+)"
+    );
+    
+    // Parse credits
+    static QRegularExpression creditsRe(
+        "Credits?[:：]\\s*"                             // Label
+        "([\\d,]+)"                                    // Number
+        "(?:\\s*(?:remaining|left| credits?))?"       // Optional suffix
+    );
+
+    auto sessionMatch = sessionRe.match(text);
+    if (sessionMatch.hasMatch()) {
+        double pct = sessionMatch.captured(1).toDouble();
+        snap.primary = RateWindow{
+            std::clamp(pct, 0.0, 100.0),
+            std::nullopt,
+            std::nullopt,
+            QString(),
+            std::nullopt
+        };
+    }
+
+    auto weeklyMatch = weeklyRe.match(text);
+    if (weeklyMatch.hasMatch()) {
+        double pct = weeklyMatch.captured(1).toDouble();
+        snap.secondary = RateWindow{
+            std::clamp(pct, 0.0, 100.0),
+            std::nullopt,
+            std::nullopt,
+            QString(),
+            std::nullopt
+        };
+    }
+
+    auto creditsMatch = creditsRe.match(text);
+    if (creditsMatch.hasMatch()) {
+        QString creditsStr = creditsMatch.captured(1);
+        creditsStr.remove(',');
+        double credits = creditsStr.toDouble();
+        if (credits >= 0) {
+            // Credits will be set on the result object, not the snapshot
+            // Store in a temporary variable or handle in fetchSync
+        }
+    }
+
+    return snap;
+}
+
+ProviderFetchResult CodexCLIStrategy::fetchSync(const ProviderFetchContext&) {
+    ProviderFetchResult result;
+    result.strategyID = "codex.cli";
+    result.strategyKind = ProviderFetchKind::CLI;
+    result.sourceLabel = "cli";
+
+    QString binary = BinaryLocator::resolve("codex");
+    if (binary.isEmpty()) {
+        result.errorMessage = "codex CLI not found in PATH";
+        return result;
+    }
+
+    QProcess proc;
+    proc.start(binary, QStringList{"/status"});
+    if (!proc.waitForFinished(15000)) {
+        proc.kill();
+        result.errorMessage = "codex CLI timed out";
+        return result;
+    }
+
+    QString output = proc.readAllStandardOutput();
+    QString stderrOutput = proc.readAllStandardError();
+    
+    if (output.isEmpty() && stderrOutput.isEmpty()) {
+        result.errorMessage = "empty CLI output";
+        return result;
+    }
+
+    // Combine stdout and stderr for parsing
+    QString combined = output + "\n" + stderrOutput;
+    
+    UsageSnapshot snap = parseCodexCLIOutput(combined);
+    
+    // Check if we got any meaningful data
+    if (!snap.primary.has_value() && !snap.secondary.has_value()) {
+        result.errorMessage = "Could not parse codex CLI output";
+        return result;
+    }
+
+    result.usage = snap;
     result.success = true;
     return result;
 }

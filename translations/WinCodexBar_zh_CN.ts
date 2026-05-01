@@ -938,6 +938,11 @@
         <translation>Token 用量</translation>
     </message>
     <message>
+        <location filename="../qml/TrayPanel.qml" line="176"/>
+        <source>Details</source>
+        <translation>详情</translation>
+    </message>
+    <message>
         <location filename="../qml/TrayPanel.qml" line="161"/>
         <source>today</source>
         <translation>今日</translation>
@@ -1190,6 +1195,58 @@
         <location filename="../src/util/UsagePaceText.cpp" line="84"/>
         <source>&lt;1m</source>
         <translation>&lt;1分钟</translation>
+    </message>
+    </context>
+<context>
+    <name>TokenUsagePane</name>
+    <message>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="50"/>
+        <source>Token Usage Overview</source>
+        <translation>Token 用量总览</translation>
+    </message>
+    <message>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="59"/>
+        <source>Provider and model breakdown</source>
+        <translation>提供商和模型明细</translation>
+    </message>
+    <message>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="68"/>
+        <source>Off</source>
+        <translation>关闭</translation>
+    </message>
+    <message>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="69"/>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="76"/>
+        <source>Scanning</source>
+        <translation>扫描中</translation>
+    </message>
+    <message>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="69"/>
+        <source>Last 30 days</source>
+        <translation>最近30天</translation>
+    </message>
+    <message>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="129"/>
+        <source>token sources</source>
+        <translation>token 来源</translation>
+    </message>
+    <message>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="198"/>
+        <source>No token providers enabled</source>
+        <translation>未启用 Token 提供商</translation>
+    </message>
+    <message>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="725"/>
+        <source>Unknown model</source>
+        <translation>未知模型</translation>
+    </message>
+</context>
+<context>
+    <name>UsageWindow</name>
+    <message>
+        <location filename="../qml/UsageWindow.qml" line="64"/>
+        <source>Usage Details</source>
+        <translation>用量详情</translation>
     </message>
 </context>
 </TS>
