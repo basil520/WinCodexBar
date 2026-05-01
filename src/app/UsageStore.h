@@ -68,6 +68,19 @@ public:
 
     Q_INVOKABLE QVariantList utilizationChartData(const QString& providerId, const QString& seriesName) const;
 
+    // Codex multi-account management
+    Q_INVOKABLE QVariantList codexAccounts() const;
+    Q_INVOKABLE QString codexActiveAccountID() const;
+    Q_INVOKABLE void setCodexActiveAccount(const QString& accountID);
+    Q_INVOKABLE bool addCodexAccount(const QString& email, const QString& homePath);
+    Q_INVOKABLE bool removeCodexAccount(const QString& accountID);
+    Q_INVOKABLE bool reauthenticateCodexAccount(const QString& accountID);
+    Q_INVOKABLE bool isCodexAuthenticating() const;
+    Q_INVOKABLE bool isCodexRemoving() const;
+    Q_INVOKABLE QString codexAuthenticatingAccountID() const;
+    Q_INVOKABLE QString codexRemovingAccountID() const;
+    Q_INVOKABLE bool hasCodexUnreadableStore() const;
+
     bool costUsageEnabled() const { return m_costUsageEnabled; }
     void setCostUsageEnabled(bool v);
     bool costUsageRefreshing() const { return m_costUsageRefreshing; }
@@ -98,6 +111,14 @@ signals:
     void providerLoginStateChanged(const QString& providerId);
     void providerStatusChanged(const QString& providerId);
     void statusRevisionChanged();
+
+    // Codex multi-account signals
+    void codexAccountsChanged();
+    void codexActiveAccountChanged(const QString& accountID);
+    void codexAuthenticationStarted(const QString& accountID);
+    void codexAuthenticationFinished(const QString& accountID, bool success);
+    void codexRemovalStarted(const QString& accountID);
+    void codexRemovalFinished(const QString& accountID, bool success);
 
 private:
     std::optional<ProviderSettingsDescriptor> settingDescriptor(const QString& providerId,
@@ -130,4 +151,7 @@ private:
     int m_pendingRefreshes = 0;
     int m_snapshotRevision = 0;
     int m_statusRevision = 0;
+
+    // Codex multi-account
+    class ManagedCodexAccountService* m_codexAccountService = nullptr;
 };

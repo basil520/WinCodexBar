@@ -1,4 +1,6 @@
 #include "CodexProvider.h"
+#include "ManagedCodexAccountService.h"
+#include "CodexHomeScope.h"
 #include "../../network/NetworkManager.h"
 #include "../../util/BinaryLocator.h"
 #include "../../util/TextParser.h"
@@ -9,6 +11,11 @@
 #include <QDir>
 
 CodexProvider::CodexProvider(QObject* parent) : IProvider(parent) {}
+
+void CodexProvider::setAccountService(ManagedCodexAccountService* service)
+{
+    m_accountService = service;
+}
 
 QVector<IFetchStrategy*> CodexProvider::createStrategies(const ProviderFetchContext& ctx) {
     QVector<IFetchStrategy*> strategies;

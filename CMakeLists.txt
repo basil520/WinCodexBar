@@ -62,6 +62,7 @@ set(CORE_SOURCES
     src/providers/codex/CodexPlanFormatting.cpp
     src/providers/codex/CodexProviderSettingsBuilder.cpp
     src/providers/codex/CodexUsageDataSource.cpp
+    src/providers/codex/ManagedCodexAccountService.cpp
     src/providers/claude/ClaudeProvider.cpp
     src/providers/cursor/CursorProvider.cpp
     src/providers/kimi/KimiProvider.cpp
@@ -128,6 +129,7 @@ set(CORE_HEADERS
     src/providers/codex/CodexPlanFormatting.h
     src/providers/codex/CodexProviderSettingsBuilder.h
     src/providers/codex/CodexUsageDataSource.h
+    src/providers/codex/ManagedCodexAccountService.h
     src/providers/kimi/KimiProvider.h
     src/providers/opencode/OpenCodeProvider.h
     src/providers/opencode/OpenCodeGoProvider.h

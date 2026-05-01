@@ -11,6 +11,7 @@
 #include "../util/CostUsageScanner.h"
 #include "../util/UsagePaceText.h"
 #include "../models/UsagePace.h"
+#include "../providers/codex/ManagedCodexAccountService.h"
 
 #include <QDateTime>
 #include <QJsonObject>
@@ -62,6 +63,26 @@ UsageStore::UsageStore(QObject* parent)
     QObject::connect(m_pipeline, &ProviderPipeline::pipelineComplete,
                      this, [this](const ProviderFetchResult& /*result*/) {
     });
+
+    // Initialize Codex multi-account service
+    QHash<QString, QString> env;
+    auto systemEnv = QProcessEnvironment::systemEnvironment();
+    for (const auto& key : systemEnv.keys()) {
+        env.insert(key, systemEnv.value(key));
+    }
+    m_codexAccountService = new ManagedCodexAccountService(env, this);
+    QObject::connect(m_codexAccountService, &ManagedCodexAccountService::accountsChanged,
+                     this, &UsageStore::codexAccountsChanged);
+    QObject::connect(m_codexAccountService, &ManagedCodexAccountService::activeAccountChanged,
+                     this, &UsageStore::codexActiveAccountChanged);
+    QObject::connect(m_codexAccountService, &ManagedCodexAccountService::authenticationStarted,
+                     this, &UsageStore::codexAuthenticationStarted);
+    QObject::connect(m_codexAccountService, &ManagedCodexAccountService::authenticationFinished,
+                     this, &UsageStore::codexAuthenticationFinished);
+    QObject::connect(m_codexAccountService, &ManagedCodexAccountService::removalStarted,
+                     this, &UsageStore::codexRemovalStarted);
+    QObject::connect(m_codexAccountService, &ManagedCodexAccountService::removalFinished,
+                     this, &UsageStore::codexRemovalFinished);
 }
 
 void UsageStore::setSettingsStore(SettingsStore* s) {
@@ -1386,4 +1407,88 @@ void UsageStore::refreshProviderStatuses() {
             }, Qt::QueuedConnection);
         });
     }
+}
+
+// ============================================================================
+// Codex Multi-Account Management
+// ============================================================================
+
+QVariantList UsageStore::codexAccounts() const
+{
+    QVariantList result;
+    if (!m_codexAccountService) return result;
+
+    auto accounts = m_codexAccountService->visibleAccounts();
+    for (const auto& account : accounts) {
+        QVariantMap map;
+        map["id"] = account.id;
+        map["displayName"] = account.displayName;
+        map["email"] = account.email;
+        map["workspaceLabel"] = account.workspaceLabel;
+        map["isLive"] = account.isLive;
+        map["isActive"] = account.isActive;
+        map["storedAccountID"] = account.storedAccountID;
+        result.append(map);
+    }
+    return result;
+}
+
+QString UsageStore::codexActiveAccountID() const
+{
+    if (!m_codexAccountService) return "live-system";
+    return m_codexAccountService->activeAccountID();
+}
+
+void UsageStore::setCodexActiveAccount(const QString& accountID)
+{
+    if (!m_codexAccountService) return;
+    m_codexAccountService->setActiveAccount(accountID);
+}
+
+bool UsageStore::addCodexAccount(const QString& email, const QString& homePath)
+{
+    if (!m_codexAccountService) return false;
+    return m_codexAccountService->addAccount(email, homePath);
+}
+
+bool UsageStore::removeCodexAccount(const QString& accountID)
+{
+    if (!m_codexAccountService) return false;
+    return m_codexAccountService->removeAccount(accountID);
+}
+
+bool UsageStore::reauthenticateCodexAccount(const QString& accountID)
+{
+    if (!m_codexAccountService) return false;
+    return m_codexAccountService->reauthenticateAccount(accountID);
+}
+
+bool UsageStore::isCodexAuthenticating() const
+{
+    if (!m_codexAccountService) return false;
+    return m_codexAccountService->isAuthenticating();
+}
+
+bool UsageStore::isCodexRemoving() const
+{
+    if (!m_codexAccountService) return false;
+    return m_codexAccountService->isRemoving();
+}
+
+QString UsageStore::codexAuthenticatingAccountID() const
+{
+    if (!m_codexAccountService) return QString();
+    return m_codexAccountService->authenticatingAccountID();
+}
+
+QString UsageStore::codexRemovingAccountID() const
+{
+    if (!m_codexAccountService) return QString();
+    return m_codexAccountService->removingAccountID();
+}
+
+bool UsageStore::hasCodexUnreadableStore() const
+{
+    if (!m_codexAccountService) return false;
+    return m_codexAccountService->hasUnreadableStore();
 }

@@ -6,10 +6,14 @@
 #include "../ProviderFetchResult.h"
 #include "../../models/UsageSnapshot.h"
 #include "../../models/CodexUsageResponse.h"
+#include "CodexAccountReconciliation.h"
+#include "CodexReconciledState.h"
 
 #include <QObject>
 #include <QString>
 #include <QFuture>
+
+class ManagedCodexAccountService;
 
 class CodexProvider : public IProvider {
     Q_OBJECT
@@ -36,6 +40,12 @@ public:
                    { {"auto", "Auto"}, {"oauth", "OAuth"}, {"cli", "CLI"} } } };
     }
     QVector<QString> supportedSourceModes() const override { return {"auto", "oauth", "cli"}; }
+
+    void setAccountService(ManagedCodexAccountService* service);
+    ManagedCodexAccountService* accountService() const { return m_accountService; }
+
+private:
+    ManagedCodexAccountService* m_accountService = nullptr;
 };
 
 class CodexOAuthStrategy : public IFetchStrategy {

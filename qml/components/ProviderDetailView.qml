@@ -518,6 +518,54 @@ ScrollView {
                 }
             }
 
+            SettingsGroupBox {
+                visible: root.providerId === "codex"
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    SectionTitle { text: qsTr("Account Management") }
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("Manage multiple Codex accounts. Switch between accounts to track usage separately.")
+                        color: AppTheme.textSecondary
+                        font.pixelSize: AppTheme.fontSizeSm
+                        wrapMode: Text.WordWrap
+                    }
+
+                    CodexAccountsPane {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 280
+                        visible: root.providerId === "codex"
+                        
+                        accounts: UsageStore.codexAccounts()
+                        activeAccountID: UsageStore.codexActiveAccountID()
+                        isAuthenticating: UsageStore.isCodexAuthenticating()
+                        isRemoving: UsageStore.isCodexRemoving()
+                        authenticatingAccountID: UsageStore.codexAuthenticatingAccountID()
+                        removingAccountID: UsageStore.codexRemovingAccountID()
+                        hasUnreadableStore: UsageStore.hasCodexUnreadableStore()
+
+                        onSetActiveAccount: function(accountID) {
+                            UsageStore.setCodexActiveAccount(accountID)
+                        }
+                        onAddAccount: function() {
+                            var email = "user@example.com"
+                            var homePath = ""
+                            UsageStore.addCodexAccount(email, homePath)
+                        }
+                        onRemoveAccount: function(accountID) {
+                            UsageStore.removeCodexAccount(accountID)
+                        }
+                        onReauthenticateAccount: function(accountID) {
+                            UsageStore.reauthenticateCodexAccount(accountID)
+                        }
+                    }
+                }
+            }
+
             ProviderErrorCard {
                 visible: root.providerError !== ""
                 errorTitle: qsTr("Last Provider Error")

@@ -321,7 +321,11 @@ int main(int argc, char* argv[]) {
     ProviderRegistry::instance().registerProvider(new KiroProvider());
     ProviderRegistry::instance().registerProvider(new MistralProvider());
     ProviderRegistry::instance().registerProvider(new OllamaProvider());
-    ProviderRegistry::instance().registerProvider(new CodexProvider());
+    
+    // Register CodexProvider and set up account service
+    CodexProvider* codexProvider = new CodexProvider();
+    ProviderRegistry::instance().registerProvider(codexProvider);
+    
     ProviderRegistry::instance().registerProvider(new ClaudeProvider());
     ProviderRegistry::instance().registerProvider(new CursorProvider());
     ProviderRegistry::instance().registerProvider(new KimiProvider());
@@ -332,6 +336,13 @@ int main(int argc, char* argv[]) {
     SettingsStore* settings = new SettingsStore();
     UsageStore* usageStore = new UsageStore();
     usageStore->setSettingsStore(settings);
+    
+    // Connect CodexProvider with account service from UsageStore
+    // The account service is initialized in UsageStore constructor
+    QObject::connect(usageStore, &UsageStore::codexAccountsChanged, [codexProvider, usageStore]() {
+        // Refresh Codex data when accounts change
+        usageStore->refreshProvider("codex");
+    });
 
     qmlRegisterSingletonInstance("CodexBar", 1, 0, "SettingsStore", settings);
     qmlRegisterSingletonInstance("CodexBar", 1, 0, "UsageStore", usageStore);
