@@ -1192,4 +1192,43 @@
         <translation>&lt;1m</translation>
     </message>
 </context>
+<context>
+    <name>ManagedCodexAccountService</name>
+    <message>
+        <source>Codex login failed.</source>
+        <translation>Codex login failed.</translation>
+    </message>
+    <message>
+        <source>Codex device code authentication is not enabled for your account, or the authentication server is unreachable. Enable device auth in your Codex/OpenAI account settings, or check your network/proxy configuration.</source>
+        <translation>Codex device code authentication is not enabled for your account, or the authentication server is unreachable. Enable device auth in your Codex/OpenAI account settings, or check your network/proxy configuration.</translation>
+    </message>
+    <message>
+        <source>Network connection to Codex authentication server timed out. Check your network or proxy settings.</source>
+        <translation>Network connection to Codex authentication server timed out. Check your network or proxy settings.</translation>
+    </message>
+    <message>
+        <source>Cannot reach Codex authentication server. Check your network connection or proxy settings.</source>
+        <translation>Cannot reach Codex authentication server. Check your network connection or proxy settings.</translation>
+    </message>
+    <message>
+        <source>Connection to Codex authentication server was reset. Your network or proxy may be interrupting the connection.</source>
+        <translation>Connection to Codex authentication server was reset. Your network or proxy may be interrupting the connection.</translation>
+    </message>
+    <message>
+        <source>Cannot resolve Codex authentication server hostname. Check your DNS or network settings.</source>
+        <translation>Cannot resolve Codex authentication server hostname. Check your DNS or network settings.</translation>
+    </message>
+    <message>
+        <source>Proxy connection to Codex authentication server failed. Check your proxy settings or disable the proxy temporarily.</source>
+        <translation>Proxy connection to Codex authentication server failed. Check your proxy settings or disable the proxy temporarily.</translation>
+    </message>
+    <message>
+        <source>SSL/TLS connection to Codex authentication server failed. Check your system time or certificate settings.</source>
+        <translation>SSL/TLS connection to Codex authentication server failed. Check your system time or certificate settings.</translation>
+    </message>
+    <message>
+        <source>Details: </source>
+        <translation>Details: </translation>
+    </message>
+</context>
 </TS>

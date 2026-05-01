@@ -1249,4 +1249,43 @@
         <translation>用量详情</translation>
     </message>
 </context>
+<context>
+    <name>ManagedCodexAccountService</name>
+    <message>
+        <source>Codex login failed.</source>
+        <translation>Codex 登录失败。</translation>
+    </message>
+    <message>
+        <source>Codex device code authentication is not enabled for your account, or the authentication server is unreachable. Enable device auth in your Codex/OpenAI account settings, or check your network/proxy configuration.</source>
+        <translation>Codex 设备代码授权未启用，或认证服务器无法访问。请在 Codex/OpenAI 账户设置中开启设备授权，或检查网络/代理配置。</translation>
+    </message>
+    <message>
+        <source>Network connection to Codex authentication server timed out. Check your network or proxy settings.</source>
+        <translation>连接 Codex 认证服务器超时。请检查网络或代理设置。</translation>
+    </message>
+    <message>
+        <source>Cannot reach Codex authentication server. Check your network connection or proxy settings.</source>
+        <translation>无法连接 Codex 认证服务器。请检查网络或代理设置。</translation>
+    </message>
+    <message>
+        <source>Connection to Codex authentication server was reset. Your network or proxy may be interrupting the connection.</source>
+        <translation>与 Codex 认证服务器的连接被重置。网络或代理可能正在中断连接。</translation>
+    </message>
+    <message>
+        <source>Cannot resolve Codex authentication server hostname. Check your DNS or network settings.</source>
+        <translation>无法解析 Codex 认证服务器域名。请检查 DNS 或网络设置。</translation>
+    </message>
+    <message>
+        <source>Proxy connection to Codex authentication server failed. Check your proxy settings or disable the proxy temporarily.</source>
+        <translation>通过代理连接 Codex 认证服务器失败。请检查代理设置或暂时关闭代理。</translation>
+    </message>
+    <message>
+        <source>SSL/TLS connection to Codex authentication server failed. Check your system time or certificate settings.</source>
+        <translation>SSL/TLS 连接 Codex 认证服务器失败。请检查系统时间或证书设置。</translation>
+    </message>
+    <message>
+        <source>Details: </source>
+        <translation>详情：</translation>
+    </message>
+</context>
 </TS>

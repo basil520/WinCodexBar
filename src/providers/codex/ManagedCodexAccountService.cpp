@@ -259,9 +259,36 @@ void ManagedCodexAccountService::onLoginFinished(const CodexLoginRunner::Result&
             if (!result.output.isEmpty())
                 message += QStringLiteral(" Error: ") + sanitizeLoginOutput(result.output);
         } else {
-            message = QStringLiteral("Codex login failed.");
+            message = tr("Codex login failed.");
+            const QString outputLower = result.output.toLower();
+            if (outputLower.contains("403") || outputLower.contains("forbidden")) {
+                message = tr("Codex device code authentication is not enabled for your account, "
+                             "or the authentication server is unreachable. "
+                             "Enable device auth in your Codex/OpenAI account settings, "
+                             "or check your network/proxy configuration.");
+            } else if (outputLower.contains("timeout") || outputLower.contains("timed out")) {
+                message = tr("Network connection to Codex authentication server timed out. "
+                             "Check your network or proxy settings.");
+            } else if (outputLower.contains("connection refused") || outputLower.contains("econnrefused")) {
+                message = tr("Cannot reach Codex authentication server. "
+                             "Check your network connection or proxy settings.");
+            } else if (outputLower.contains("econnreset") || outputLower.contains("connection reset")) {
+                message = tr("Connection to Codex authentication server was reset. "
+                             "Your network or proxy may be interrupting the connection.");
+            } else if (outputLower.contains("enotfound") || outputLower.contains("dns")
+                       || outputLower.contains("resolve") || outputLower.contains("getaddrinfo")) {
+                message = tr("Cannot resolve Codex authentication server hostname. "
+                             "Check your DNS or network settings.");
+            } else if (outputLower.contains("proxy") || outputLower.contains("tunnel")) {
+                message = tr("Proxy connection to Codex authentication server failed. "
+                             "Check your proxy settings or disable the proxy temporarily.");
+            } else if (outputLower.contains("certificate") || outputLower.contains("ssl")
+                       || outputLower.contains("tls")) {
+                message = tr("SSL/TLS connection to Codex authentication server failed. "
+                             "Check your system time or certificate settings.");
+            }
             if (!result.output.isEmpty())
-                message += QStringLiteral(" Output: ") + sanitizeLoginOutput(result.output);
+                message += QStringLiteral(" ") + tr("Details: ") + sanitizeLoginOutput(result.output);
         }
         finalizeLoginFailure(homePath, message);
         return;
