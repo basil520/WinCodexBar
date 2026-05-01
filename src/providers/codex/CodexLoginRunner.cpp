@@ -279,9 +279,13 @@ void CodexLoginRunner::onProgressTick()
                 .arg(m_elapsedSeconds));
         }
     } else {
-        // Output received but no device code yet
-        emit progressUpdate(QStringLiteral("Received response but no device code. Retrying... (%1s)")
-            .arg(m_elapsedSeconds));
+        // Output received but no device code yet — include a preview
+        QString preview = TextParser::stripAnsiEscapes(m_output);
+        preview = preview.simplified();
+        if (preview.length() > 150)
+            preview = preview.left(150) + QStringLiteral("...");
+        emit progressUpdate(QStringLiteral("Received response but no device code. Output: %1")
+            .arg(preview));
     }
 }
 
