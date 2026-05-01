@@ -7,6 +7,7 @@ class TextParserTest : public QObject {
 
 private slots:
     void testStripAnsiEscapes();
+    void testStripTerminalControlSequencesFromCodexTui();
     void testStripAnsiEscapesNoAnsi();
     void testExtractPercent();
     void testExtractPercentDecimal();

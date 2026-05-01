@@ -14,6 +14,13 @@
 #include <QVariant>
 #include <algorithm>
 
+static bool g_shuttingDown = false;
+
+void CostUsageScanner::setShuttingDown(bool shuttingDown)
+{
+    g_shuttingDown = shuttingDown;
+}
+
 CostUsageScanner::CostUsageScanner() { initPricing(); }
 
 const QHash<QString, CostUsageScanner::Pricing>& CostUsageScanner::codexPricingMap() {
@@ -319,6 +326,7 @@ CostUsageSnapshot CostUsageScanner::scanClaude(const QString& configDir, const Q
         }
 
         for (auto& path : jsonlFiles) {
+            if (g_shuttingDown) break;
             QFile file(path);
             if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
 
@@ -467,11 +475,14 @@ CostUsageSnapshot CostUsageScanner::scanCodex(const QString& sessionsDir, const 
         if (!QDir(root).exists()) continue;
         QDir::Filters filters = QDir::Files | QDir::NoDotAndDotDot | QDir::Readable;
         QDirIterator it(root, {"*.jsonl"}, filters, QDirIterator::Subdirectories);
-        while (it.hasNext())
+        while (it.hasNext()) {
+            if (g_shuttingDown) break;
             jsonlFiles.append(it.next());
+        }
     }
 
     for (auto& path : jsonlFiles) {
+        if (g_shuttingDown) break;
         QFile file(path);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
 
@@ -908,9 +919,7 @@ QHash<QString, CostUsageSnapshot> CostUsageScanner::scanOpenCodeDB(const QDate& 
         ORDER BY um.provider, day, input_tokens DESC
     )";
 
-    QSqlQuery query(db);
-    query.prepare(sql);
-    if (!query.exec()) {
+    if (g_shuttingDown) {
         db.close();
         QSqlDatabase::removeDatabase(connName);
         return result;
@@ -922,20 +931,32 @@ QHash<QString, CostUsageSnapshot> CostUsageScanner::scanOpenCodeDB(const QDate& 
     };
     QHash<QString, ProviderData> providerData;
 
-    while (query.next()) {
-        QString providerId = query.value("provider_id").toString();
-        QString day = query.value("day").toString();
-        QString model = query.value("model_name").toString();
-        int inputTokens = query.value("input_tokens").toInt();
-        int outputTokens = query.value("output_tokens").toInt();
-        int cacheRead = query.value("cache_read").toInt();
+    {
+        QSqlQuery query(db);
+        query.prepare(sql);
+        if (!query.exec() || g_shuttingDown) {
+            // Query object will be destroyed when leaving this scope
+            db.close();
+            QSqlDatabase::removeDatabase(connName);
+            return result;
+        }
 
-        auto& mb = providerData[providerId].dayModels[day][model];
-        mb.modelName = model;
-        mb.inputTokens += qMax(0, inputTokens);
-        mb.outputTokens += qMax(0, outputTokens);
-        mb.cacheReadTokens += qMax(0, cacheRead);
-    }
+        while (query.next()) {
+            if (g_shuttingDown) break;
+            QString providerId = query.value("provider_id").toString();
+            QString day = query.value("day").toString();
+            QString model = query.value("model_name").toString();
+            int inputTokens = query.value("input_tokens").toInt();
+            int outputTokens = query.value("output_tokens").toInt();
+            int cacheRead = query.value("cache_read").toInt();
+
+            auto& mb = providerData[providerId].dayModels[day][model];
+            mb.modelName = model;
+            mb.inputTokens += qMax(0, inputTokens);
+            mb.outputTokens += qMax(0, outputTokens);
+            mb.cacheReadTokens += qMax(0, cacheRead);
+        }
+    } // QSqlQuery destroyed here before db.close()
 
     db.close();
     QSqlDatabase::removeDatabase(connName);
@@ -948,6 +969,7 @@ QHash<QString, CostUsageSnapshot> CostUsageScanner::scanOpenCodeDB(const QDate& 
 
     // Build snapshots for each provider found in the database
     for (auto pit = providerData.constBegin(); pit != providerData.constEnd(); ++pit) {
+        if (g_shuttingDown) break;
         QString rawProviderId = pit.key();
         QString providerId = providerIdMap.value(rawProviderId, rawProviderId);
         CostUsageSnapshot snap;

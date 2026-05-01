@@ -304,7 +304,9 @@ ScrollView {
                                     || (root.connectionState === "testing" ? qsTr("Running one non-interactive provider refresh.") : "")
                                 color: AppTheme.textSecondary
                                 font.pixelSize: AppTheme.fontSizeSm
-                                wrapMode: Text.WordWrap
+                                wrapMode: Text.WrapAnywhere
+                                maximumLineCount: 3
+                                elide: Text.ElideRight
                                 visible: text !== ""
                             }
 
@@ -328,6 +330,7 @@ ScrollView {
                                 font.pixelSize: AppTheme.fontSizeSm
                                 wrapMode: Text.WrapAnywhere
                                 maximumLineCount: 8
+                                elide: Text.ElideRight
                                 visible: root.connectionState === "failed" && root.detailsExpanded
                             }
 

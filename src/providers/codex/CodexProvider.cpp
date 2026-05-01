@@ -5,10 +5,21 @@
 #include "../../util/BinaryLocator.h"
 #include "../../util/TextParser.h"
 #include "../../models/CodexUsageResponse.h"
+#include "../shared/ConPTYSession.h"
 
 #include <QJsonDocument>
 #include <QFile>
 #include <QDir>
+#include <QProcess>
+#include <QProcessEnvironment>
+#include <QRegularExpression>
+#include <QThread>
+#include <QDateTime>
+#include <QDebug>
+#include <QStandardPaths>
+#include <QElapsedTimer>
+#include <QJsonValue>
+#include <QVariant>
 
 CodexProvider::CodexProvider(QObject* parent) : IProvider(parent) {}
 
@@ -22,11 +33,15 @@ QVector<IFetchStrategy*> CodexProvider::createStrategies(const ProviderFetchCont
     
     QString mode = ctx.settings.get("sourceMode", "auto").toString();
     
-    if (mode == "auto" || mode == "cli") {
-        strategies.append(new CodexCLIStrategy());
-    }
     if (mode == "auto" || mode == "oauth") {
         strategies.append(new CodexOAuthStrategy());
+    }
+    if (mode == "auto" || mode == "cli") {
+        strategies.append(new CodexAppServerStrategy());
+        strategies.append(new CodexCLIPtyStrategy());
+    }
+    if (mode == "auto" || mode == "web") {
+        strategies.append(new CodexWebDashboardStrategy());
     }
     
     return strategies;
@@ -217,17 +232,484 @@ ProviderFetchResult CodexOAuthStrategy::fetchSync(const ProviderFetchContext& ct
 }
 
 // ============================================================================
-// CodexCLIStrategy
+// CodexAppServerStrategy
 // ============================================================================
 
-CodexCLIStrategy::CodexCLIStrategy(QObject* parent) : IFetchStrategy(parent) {}
+namespace {
 
-bool CodexCLIStrategy::isAvailable(const ProviderFetchContext&) const {
+ProviderFetchResult makeCodexRpcFailure(const QString& message)
+{
+    ProviderFetchResult result;
+    result.strategyID = "codex.cli.rpc";
+    result.strategyKind = ProviderFetchKind::CLI;
+    result.sourceLabel = "cli-rpc";
+    result.success = false;
+    result.errorMessage = message;
+    return result;
+}
+
+QString codexResetDescription(const QDateTime& dt)
+{
+    if (!dt.isValid()) return {};
+    qint64 secs = QDateTime::currentDateTime().secsTo(dt);
+    if (secs <= 0) return "now";
+    int mins = static_cast<int>(secs / 60);
+    if (mins < 60) return QString("%1m").arg(mins);
+    int hrs = mins / 60;
+    int remMin = mins % 60;
+    if (hrs < 24) return QString("%1h %2m").arg(hrs).arg(remMin);
+    int days = hrs / 24;
+    int remHrs = hrs % 24;
+    return QString("%1d %2h").arg(days).arg(remHrs);
+}
+
+std::optional<RateWindow> mapCodexRpcWindow(const QJsonObject& obj)
+{
+    if (obj.isEmpty() || !obj.contains("usedPercent")) return std::nullopt;
+    RateWindow window;
+    window.usedPercent = std::clamp(obj.value("usedPercent").toDouble(), 0.0, 100.0);
+    if (!obj.value("windowDurationMins").isNull() && !obj.value("windowDurationMins").isUndefined()) {
+        window.windowMinutes = obj.value("windowDurationMins").toVariant().toInt();
+    }
+    if (!obj.value("resetsAt").isNull() && !obj.value("resetsAt").isUndefined()) {
+        qint64 resetSecs = obj.value("resetsAt").toVariant().toLongLong();
+        if (resetSecs > 0) {
+            QDateTime resetAt = QDateTime::fromSecsSinceEpoch(resetSecs);
+            window.resetsAt = resetAt;
+            window.resetDescription = codexResetDescription(resetAt);
+        }
+    }
+    return window;
+}
+
+double codexBalanceValue(const QJsonValue& value)
+{
+    if (value.isDouble()) return value.toDouble();
+    bool ok = false;
+    double parsed = value.toString().toDouble(&ok);
+    return ok ? parsed : 0.0;
+}
+
+void applyCodexCredits(ProviderFetchResult& result, const QJsonObject& credits)
+{
+    if (credits.isEmpty()) return;
+    if (!credits.value("hasCredits").toBool(false)) return;
+    if (credits.value("unlimited").toBool(false)) return;
+
+    double balance = codexBalanceValue(credits.value("balance"));
+
+    CreditsSnapshot snapshot;
+    snapshot.remaining = balance;
+    snapshot.updatedAt = QDateTime::currentDateTime();
+    result.credits = snapshot;
+
+    ProviderCostSnapshot cost;
+    cost.used = balance;
+    cost.limit = 0.0;
+    cost.currencyCode = "USD";
+    cost.period = "Credits";
+    cost.updatedAt = snapshot.updatedAt;
+    result.usage.providerCost = cost;
+}
+
+QJsonObject selectCodexRateLimitSnapshot(const QJsonObject& rateLimitsResult)
+{
+    QJsonObject byLimitId = rateLimitsResult.value("rateLimitsByLimitId").toObject();
+    QJsonObject codex = byLimitId.value("codex").toObject();
+    if (!codex.isEmpty()) return codex;
+
+    for (auto it = byLimitId.constBegin(); it != byLimitId.constEnd(); ++it) {
+        QJsonObject bucket = it.value().toObject();
+        if (bucket.value("limitId").toString() == "codex") return bucket;
+    }
+
+    return rateLimitsResult.value("rateLimits").toObject();
+}
+
+void applyCodexAccount(UsageSnapshot& usage, const QJsonObject& accountResult)
+{
+    QJsonObject account = accountResult.value("account").toObject();
+    if (account.value("type").toString().compare("chatgpt", Qt::CaseInsensitive) != 0) {
+        return;
+    }
+
+    QString email = account.value("email").toString().trimmed();
+    QString plan = account.value("planType").toString().trimmed();
+    if (email.isEmpty() && plan.isEmpty()) return;
+
+    ProviderIdentitySnapshot identity;
+    identity.providerID = UsageProvider::codex;
+    if (!email.isEmpty()) identity.accountEmail = email;
+    if (!plan.isEmpty()) identity.loginMethod = plan;
+    usage.identity = identity;
+}
+
+QString extractJsonObjectAfterMarker(const QString& text, const QString& marker)
+{
+    int markerIndex = text.indexOf(marker);
+    if (markerIndex < 0) return {};
+    int start = text.indexOf('{', markerIndex + marker.length());
+    if (start < 0) return {};
+
+    int depth = 0;
+    bool inString = false;
+    bool escaped = false;
+    for (int i = start; i < text.length(); ++i) {
+        QChar ch = text.at(i);
+        if (inString) {
+            if (escaped) {
+                escaped = false;
+            } else if (ch == '\\') {
+                escaped = true;
+            } else if (ch == '"') {
+                inString = false;
+            }
+            continue;
+        }
+        if (ch == '"') {
+            inString = true;
+        } else if (ch == '{') {
+            ++depth;
+        } else if (ch == '}') {
+            --depth;
+            if (depth == 0) return text.mid(start, i - start + 1);
+        }
+    }
+    return {};
+}
+
+QString quoteWindowsCommandArg(QString arg)
+{
+    arg.replace("\"", "\\\"");
+    if (arg.contains(QRegularExpression("[\\s&()\\[\\]{}^=;!'+,`~]"))) {
+        return "\"" + arg + "\"";
+    }
+    return arg;
+}
+
+void configureCodexRpcProcess(QProcess& process,
+                              const QString& binary,
+                              const QStringList& codexArgs,
+                              const ProviderFetchContext& ctx)
+{
+    QProcessEnvironment env;
+    if (ctx.env.isEmpty()) {
+        env = QProcessEnvironment::systemEnvironment();
+    } else {
+        for (auto it = ctx.env.constBegin(); it != ctx.env.constEnd(); ++it) {
+            env.insert(it.key(), it.value());
+        }
+    }
+    process.setProcessEnvironment(env);
+    process.setProcessChannelMode(QProcess::SeparateChannels);
+
+#ifdef Q_OS_WIN
+    if (binary.endsWith(".cmd", Qt::CaseInsensitive) ||
+        binary.endsWith(".bat", Qt::CaseInsensitive)) {
+        QString command = quoteWindowsCommandArg(QDir::toNativeSeparators(binary));
+        for (const auto& arg : codexArgs) {
+            command += " " + quoteWindowsCommandArg(arg);
+        }
+        QString comspec = env.value("ComSpec", "cmd.exe");
+        process.setProgram(comspec);
+        process.setArguments({"/d", "/s", "/c", command});
+        return;
+    }
+#endif
+
+    process.setProgram(binary);
+    process.setArguments(codexArgs);
+}
+
+bool writeCodexRpcMessage(QProcess& process, const QJsonObject& payload, QString* error)
+{
+    QByteArray data = QJsonDocument(payload).toJson(QJsonDocument::Compact);
+    data.append('\n');
+    qint64 written = process.write(data);
+    if (written != data.size() || !process.waitForBytesWritten(2000)) {
+        if (error) *error = "failed to write JSON-RPC request";
+        return false;
+    }
+    return true;
+}
+
+bool readCodexRpcResponse(QProcess& process,
+                          int requestId,
+                          int timeoutMs,
+                          QJsonObject* response,
+                          QString* error)
+{
+    QElapsedTimer timer;
+    timer.start();
+    QByteArray buffer;
+    QByteArray stderrBuffer;
+
+    auto consumeLine = [&](const QByteArray& rawLine) -> std::optional<QJsonObject> {
+        QByteArray line = rawLine.trimmed();
+        if (line.isEmpty()) return std::nullopt;
+
+        QJsonParseError parseError;
+        QJsonDocument doc = QJsonDocument::fromJson(line, &parseError);
+        if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
+            qDebug() << "[CodexRPC] Ignoring non-JSON stdout line:" << QString::fromUtf8(line.left(300));
+            return std::nullopt;
+        }
+
+        QJsonObject obj = doc.object();
+        if (!obj.contains("id")) {
+            qDebug() << "[CodexRPC] Ignoring notification:" << obj.value("method").toString();
+            return std::nullopt;
+        }
+
+        if (obj.value("id").toInt(-1) != requestId) {
+            qDebug() << "[CodexRPC] Ignoring response for id:" << obj.value("id");
+            return std::nullopt;
+        }
+        return obj;
+    };
+
+    while (timer.elapsed() < timeoutMs) {
+        buffer.append(process.readAllStandardOutput());
+        stderrBuffer.append(process.readAllStandardError());
+
+        int newline = -1;
+        while ((newline = buffer.indexOf('\n')) >= 0) {
+            QByteArray line = buffer.left(newline);
+            buffer.remove(0, newline + 1);
+            auto obj = consumeLine(line);
+            if (obj.has_value()) {
+                if (response) *response = *obj;
+                return true;
+            }
+        }
+
+        if (process.state() == QProcess::NotRunning) {
+            break;
+        }
+
+        int remaining = static_cast<int>(timeoutMs - timer.elapsed());
+        process.waitForReadyRead(qBound(50, remaining, 250));
+    }
+
+    if (!buffer.trimmed().isEmpty()) {
+        auto obj = consumeLine(buffer);
+        if (obj.has_value()) {
+            if (response) *response = *obj;
+            return true;
+        }
+    }
+
+    stderrBuffer.append(process.readAllStandardError());
+    QString stderrText = QString::fromUtf8(stderrBuffer).trimmed();
+    if (stderrText.length() > 500) stderrText = stderrText.left(500) + "...";
+    if (error) {
+        *error = stderrText.isEmpty()
+            ? QString("timed out waiting for JSON-RPC response")
+            : QString("timed out waiting for JSON-RPC response: %1").arg(stderrText);
+    }
+    return false;
+}
+
+bool sendCodexRpcRequest(QProcess& process,
+                         int id,
+                         const QString& method,
+                         const QJsonValue& params,
+                         int timeoutMs,
+                         QJsonObject* response,
+                         QString* error)
+{
+    QJsonObject payload;
+    payload["id"] = id;
+    payload["method"] = method;
+    payload["params"] = params;
+    if (!writeCodexRpcMessage(process, payload, error)) return false;
+    return readCodexRpcResponse(process, id, timeoutMs, response, error);
+}
+
+} // namespace
+
+CodexAppServerStrategy::CodexAppServerStrategy(QObject* parent) : IFetchStrategy(parent) {}
+
+bool CodexAppServerStrategy::isAvailable(const ProviderFetchContext&) const {
     return BinaryLocator::isAvailable("codex");
 }
 
-bool CodexCLIStrategy::shouldFallback(const ProviderFetchResult& result,
-                                       const ProviderFetchContext& ctx) const {
+bool CodexAppServerStrategy::shouldFallback(const ProviderFetchResult& result,
+                                            const ProviderFetchContext& ctx) const {
+    Q_UNUSED(ctx)
+    return !result.success;
+}
+
+ProviderFetchResult CodexAppServerStrategy::mapRpcResult(const QJsonObject& rateLimitsResult,
+                                                         const QJsonObject& accountResult)
+{
+    ProviderFetchResult result;
+    result.strategyID = "codex.cli.rpc";
+    result.strategyKind = ProviderFetchKind::CLI;
+    result.sourceLabel = "cli-rpc";
+
+    QJsonObject snapshot = selectCodexRateLimitSnapshot(rateLimitsResult);
+    if (snapshot.isEmpty()) {
+        result.success = false;
+        result.errorMessage = "Codex CLI RPC returned no rate limit data.";
+        return result;
+    }
+
+    UsageSnapshot usage;
+    usage.updatedAt = QDateTime::currentDateTime();
+    usage.primary = mapCodexRpcWindow(snapshot.value("primary").toObject());
+    usage.secondary = mapCodexRpcWindow(snapshot.value("secondary").toObject());
+    applyCodexAccount(usage, accountResult);
+
+    result.usage = usage;
+    applyCodexCredits(result, snapshot.value("credits").toObject());
+
+    if (!result.usage.primary.has_value() && !result.usage.secondary.has_value()) {
+        result.success = false;
+        result.errorMessage = "Codex CLI RPC returned no rate limit windows.";
+        return result;
+    }
+
+    result.success = true;
+    return result;
+}
+
+ProviderFetchResult CodexAppServerStrategy::mapRpcError(const QJsonObject& errorObject)
+{
+    QString message = errorObject.value("message").toString();
+    QString bodyJson = extractJsonObjectAfterMarker(message, "body=");
+    if (!bodyJson.isEmpty()) {
+        QJsonParseError parseError;
+        QJsonDocument doc = QJsonDocument::fromJson(bodyJson.toUtf8(), &parseError);
+        if (parseError.error == QJsonParseError::NoError && doc.isObject()) {
+            QJsonObject body = doc.object();
+            CodexUsageResponse response = CodexUsageResponse::fromJson(body);
+            QString email = body.value("email").toString().trimmed();
+            QString plan = body.value("plan_type").toString().trimmed();
+            UsageSnapshot snapshot = response.toUsageSnapshot(email, plan);
+            if (snapshot.primary.has_value() || snapshot.secondary.has_value()) {
+                ProviderFetchResult result;
+                result.strategyID = "codex.cli.rpc";
+                result.strategyKind = ProviderFetchKind::CLI;
+                result.sourceLabel = "cli-rpc";
+                result.usage = snapshot;
+                result.success = true;
+                if (response.credits.has_value() && response.credits->hasCredits && !response.credits->unlimited) {
+                    CreditsSnapshot credits;
+                    credits.remaining = response.credits->balance.value_or(0.0);
+                    credits.updatedAt = QDateTime::currentDateTime();
+                    result.credits = credits;
+                }
+                return result;
+            }
+        }
+    }
+
+    QString shortMessage = "Codex CLI RPC failed; falling back to /status.";
+    if (!message.trimmed().isEmpty()) {
+        qDebug() << "[CodexRPC] JSON-RPC error:" << message.left(1000);
+    }
+    return makeCodexRpcFailure(shortMessage);
+}
+
+ProviderFetchResult CodexAppServerStrategy::fetchSync(const ProviderFetchContext& ctx) {
+    QString binary = BinaryLocator::resolve("codex");
+    qDebug() << "[CodexRPC] Binary resolve result:" << binary;
+    if (binary.isEmpty()) {
+        return makeCodexRpcFailure("codex CLI not found in PATH. Install via `npm i -g @openai/codex`");
+    }
+
+    QStringList args;
+    args << "-s" << "read-only" << "-a" << "untrusted" << "app-server" << "--listen" << "stdio://";
+
+    QProcess process;
+    configureCodexRpcProcess(process, binary, args, ctx);
+    qDebug() << "[CodexRPC] Starting app-server:" << process.program() << process.arguments().join(' ');
+    process.start();
+    if (!process.waitForStarted(5000)) {
+        return makeCodexRpcFailure("Codex CLI RPC failed to start; falling back to /status.");
+    }
+
+    auto stopProcess = [&]() {
+        process.closeWriteChannel();
+        if (process.state() != QProcess::NotRunning) {
+            process.terminate();
+            if (!process.waitForFinished(2000)) {
+                process.kill();
+                process.waitForFinished(1000);
+            }
+        }
+    };
+
+    int timeoutMs = qMax(3000, ctx.networkTimeoutMs);
+    QString error;
+    QJsonObject initializeResponse;
+    QJsonObject initParams{
+        {"clientInfo", QJsonObject{
+            {"name", "wincodexbar"},
+            {"title", "WinCodexBar"},
+            {"version", "0.1.0"}
+        }}
+    };
+    if (!sendCodexRpcRequest(process, 1, "initialize", initParams, timeoutMs, &initializeResponse, &error)) {
+        qDebug() << "[CodexRPC] initialize failed:" << error;
+        stopProcess();
+        return makeCodexRpcFailure("Codex CLI RPC failed during initialize; falling back to /status.");
+    }
+
+    QString notifyError;
+    if (!writeCodexRpcMessage(process, QJsonObject{{"method", "initialized"}, {"params", QJsonObject{}}}, &notifyError)) {
+        qDebug() << "[CodexRPC] initialized notification failed:" << notifyError;
+    }
+
+    QJsonObject limitsResponse;
+    if (!sendCodexRpcRequest(process, 2, "account/rateLimits/read", QJsonObject{},
+                             timeoutMs, &limitsResponse, &error)) {
+        qDebug() << "[CodexRPC] account/rateLimits/read failed:" << error;
+        stopProcess();
+        return makeCodexRpcFailure("Codex CLI RPC failed while reading rate limits; falling back to /status.");
+    }
+
+    if (limitsResponse.contains("error")) {
+        stopProcess();
+        return mapRpcError(limitsResponse.value("error").toObject());
+    }
+
+    QJsonObject accountResult;
+    QJsonObject accountResponse;
+    if (sendCodexRpcRequest(process, 3, "account/read", QJsonObject{{"refreshToken", false}},
+                            timeoutMs, &accountResponse, &error)) {
+        if (!accountResponse.contains("error")) {
+            accountResult = accountResponse.value("result").toObject();
+        } else {
+            qDebug() << "[CodexRPC] account/read error:" << accountResponse.value("error").toObject();
+        }
+    } else {
+        qDebug() << "[CodexRPC] account/read failed:" << error;
+    }
+
+    stopProcess();
+
+    ProviderFetchResult result = mapRpcResult(limitsResponse.value("result").toObject(), accountResult);
+    if (!result.success) {
+        qDebug() << "[CodexRPC] Mapping failed:" << result.errorMessage;
+        result.errorMessage = "Codex CLI RPC returned unusable rate limit data; falling back to /status.";
+    }
+    return result;
+}
+
+// ============================================================================
+// CodexCLIPtyStrategy
+// ============================================================================
+
+CodexCLIPtyStrategy::CodexCLIPtyStrategy(QObject* parent) : IFetchStrategy(parent) {}
+
+bool CodexCLIPtyStrategy::isAvailable(const ProviderFetchContext&) const {
+    return BinaryLocator::isAvailable("codex");
+}
+
+bool CodexCLIPtyStrategy::shouldFallback(const ProviderFetchResult& result,
+                                         const ProviderFetchContext& ctx) const {
     Q_UNUSED(ctx)
     return !result.success;
 }
@@ -237,105 +719,372 @@ static UsageSnapshot parseCodexCLIOutput(const QString& raw) {
     UsageSnapshot snap;
     snap.updatedAt = QDateTime::currentDateTime();
 
-    // Parse session usage: "Session: 80% (4,000 / 5,000 tokens)" or similar
-    static QRegularExpression sessionRe(
-        "Session[:：]\\s*"                              // Label
-        "(?:[^\\d]*[█░])?"                             // Optional progress bar
-        "(\\d+(?:\\.\\d+)?)"                           // Percentage
-        "\\%?\\s*"                                     // Optional % sign
-        "(?:\\(([^/]+)/([^)]+)"                        // Optional "(used / limit"
-    );
-    
-    // Parse weekly usage
-    static QRegularExpression weeklyRe(
-        "Weekly[:：]\\s*"
-        "(?:[^\\d]*[█░])?"
-        "(\\d+(?:\\.\\d+)?)"
-        "\\%?\\s*"
-        "(?:\\(([^/]+)/([^)]+)"
-    );
-    
-    // Parse credits
-    static QRegularExpression creditsRe(
-        "Credits?[:：]\\s*"                             // Label
-        "([\\d,]+)"                                    // Number
-        "(?:\\s*(?:remaining|left| credits?))?"       // Optional suffix
-    );
-
-    auto sessionMatch = sessionRe.match(text);
-    if (sessionMatch.hasMatch()) {
-        double pct = sessionMatch.captured(1).toDouble();
-        snap.primary = RateWindow{
-            std::clamp(pct, 0.0, 100.0),
-            std::nullopt,
-            std::nullopt,
-            QString(),
-            std::nullopt
-        };
-    }
-
-    auto weeklyMatch = weeklyRe.match(text);
-    if (weeklyMatch.hasMatch()) {
-        double pct = weeklyMatch.captured(1).toDouble();
-        snap.secondary = RateWindow{
-            std::clamp(pct, 0.0, 100.0),
-            std::nullopt,
-            std::nullopt,
-            QString(),
-            std::nullopt
-        };
-    }
-
+    // Credits: "Credits:\s*([0-9][0-9.,]*)" (matching original CodexBar)
+    static QRegularExpression creditsRe("Credits:\\s*([0-9][0-9.,]*)");
     auto creditsMatch = creditsRe.match(text);
     if (creditsMatch.hasMatch()) {
         QString creditsStr = creditsMatch.captured(1);
         creditsStr.remove(',');
-        double credits = creditsStr.toDouble();
-        if (credits >= 0) {
-            // Credits will be set on the result object, not the snapshot
-            // Store in a temporary variable or handle in fetchSync
+        bool ok;
+        double credits = creditsStr.toDouble(&ok);
+        if (ok && credits >= 0) {
+            // Credits are stored in ProviderFetchResult, not UsageSnapshot
+            // The caller should handle this
+        }
+    }
+
+    // 5h limit line: "5h limit[^\n]*" (matching original CodexBar)
+    static QRegularExpression fiveHRe("5h limit[^\\n]*");
+    QString fiveLine;
+    auto fiveMatch = fiveHRe.match(text);
+    if (fiveMatch.hasMatch()) {
+        fiveLine = fiveMatch.captured(0);
+    }
+
+    // Weekly limit line: "Weekly limit[^\n]*" (matching original CodexBar)
+    static QRegularExpression weeklyRe("Weekly limit[^\\n]*");
+    QString weekLine;
+    auto weekMatch = weeklyRe.match(text);
+    if (weekMatch.hasMatch()) {
+        weekLine = weekMatch.captured(0);
+    }
+
+    // Parse percentage from line: "(\d+)%\s*(?:remaining|left)"
+    auto parsePercentLeft = [](const QString& line) -> std::optional<double> {
+        if (line.isEmpty()) return std::nullopt;
+        static QRegularExpression pctRe("(\\d+(?:\\.\\d+)?)\\s*%");
+        auto m = pctRe.match(line);
+        if (m.hasMatch()) {
+            bool ok;
+            double pct = m.captured(1).toDouble(&ok);
+            if (ok) return std::clamp(pct, 0.0, 100.0);
+        }
+        return std::nullopt;
+    };
+
+    // Parse reset string from line: "resets?\s+(.+)"
+    auto parseResetString = [](const QString& line) -> QString {
+        if (line.isEmpty()) return QString();
+        static QRegularExpression resetRe("resets?\\s+(.+)");
+        auto m = resetRe.match(line);
+        if (m.hasMatch()) {
+            QString reset = m.captured(1).trimmed();
+            // Remove trailing parentheses
+            if (reset.endsWith(')')) reset.chop(1);
+            if (reset.startsWith('(')) reset = reset.mid(1);
+            return reset.trimmed();
+        }
+        return QString();
+    };
+
+    auto fivePct = parsePercentLeft(fiveLine);
+    auto weekPct = parsePercentLeft(weekLine);
+    QString fiveReset = parseResetString(fiveLine);
+    QString weekReset = parseResetString(weekLine);
+
+    if (fivePct.has_value()) {
+        snap.primary = RateWindow{
+            *fivePct,
+            std::nullopt,
+            std::nullopt,
+            fiveReset,
+            std::nullopt
+        };
+    }
+
+    if (weekPct.has_value()) {
+        snap.secondary = RateWindow{
+            *weekPct,
+            std::nullopt,
+            std::nullopt,
+            weekReset,
+            std::nullopt
+        };
+    }
+
+    return snap;
+}
+
+ProviderFetchResult CodexCLIPtyStrategy::fetchSync(const ProviderFetchContext&) {
+    ProviderFetchResult result;
+    result.strategyID = "codex.cli.pty";
+    result.strategyKind = ProviderFetchKind::CLI;
+    result.sourceLabel = "cli-pty";
+
+    QString binary = BinaryLocator::resolve("codex");
+    qDebug() << "[CodexCLI] Binary resolve result:" << binary;
+    if (binary.isEmpty()) {
+        result.errorMessage = "codex CLI not found in PATH. Install via `npm i -g @openai/codex`";
+        return result;
+    }
+
+    // codex CLI requires a real terminal (PTY). QProcess won't work because
+    // codex checks isTTY() and fails with "stdin is not a terminal".
+    // We must use ConPTY on Windows.
+    if (!ConPTYSession::isConPtyAvailable()) {
+        result.errorMessage = "ConPTY is not available on this Windows version (requires Windows 10 1809+). codex CLI needs a terminal.";
+        return result;
+    }
+
+    // Build the command to run inside ConPTY.
+    // BinaryLocator now prefers .cmd over .ps1, so binary should be codex.cmd
+    // which can be executed directly in ConPTY (cmd environment).
+    // Build the command to run inside ConPTY.
+    // We run codex with no args, then send "/status" via stdin.
+    QStringList args;
+    args << "--no-alt-screen";
+
+    ConPTYSession session;
+    qDebug() << "[CodexCLI] Starting ConPTY session:" << binary << args.join(' ');
+    if (!session.start(binary, args)) {
+        result.errorMessage = "Failed to start ConPTY session for codex CLI";
+        return result;
+    }
+
+    // Wait for codex to fully initialize (MCP server boot, UI draw, etc.)
+    // Then send /status command via PTY stdin.
+    QThread::msleep(2000);
+
+    if (!session.isRunning()) {
+        result.errorMessage = "codex CLI exited before we could send /status";
+        return result;
+    }
+
+    session.write(QByteArray("\x15/status\r\n", 10));
+    qDebug() << "[CodexCLI] Sent /status command";
+
+    // Give codex time to process /status and print output
+    QThread::msleep(1500);
+
+    QByteArray accumulatedOutput;
+    QDateTime deadline = QDateTime::currentDateTimeUtc().addSecs(15);
+
+    while (QDateTime::currentDateTimeUtc() < deadline) {
+        QByteArray chunk = session.readOutput(500);
+        if (!chunk.isEmpty()) {
+            accumulatedOutput.append(chunk);
+        }
+
+        if (!session.isRunning()) {
+            qDebug() << "[CodexCLI] Session ended";
+            break;
+        }
+
+        QThread::msleep(100);
+    }
+
+    if (session.isRunning()) {
+        session.terminate();
+    }
+
+    // Read any remaining output
+    QByteArray remaining = session.readOutput(1000);
+    accumulatedOutput.append(remaining);
+    
+    qDebug() << "[CodexCLI] Total output length:" << accumulatedOutput.length();
+
+    if (accumulatedOutput.isEmpty()) {
+        result.errorMessage = "empty CLI output";
+        return result;
+    }
+
+    // ConPTY outputs UTF-8, not local 8-bit encoding
+    QString combined = QString::fromUtf8(accumulatedOutput);
+
+    // Log full raw output for debugging (first 2000 chars)
+    qDebug() << "[CodexCLI] Raw output preview:" << combined.left(2000);
+
+    // Check for "stdin is not a terminal" - this should not happen with ConPTY,
+    // but if it does, something is wrong with the PTY setup.
+    QString lower = combined.toLower();
+    if (lower.contains("stdin is not a terminal")) {
+        result.errorMessage = "codex CLI still reports 'stdin is not a terminal' even with ConPTY. Please report this issue.";
+        return result;
+    }
+
+    // Check for update prompt
+    if (lower.contains("update available") && lower.contains("codex")) {
+        result.errorMessage = "Codex CLI update needed. Run `npm i -g @openai/codex` to continue.";
+        return result;
+    }
+
+    // Check for "data not available yet"
+    if (lower.contains("data not available")) {
+        result.errorMessage = "Codex data not available yet; will retry shortly.";
+        return result;
+    }
+
+    UsageSnapshot snap = parseCodexCLIOutput(combined);
+
+    if (!snap.primary.has_value() && !snap.secondary.has_value()) {
+        QString preview = TextParser::stripAnsiEscapes(combined).simplified();
+        if (preview.length() > 300) preview = preview.left(300) + "...";
+        qDebug() << "[CodexCLI] Sanitized unparsed output preview:" << preview;
+        result.errorMessage = "Could not parse codex CLI status output. The CLI returned interactive screen output instead of usage data.";
+        return result;
+    }
+
+    result.usage = snap;
+    result.success = true;
+    return result;
+}
+
+// ============================================================================
+// CodexWebDashboardStrategy
+// ============================================================================
+
+CodexWebDashboardStrategy::CodexWebDashboardStrategy(QObject* parent) : IFetchStrategy(parent) {}
+
+bool CodexWebDashboardStrategy::isAvailable(const ProviderFetchContext& ctx) const {
+    return ctx.manualCookieHeader.has_value() || !ctx.settings.get("manualCookieHeader").toString().isEmpty();
+}
+
+bool CodexWebDashboardStrategy::shouldFallback(const ProviderFetchResult& result,
+                                                const ProviderFetchContext& ctx) const {
+    Q_UNUSED(ctx)
+    return !result.success;
+}
+
+UsageSnapshot CodexWebDashboardStrategy::parseDashboardHTML(const QString& html) {
+    UsageSnapshot snap;
+    snap.updatedAt = QDateTime::currentDateTime();
+
+    // Strip HTML tags to get text content (similar to WebView text extraction)
+    QString text = html;
+    // Simple HTML tag removal
+    static QRegularExpression tagRe("<[^>]+>");
+    text = text.replace(tagRe, " ");
+    // Decode common HTML entities
+    text = text.replace("&nbsp;", " ");
+    text = text.replace("&lt;", "<");
+    text = text.replace("&gt;", ">");
+    text = text.replace("&amp;", "&");
+    text = text.replace("&quot;", "\"");
+    // Normalize whitespace
+    static QRegularExpression wsRe("\\s+");
+    text = text.replace(wsRe, " ");
+    text = text.trimmed();
+
+    // Try JSON embedded in script tags first
+    static QRegularExpression jsonDataRe(
+        "window\.__INITIAL_STATE__\s*=\s*(\\{.*?\\});",
+        QRegularExpression::DotMatchesEverythingOption
+    );
+    
+    auto match = jsonDataRe.match(html);
+    if (match.hasMatch()) {
+        QString jsonStr = match.captured(1);
+        QJsonParseError err;
+        QJsonDocument doc = QJsonDocument::fromJson(jsonStr.toUtf8(), &err);
+        if (err.error == QJsonParseError::NoError) {
+            QJsonObject root = doc.object();
+            QJsonObject usage = root.value("usage").toObject();
+            if (!usage.isEmpty()) {
+                QJsonObject session = usage.value("session").toObject();
+                QJsonObject weekly = usage.value("weekly").toObject();
+
+                if (!session.isEmpty()) {
+                    double pct = session.value("percentage").toDouble();
+                    if (pct > 0) {
+                        snap.primary = RateWindow{
+                            std::clamp(pct, 0.0, 100.0),
+                            std::nullopt, std::nullopt, QString(), std::nullopt
+                        };
+                    }
+                }
+                if (!weekly.isEmpty()) {
+                    double pct = weekly.value("percentage").toDouble();
+                    if (pct > 0) {
+                        snap.secondary = RateWindow{
+                            std::clamp(pct, 0.0, 100.0),
+                            std::nullopt, std::nullopt, QString(), std::nullopt
+                        };
+                    }
+                }
+            }
+        }
+    }
+
+    // Fallback: parse from visible text (matching original CodexBar's text-based parsing)
+    if (!snap.primary.has_value()) {
+        // Look for patterns like "Session: 80%" or "5h limit: 20% remaining"
+        static QRegularExpression sessionPctRe(
+            "(?:Session|5h limit)[^\\d]*?(\\d+(?:\\.\\d+)?)\\s*%",
+            QRegularExpression::CaseInsensitiveOption
+        );
+        auto m = sessionPctRe.match(text);
+        if (m.hasMatch()) {
+            double pct = m.captured(1).toDouble();
+            snap.primary = RateWindow{
+                std::clamp(pct, 0.0, 100.0),
+                std::nullopt, std::nullopt, QString(), std::nullopt
+            };
+        }
+    }
+
+    if (!snap.secondary.has_value()) {
+        static QRegularExpression weeklyPctRe(
+            "(?:Weekly|7d limit)[^\\d]*?(\\d+(?:\\.\\d+)?)\\s*%",
+            QRegularExpression::CaseInsensitiveOption
+        );
+        auto m = weeklyPctRe.match(text);
+        if (m.hasMatch()) {
+            double pct = m.captured(1).toDouble();
+            snap.secondary = RateWindow{
+                std::clamp(pct, 0.0, 100.0),
+                std::nullopt, std::nullopt, QString(), std::nullopt
+            };
         }
     }
 
     return snap;
 }
 
-ProviderFetchResult CodexCLIStrategy::fetchSync(const ProviderFetchContext&) {
+ProviderFetchResult CodexWebDashboardStrategy::fetchSync(const ProviderFetchContext& ctx) {
     ProviderFetchResult result;
-    result.strategyID = "codex.cli";
-    result.strategyKind = ProviderFetchKind::CLI;
-    result.sourceLabel = "cli";
+    result.strategyID = "codex.web";
+    result.strategyKind = ProviderFetchKind::WebDashboard;
+    result.sourceLabel = "web";
 
-    QString binary = BinaryLocator::resolve("codex");
-    if (binary.isEmpty()) {
-        result.errorMessage = "codex CLI not found in PATH";
+    QString cookieHeader;
+    if (ctx.manualCookieHeader.has_value()) {
+        cookieHeader = *ctx.manualCookieHeader;
+    } else {
+        cookieHeader = ctx.settings.get("manualCookieHeader").toString();
+    }
+
+    qDebug() << "[CodexWeb] Cookie header length:" << cookieHeader.length();
+    if (cookieHeader.isEmpty()) {
+        result.success = false;
+        result.errorMessage = "No cookie header configured for web dashboard access";
         return result;
     }
 
-    QProcess proc;
-    proc.start(binary, QStringList{"/status"});
-    if (!proc.waitForFinished(15000)) {
-        proc.kill();
-        result.errorMessage = "codex CLI timed out";
+    QHash<QString, QString> headers;
+    headers["Cookie"] = cookieHeader;
+    headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
+    headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    headers["Accept-Language"] = "en-US,en;q=0.9";
+
+    qDebug() << "[CodexWeb] Fetching dashboard URL...";
+    QString html = NetworkManager::instance().getStringSync(
+        QUrl("https://chatgpt.com/codex/settings/usage"),
+        headers,
+        ctx.networkTimeoutMs
+    );
+
+    qDebug() << "[CodexWeb] Response length:" << html.length();
+    if (html.isEmpty()) {
+        result.success = false;
+        result.errorMessage = "Empty response from web dashboard (HTTP request failed or returned empty)";
         return result;
     }
 
-    QString output = proc.readAllStandardOutput();
-    QString stderrOutput = proc.readAllStandardError();
-    
-    if (output.isEmpty() && stderrOutput.isEmpty()) {
-        result.errorMessage = "empty CLI output";
-        return result;
-    }
-
-    // Combine stdout and stderr for parsing
-    QString combined = output + "\n" + stderrOutput;
-    
-    UsageSnapshot snap = parseCodexCLIOutput(combined);
-    
-    // Check if we got any meaningful data
+    UsageSnapshot snap = parseDashboardHTML(html);
     if (!snap.primary.has_value() && !snap.secondary.has_value()) {
-        result.errorMessage = "Could not parse codex CLI output";
+        result.success = false;
+        result.errorMessage = "Could not parse usage data from web dashboard. Response preview: "
+                            + html.left(300).replace('\n', ' ');
         return result;
     }
 

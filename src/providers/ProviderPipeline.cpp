@@ -1,6 +1,8 @@
 #include "ProviderPipeline.h"
 #include "IProvider.h"
 
+#include <QtAlgorithms>
+
 namespace {
 
 bool sourceModeAcceptsKind(ProviderSourceMode mode, int kind)
@@ -41,7 +43,7 @@ QVector<IFetchStrategy*> ProviderPipeline::resolveStrategies(
         if (sourceModeAcceptsKind(ctx.sourceMode, strategy->kind())) {
             filtered.append(strategy);
         } else {
-            strategy->deleteLater();
+            delete strategy;
         }
     }
     return filtered;
@@ -73,4 +75,29 @@ ProviderFetchResult ProviderPipeline::execute(
 
     emit pipelineComplete(lastResult);
     return lastResult;
+}
+
+ProviderFetchResult ProviderPipeline::executeProvider(
+    IProvider* provider,
+    const ProviderFetchContext& ctx)
+{
+    QVector<IFetchStrategy*> strategies = resolveStrategies(provider, ctx);
+    if (strategies.isEmpty()) {
+        ProviderFetchResult result;
+        result.success = false;
+        result.errorMessage = "No available fetch strategy";
+        emit pipelineComplete(result);
+        return result;
+    }
+
+    struct StrategyCleanup {
+        QVector<IFetchStrategy*>& strategies;
+        ~StrategyCleanup() { qDeleteAll(strategies); }
+    } cleanup{strategies};
+
+    ProviderFetchResult result = execute(strategies, ctx);
+    if (!result.success && result.errorMessage.trimmed().isEmpty()) {
+        result.errorMessage = "No available fetch strategy";
+    }
+    return result;
 }

@@ -10,6 +10,8 @@
 
 class CostUsageScanner {
 public:
+    static void setShuttingDown(bool shuttingDown);
+
     explicit CostUsageScanner();
 
     CostUsageSnapshot scanClaude(const QString& configDir, const QDate& since, const QDate& until);

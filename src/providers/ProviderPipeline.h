@@ -24,6 +24,11 @@ public:
         const ProviderFetchContext& ctx
     );
 
+    ProviderFetchResult executeProvider(
+        IProvider* provider,
+        const ProviderFetchContext& ctx
+    );
+
     static constexpr int STRATEGY_TIMEOUT_MS = 15000;
     static constexpr int PIPELINE_TIMEOUT_MS = 30000;
 

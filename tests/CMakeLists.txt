@@ -91,6 +91,14 @@ target_compile_definitions(tst_TextParser PRIVATE ${COMMON_DEFINES})
 target_link_libraries(tst_TextParser PRIVATE Qt6::Core Qt6::Test)
 add_wincodexbar_test(tst_TextParser tst_TextParser)
 
+add_executable(tst_SingleInstanceGuard
+    tst_SingleInstanceGuard.cpp
+)
+target_include_directories(tst_SingleInstanceGuard PRIVATE ${COMMON_INCLUDE})
+target_compile_definitions(tst_SingleInstanceGuard PRIVATE ${COMMON_DEFINES})
+target_link_libraries(tst_SingleInstanceGuard PRIVATE codexbar_core Qt6::Core Qt6::Test)
+add_wincodexbar_test(tst_SingleInstanceGuard tst_SingleInstanceGuard)
+
 add_executable(tst_ZaiProvider
     tst_ZaiProvider.cpp
 )
@@ -119,6 +127,14 @@ target_include_directories(tst_ProviderPipeline PRIVATE ${COMMON_INCLUDE})
 target_compile_definitions(tst_ProviderPipeline PRIVATE ${COMMON_DEFINES})
 target_link_libraries(tst_ProviderPipeline PRIVATE codexbar_core Qt6::Core Qt6::Test)
 add_wincodexbar_test(tst_ProviderPipeline tst_ProviderPipeline)
+
+add_executable(tst_CodexProvider
+    tst_CodexProvider.cpp
+)
+target_include_directories(tst_CodexProvider PRIVATE ${COMMON_INCLUDE})
+target_compile_definitions(tst_CodexProvider PRIVATE ${COMMON_DEFINES})
+target_link_libraries(tst_CodexProvider PRIVATE codexbar_core Qt6::Core Qt6::Test)
+add_wincodexbar_test(tst_CodexProvider tst_CodexProvider)
 
 add_executable(tst_FetchContext
     tst_FetchContext.cpp

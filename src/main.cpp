@@ -9,7 +9,6 @@
 #include <QQuickView>
 #include <QScreen>
 #include <QSettings>
-#include <QSharedMemory>
 #include <QTimer>
 #include <QUrl>
 #include <QVariantMap>
@@ -21,6 +20,25 @@
 #include <cmath>
 #include <windows.h>
 #endif
+
+static bool activateExistingInstance() {
+#ifdef Q_OS_WIN
+    HWND hwnd = FindWindowW(nullptr, L"CodexBar");
+    if (hwnd) {
+        ShowWindow(hwnd, SW_RESTORE);
+        SetForegroundWindow(hwnd);
+        return true;
+    }
+    // Try to find by window class if title doesn't match
+    hwnd = FindWindowW(L"Qt5152QWindowIcon", nullptr);
+    if (hwnd) {
+        ShowWindow(hwnd, SW_RESTORE);
+        SetForegroundWindow(hwnd);
+        return true;
+    }
+#endif
+    return false;
+}
 
 static QString g_logPath;
 static QtMessageHandler g_previousMessageHandler = nullptr;
@@ -43,6 +61,9 @@ static void fileMessageHandler(QtMsgType type, const QMessageLogContext& context
 #include "app/LanguageManager.h"
 #include "app/SessionQuotaNotifications.h"
 #include "tray/StatusItemController.h"
+#include "util/SingleInstanceGuard.h"
+#include "network/NetworkManager.h"
+#include "util/CostUsageScanner.h"
 #include "providers/ProviderRegistry.h"
 #include "providers/zai/ZaiProvider.h"
 #include "providers/openrouter/OpenRouterProvider.h"
@@ -295,9 +316,13 @@ static void dumpQuickItemTree(QQuickItem* item, int depth = 0) {
 int main(int argc, char* argv[]) {
     qputenv("QT_QUICK_CONTROLS_STYLE", QByteArray("Basic"));
 
-    QSharedMemory singleInstance("WinCodexBar_SingleInstance");
-    if (!singleInstance.create(1)) {
-        return 0; // Another instance is already running
+    SingleInstanceGuard singleInstance(QStringLiteral("WinCodexBar_SingleInstance"));
+    if (singleInstance.alreadyRunning()) {
+        activateExistingInstance();
+        return 0;
+    }
+    if (!singleInstance.acquired()) {
+        return 1;
     }
 
     QApplication app(argc, argv);
@@ -373,14 +398,29 @@ int main(int argc, char* argv[]) {
     }
 
     StatusItemController trayCtrl(usageStore, settings);
-    if (!trayCtrl.initialize()) return 1;
-
-    usageStore->setCostUsageEnabled(true);
+    if (!trayCtrl.initialize()) {
+        qWarning() << "Failed to initialize system tray icon";
+        QMessageBox::critical(nullptr,
+            QStringLiteral("WinCodexBar"),
+            QCoreApplication::translate("App", "Failed to create system tray icon. Please restart the app."));
+        return 1;
+    }
 
     if (settings->refreshFrequency() > 0) {
         usageStore->startAutoRefresh(settings->refreshFrequency());
     }
-    QTimer::singleShot(0, usageStore, &UsageStore::refreshProviderStatuses);
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, [&]() {
+        usageStore->stopAutoRefresh();
+        // Signal all network requests and file scanners to abort immediately
+        NetworkManager::setShuttingDown(true);
+        CostUsageScanner::setShuttingDown(true);
+        // Cancel all pending tasks in the thread pool
+        QThreadPool::globalInstance()->clear();
+    });
+    QTimer::singleShot(1500, usageStore, [usageStore]() {
+        usageStore->setCostUsageEnabled(true);
+        usageStore->refreshProviderStatuses();
+    });
     QObject::connect(settings, &SettingsStore::refreshFrequencyChanged, usageStore, [settings, usageStore]() {
         if (settings->refreshFrequency() > 0) {
             usageStore->startAutoRefresh(settings->refreshFrequency());
@@ -572,9 +612,26 @@ int main(int argc, char* argv[]) {
         trayCtrl.showBalloon(title, body);
     });
 
-    
+    int exitCode = app.exec();
 
-    return app.exec();
+    // After event loop exits, ensure all background threads are finished
+    QThreadPool::globalInstance()->setExpiryTimeout(0);
+    QThreadPool::globalInstance()->clear();
+    // Give threads a short time to finish (they should already be shutting down)
+    if (!QThreadPool::globalInstance()->waitForDone(1500)) {
+        qWarning() << "[App] Background threads still running after 1.5s, active count:"
+                   << QThreadPool::globalInstance()->activeThreadCount()
+                   << "- forcing process exit";
+        // Force exit to prevent ghost process with no tray icon
+        // Use _exit to bypass Qt cleanup that may hang on active threads
+#ifdef Q_OS_WIN
+        ExitProcess(static_cast<UINT>(exitCode));
+#else
+        _exit(exitCode);
+#endif
+    }
+    
+    return exitCode;
 }
 
 #include "main.moc"

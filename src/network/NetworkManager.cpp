@@ -4,6 +4,13 @@
 #include <QTimer>
 #include <QUrlQuery>
 
+static bool g_shuttingDown = false;
+
+void NetworkManager::setShuttingDown(bool shuttingDown)
+{
+    g_shuttingDown = shuttingDown;
+}
+
 namespace {
 
 void applyHeaders(QNetworkRequest& request,
@@ -20,12 +27,20 @@ void applyHeaders(QNetworkRequest& request,
 
 QByteArray waitForReply(QNetworkReply* reply, int timeoutMs)
 {
+    if (g_shuttingDown) {
+        reply->abort();
+        reply->deleteLater();
+        return {};
+    }
+
     QEventLoop loop;
     QTimer timer;
     timer.setSingleShot(true);
     QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
     QObject::connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
-    timer.start(timeoutMs);
+    // Use shorter timeout when shutting down to allow quick exit
+    int actualTimeout = g_shuttingDown ? qMin(1000, timeoutMs) : timeoutMs;
+    timer.start(actualTimeout);
     loop.exec();
 
     QByteArray data;
