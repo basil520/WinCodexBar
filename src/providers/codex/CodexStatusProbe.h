@@ -39,6 +39,7 @@ public:
     CodexStatusProbe();
 
     ProbeResult fetch();
+    ProbeResult fetchWithRetry();
     static Snapshot parse(const QString& text, const QDateTime& now = QDateTime::currentDateTime());
     static std::optional<QDateTime> parseResetDate(const QString& text, const QDateTime& now);
 
@@ -51,6 +52,7 @@ private:
     int m_timeoutMs;
     QHash<QString, QString> m_env;
 
+    ProbeResult fetchInternal(int cols, int rows, int timeoutMs);
     static bool containsUpdatePrompt(const QString& text);
     static std::optional<double> parseCredits(const QString& text);
     static std::optional<int> parsePercentLeft(const QString& line);

@@ -103,4 +103,6 @@ public:
 
 private:
     static UsageSnapshot parseDashboardHTML(const QString& html);
+    static QString parseSignedInEmail(const QString& html);
+    static QString importBrowserCookie();
 };

@@ -71,6 +71,8 @@ struct CodexOAuthCredentials {
 
     static std::optional<CodexOAuthCredentials> load(const QHash<QString, QString>& env);
     static std::optional<CodexOAuthCredentials> parse(const QJsonObject& json);
+    bool save(const QHash<QString, QString>& env) const;
+    static QString resolveAuthFilePath(const QHash<QString, QString>& env);
 };
 
 QJsonObject parseJWTPayload(const QString& jwt);

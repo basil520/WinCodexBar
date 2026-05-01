@@ -75,9 +75,17 @@ enum class CodexDashboardDecisionReason {
     MissingDashboardSignedInEmail
 };
 
+struct CodexDashboardDecisionReasonDetail {
+    CodexDashboardDecisionReason reason;
+    QString expectedEmail;
+    QString actualEmail;
+    QString ambiguousEmail;
+};
+
 struct CodexDashboardAuthorityDecision {
     CodexDashboardDisposition disposition;
     CodexDashboardDecisionReason reason;
+    CodexDashboardDecisionReasonDetail reasonDetail;
     QSet<CodexDashboardAllowedEffect> allowedEffects;
     QSet<CodexDashboardCleanup> cleanup;
 };
@@ -95,7 +103,10 @@ private:
     static CodexDashboardAuthorityDecision makeDecision(
         CodexDashboardDisposition disposition,
         CodexDashboardDecisionReason reason,
-        CodexDashboardSourceKind sourceKind);
+        CodexDashboardSourceKind sourceKind,
+        const QString& expectedEmail = {},
+        const QString& actualEmail = {},
+        const QString& ambiguousEmail = {});
     static QSet<CodexDashboardAllowedEffect> allowedEffects(
         CodexDashboardDisposition disposition,
         CodexDashboardSourceKind sourceKind);

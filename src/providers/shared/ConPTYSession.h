@@ -18,7 +18,9 @@ public:
 
     bool start(const QString& command,
                const QStringList& args,
-               const QProcessEnvironment& env = QProcessEnvironment());
+               const QProcessEnvironment& env = QProcessEnvironment(),
+               int cols = 120,
+               int rows = 30);
     bool write(const QByteArray& data);
     QByteArray readOutput(int timeoutMs = 100);
     bool waitForPattern(const QRegularExpression& pattern, int timeoutMs = 8000);
@@ -35,7 +37,7 @@ signals:
 private:
     void readerLoop();
     void appendOutput(const QByteArray& data);
-    bool startWithConPty(const QString& command, const QStringList& args, const QProcessEnvironment& env);
+    bool startWithConPty(const QString& command, const QStringList& args, const QProcessEnvironment& env, int cols, int rows);
     bool startWithQProcess(const QString& command, const QStringList& args, const QProcessEnvironment& env);
 
     // ConPTY state

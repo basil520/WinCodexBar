@@ -195,8 +195,9 @@ Rectangle {
                     spacing: 12
 
                     Rectangle {
-                        width: 40
-                        height: 40
+                        Layout.preferredWidth: 40
+                        Layout.preferredHeight: 40
+                        Layout.alignment: Qt.AlignTop
                         radius: 20
                         color: modelData.isLive ? "#4CAF50" : AppTheme.accentColor
 
@@ -211,6 +212,7 @@ Rectangle {
 
                     ColumnLayout {
                         Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignTop
                         spacing: 2
 
                         RowLayout {
@@ -228,8 +230,9 @@ Rectangle {
 
                             Rectangle {
                                 visible: modelData.isLive
-                                width: liveLabel.implicitWidth + 12
-                                height: 20
+                                Layout.preferredWidth: liveLabel.implicitWidth + 12
+                                Layout.preferredHeight: 20
+                                Layout.alignment: Qt.AlignVCenter
                                 radius: 4
                                 color: "#4CAF50"
 
@@ -244,8 +247,9 @@ Rectangle {
 
                             Rectangle {
                                 visible: modelData.isActive
-                                width: activeLabel.implicitWidth + 12
-                                height: 20
+                                Layout.preferredWidth: activeLabel.implicitWidth + 12
+                                Layout.preferredHeight: 20
+                                Layout.alignment: Qt.AlignVCenter
                                 radius: 4
                                 color: AppTheme.accentColor
 
@@ -269,6 +273,7 @@ Rectangle {
                     }
 
                     RowLayout {
+                        Layout.alignment: Qt.AlignTop
                         spacing: 4
 
                         Button {

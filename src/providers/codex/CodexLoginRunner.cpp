@@ -156,6 +156,9 @@ CodexLoginRunner::parseDeviceAuthPrompt(const QString& output)
             QRegularExpression::CaseInsensitiveOption),
         QRegularExpression(
             R"(\benter\s+(?:the\s+)?code\s+([A-Z0-9]{4}(?:[-\s][A-Z0-9]{4})+|[A-Z0-9][A-Z0-9-]{5,}))",
+            QRegularExpression::CaseInsensitiveOption),
+        QRegularExpression(
+            R"(\benter\b[^\n]*\bcode\b[^\S\n]*(?:\([^\)]*\))?[^\S\n]*\n?\s*([A-Z0-9][-A-Z0-9]{4,}))",
             QRegularExpression::CaseInsensitiveOption)
     };
 

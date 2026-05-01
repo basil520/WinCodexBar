@@ -260,6 +260,40 @@ std::optional<CodexOAuthCredentials> CodexOAuthCredentials::parse(const QJsonObj
     return CodexOAuthCredentials{accessToken, refreshToken, idToken, accountId, lastRefresh};
 }
 
+QString CodexOAuthCredentials::resolveAuthFilePath(const QHash<QString, QString>& env) {
+    QString home = env.value("USERPROFILE", env.value("HOME", QDir::homePath()));
+    QString codexHome = env.value("CODEX_HOME").trimmed();
+    QString root = codexHome.isEmpty() ? home + "/.codex" : codexHome;
+    return root + "/auth.json";
+}
+
+bool CodexOAuthCredentials::save(const QHash<QString, QString>& env) const {
+    QString authPath = resolveAuthFilePath(env);
+
+    QJsonObject existingJson;
+    QFile readFile(authPath);
+    if (readFile.open(QIODevice::ReadOnly)) {
+        QJsonParseError err;
+        QJsonDocument doc = QJsonDocument::fromJson(readFile.readAll(), &err);
+        if (err.error == QJsonParseError::NoError) existingJson = doc.object();
+        readFile.close();
+    }
+
+    QJsonObject tokens;
+    tokens["access_token"] = accessToken;
+    tokens["refresh_token"] = refreshToken;
+    if (!idToken.isEmpty()) tokens["id_token"] = idToken;
+    if (!accountId.isEmpty()) tokens["account_id"] = accountId;
+    existingJson["tokens"] = tokens;
+    existingJson["last_refresh"] = QDateTime::currentDateTime().toString(Qt::ISODateWithMs);
+
+    QDir().mkpath(QFileInfo(authPath).absolutePath());
+    QFile writeFile(authPath);
+    if (!writeFile.open(QIODevice::WriteOnly)) return false;
+    writeFile.write(QJsonDocument(existingJson).toJson(QJsonDocument::Compact));
+    return true;
+}
+
 QJsonObject parseJWTPayload(const QString& jwt) {
     QStringList parts = jwt.split('.');
     if (parts.size() != 3) return {};

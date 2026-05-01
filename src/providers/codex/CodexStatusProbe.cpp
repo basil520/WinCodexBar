@@ -17,6 +17,21 @@ CodexStatusProbe::CodexStatusProbe()
 
 CodexStatusProbe::ProbeResult CodexStatusProbe::fetch()
 {
+    return fetchInternal(120, 30, m_timeoutMs);
+}
+
+CodexStatusProbe::ProbeResult CodexStatusProbe::fetchWithRetry()
+{
+    ProbeResult result = fetchInternal(200, 60, m_timeoutMs);
+    if (!result.success && result.error == ProbeError::ParseFailed) {
+        qDebug() << "[CodexStatusProbe] First attempt parse failed, retrying with different dimensions...";
+        result = fetchInternal(220, 70, 4000);
+    }
+    return result;
+}
+
+CodexStatusProbe::ProbeResult CodexStatusProbe::fetchInternal(int cols, int rows, int timeoutMs)
+{
     ProbeResult result;
     result.success = false;
     result.error = ProbeError::CodexNotInstalled;
@@ -45,7 +60,7 @@ CodexStatusProbe::ProbeResult CodexStatusProbe::fetch()
     }
 
     qDebug() << "[CodexStatusProbe] Starting ConPTY session:" << binary << args.join(' ');
-    if (!session.start(binary, args, processEnv)) {
+    if (!session.start(binary, args, processEnv, cols, rows)) {
         result.errorMessage = "Failed to start ConPTY session for codex CLI";
         return result;
     }
@@ -63,7 +78,7 @@ CodexStatusProbe::ProbeResult CodexStatusProbe::fetch()
     QThread::msleep(1500);
 
     QByteArray accumulatedOutput;
-    QDateTime deadline = QDateTime::currentDateTimeUtc().addSecs(m_timeoutMs / 1000);
+    QDateTime deadline = QDateTime::currentDateTimeUtc().addSecs(timeoutMs / 1000);
 
     while (QDateTime::currentDateTimeUtc() < deadline) {
         QByteArray chunk = session.readOutput(500);

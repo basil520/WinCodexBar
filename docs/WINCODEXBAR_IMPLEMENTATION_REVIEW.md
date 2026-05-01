@@ -134,6 +134,33 @@ Codex provider 当前按原版 CodexBar 的主路径重构为 OAuth 优先、CLI
 - 常用排查命令：`codex --help`、`codex app-server --help`、`codex app-server generate-json-schema --out build\codex-app-schema --experimental`。
 - 详细说明见 `docs/CODEX_PROVIDER.md`。
 
+### OAuth 凭据存储
+
+- `CodexOAuthCredentials` 结构体已从 `CodexUsageResponse.h` 中提取并增强，新增 `save()` 和 `resolveAuthFilePath()` 方法。
+- `save()` 实现原子写入：读取现有 JSON、更新 `tokens` 字段、保留其他字段（如 `last_refresh`），写回磁盘。
+- `resolveAuthFilePath()` 集中解析 `auth.json` 路径，支持 `CODEX_HOME` 环境变量。
+- `CodexOAuthStrategy::attemptTokenRefresh()` 已改用 `refreshed.save(env)` 替代内联文件写入逻辑。
+- 凭据加载支持 `OPENAI_API_KEY` 回退、snake_case/camelCase 双格式 key、8天刷新阈值。
+
+### Dashboard Authority 上下文
+
+- 新增 `CodexDashboardAuthorityContext` 类，移植原版 `CodexCLIDashboardAuthorityContext` 的核心功能。
+- `makeLiveWebInput()` 从 `ProviderFetchContext` 获取当前 identity/email，构建 live web dashboard 权威验证输入。
+- `makeCachedDashboardInput()` 根据 sourceLabel 判断是否信任 usage email（"codex-cli"/"oauth" 信任）。
+- `attachmentEmail()` 从权威验证输入中提取最优 email（优先级：expectedScopedEmail > trustedCurrentUsageEmail > dashboardSignedInEmail）。
+- `shouldTrustUsageEmail()` 判断 sourceLabel 是否应信任 usage email。
+- `CodexDashboardAuthority::evaluate()` 已真正被 Web Dashboard 策略调用，根据 disposition 决定 attach/displayOnly/failClosed。
+- `CodexDashboardDecisionReasonDetail` 结构体已携带 expected/actual/ambiguous email 数据，支持更详细的错误报告。
+
+### Web Dashboard 浏览器 Cookie 自动导入
+
+- `CodexWebDashboardStrategy::isAvailable()` 改为始终返回 `true`，不再要求手动 cookie header。
+- `fetchSync()` 优先级：手动 cookie header → 浏览器自动导入。
+- `importBrowserCookie()` 使用 `BrowserDetection::installedBrowsers()` + `CookieImporter::importCookies()` 自动提取 `chatgpt.com`/`chat.openai.com` cookie。
+- 浏览器优先级：Edge → Chrome → Brave → Opera → Vivaldi → Firefox（与 `CookieImporter::importOrder()` 一致）。
+- 自动导入的 cookie 不持久化到磁盘，每次 fetch 时重新导入（安全考虑）。
+- `parseSignedInEmail()` 从 dashboard HTML 中提取 signed-in email，用于 authority 验证。
+
 ### Fetch Context 与网络
 
 - `ProviderFetchContext` 已包含：
@@ -177,7 +204,7 @@ Codex provider 当前按原版 CodexBar 的主路径重构为 OAuth 优先、CLI
   - Chrome App-Bound/`v20` 安全跳过
 - `ConPTYSession` 已实现真实 ConPTY 路径：
   - 动态探测 `CreatePseudoConsole` / `ClosePseudoConsole`
-  - pseudo console 创建
+  - pseudo console 创建（支持自定义 cols/rows 参数，默认 120x30）
   - process attribute 注入
   - stdin 写入
   - stdout reader thread
@@ -259,7 +286,7 @@ Codex provider 当前按原版 CodexBar 的主路径重构为 OAuth 优先、CLI
 
 | Provider | 当前可用程度 | 当前依赖 / 数据源 | 主要剩余缺口 | 与原版差异 |
 | --- | --- | --- | --- | --- |
-| Codex | 部分可用；OAuth 路径已有历史 E2E 记录，CLI RPC 优先，Settings managed account 主链路已实现 | `~/.codex/auth.json` / `CODEX_HOME` OAuth token；ChatGPT backend usage API；source mode 支持 `auto/oauth/cli/web`；CLI 优先使用 `codex -s read-only -a untrusted app-server --listen stdio://` JSON-RPC，失败后再用 ConPTY `/status` fallback；Web Dashboard 使用 HTTP + Cookie 直接请求；Account Management 可创建独立 managed `CODEX_HOME`，active account 注入 OAuth/RPC/PTY fetch context | 仍需真实 Add Account/OAuth 首次登录 E2E、code review remaining、credits history、Web dashboard extras 并行合并；多账号 reconciliation 需要更多真实账号验证和持久化 polish | 原版有 OAuth、CLI RPC/PTY、Web dashboard、workspace identity cache、managed account observer |
+| Codex | 部分可用；OAuth 路径已有历史 E2E 记录，CLI RPC 优先，Settings managed account 主链路已实现 | `~/.codex/auth.json` / `CODEX_HOME` OAuth token；ChatGPT backend usage API；source mode 支持 `auto/oauth/cli/web`；CLI 优先使用 `codex -s read-only -a untrusted app-server --listen stdio://` JSON-RPC，失败后再用 ConPTY `/status` fallback（支持重试机制，首次 200x60，失败后 220x70）；Web Dashboard 支持浏览器 Cookie 自动导入 + Dashboard Authority 验证；Account Management 可创建独立 managed `CODEX_HOME`，active account 注入 OAuth/RPC/PTY fetch context | 仍需真实 Add Account/OAuth 首次登录 E2E、code review remaining、credits history、Web dashboard extras 并行合并；多账号 reconciliation 需要更多真实账号验证和持久化 polish | 原版有 OAuth、CLI RPC/PTY、Web dashboard、workspace identity cache、managed account observer |
 | Claude | 部分可用 | Claude OAuth credentials 或 Claude Web cookie；支持 browser/manual cookie；source mode 支持 `auto/oauth/web` | 缺 CLI、Keychain prompt/delegated refresh policy、web extras 完整 parity；真实账号 Web/OAuth 组合仍需继续验证 | 原版支持 `.auto/.web/.cli/.oauth` source planner，Keychain/CLI/Web 多路径更完整 |
 | Cursor | 部分可用但仍需验证 | Cursor Web cookie；usage-summary/auth/subscription API；支持 browser/manual cookie；settings UI 已支持 cookie source 与 manual cookie | 缺 Safari/WebKit fallback；真实账号端到端仍需验证 | 原版有 browser cookie order、CursorRequestUsage、CursorStatusProbe 和更完整 web session 处理 |
 | Copilot | 首次登录流程已具备 UI；OAuth 路径已有历史 E2E 记录 | WinCred `com.codexbar.oauth.copilot`；GitHub device flow foreground UI；Copilot internal API | 缺 token refresh/错误模型 polish、device flow 失败/取消场景测试 | 原版有更完整的 `CopilotDeviceFlow` 状态模型和集成体验 |

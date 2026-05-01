@@ -1,10 +1,13 @@
 #include "CodexProvider.h"
 #include "CodexHomeScope.h"
+#include "CodexDashboardAuthorityContext.h"
 #include "../../network/NetworkManager.h"
 #include "../../util/BinaryLocator.h"
 #include "../../util/TextParser.h"
 #include "../../models/CodexUsageResponse.h"
 #include "../shared/ConPTYSession.h"
+#include "../shared/CookieImporter.h"
+#include "../shared/BrowserDetection.h"
 
 #include <QJsonDocument>
 #include <QFile>
@@ -97,31 +100,7 @@ std::optional<CodexOAuthCredentials> CodexOAuthStrategy::attemptTokenRefresh(
     refreshed.accountId = creds.accountId;
     refreshed.lastRefresh = QDateTime::currentDateTime();
 
-    QString home = env.value("USERPROFILE", env.value("HOME", QDir::homePath()));
-    QString codexHome = env.value("CODEX_HOME").trimmed();
-    QString root = codexHome.isEmpty() ? home + "/.codex" : codexHome;
-    QString authPath = root + "/auth.json";
-
-    QFile file(authPath);
-    QJsonObject existingJson;
-    if (file.open(QIODevice::ReadOnly)) {
-        QJsonParseError err;
-        QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &err);
-        if (err.error == QJsonParseError::NoError) existingJson = doc.object();
-        file.close();
-    }
-
-    QJsonObject tokens;
-    tokens["access_token"] = refreshed.accessToken;
-    tokens["refresh_token"] = refreshed.refreshToken;
-    if (!refreshed.idToken.isEmpty()) tokens["id_token"] = refreshed.idToken;
-    if (!refreshed.accountId.isEmpty()) tokens["account_id"] = refreshed.accountId;
-    existingJson["tokens"] = tokens;
-    existingJson["last_refresh"] = QDateTime::currentDateTime().toString(Qt::ISODateWithMs);
-
-    if (file.open(QIODevice::WriteOnly)) {
-        file.write(QJsonDocument(existingJson).toJson(QJsonDocument::Compact));
-    }
+    refreshed.save(env);
 
     return refreshed;
 }
@@ -848,7 +827,7 @@ ProviderFetchResult CodexCLIPtyStrategy::fetchSync(const ProviderFetchContext& c
 
     ConPTYSession session;
     qDebug() << "[CodexCLI] Starting ConPTY session:" << binary << args.join(' ');
-    if (!session.start(binary, args, env)) {
+    if (!session.start(binary, args, env, 200, 60)) {
         result.errorMessage = "Failed to start ConPTY session for codex CLI";
         return result;
     }
@@ -947,8 +926,31 @@ ProviderFetchResult CodexCLIPtyStrategy::fetchSync(const ProviderFetchContext& c
 
 CodexWebDashboardStrategy::CodexWebDashboardStrategy(QObject* parent) : IFetchStrategy(parent) {}
 
+QString CodexWebDashboardStrategy::importBrowserCookie() {
+    QStringList domains = {"chatgpt.com", "chat.openai.com"};
+    auto browsers = BrowserDetection::installedBrowsers();
+
+    for (auto browser : browsers) {
+        auto cookies = CookieImporter::importCookies(browser, domains);
+        if (cookies.isEmpty()) continue;
+
+        QString cookieHeader;
+        for (const auto& cookie : cookies) {
+            if (!cookieHeader.isEmpty()) cookieHeader += "; ";
+            cookieHeader += cookie.name() + "=" + cookie.value();
+        }
+        if (!cookieHeader.isEmpty()) {
+            qDebug() << "[CodexWeb] Imported cookies from browser" << static_cast<int>(browser)
+                     << "length:" << cookieHeader.length();
+            return cookieHeader;
+        }
+    }
+    return {};
+}
+
 bool CodexWebDashboardStrategy::isAvailable(const ProviderFetchContext& ctx) const {
-    return ctx.manualCookieHeader.has_value() || !ctx.settings.get("manualCookieHeader").toString().isEmpty();
+    Q_UNUSED(ctx)
+    return true;
 }
 
 bool CodexWebDashboardStrategy::shouldFallback(const ProviderFetchResult& result,
@@ -1052,6 +1054,26 @@ UsageSnapshot CodexWebDashboardStrategy::parseDashboardHTML(const QString& html)
     return snap;
 }
 
+QString CodexWebDashboardStrategy::parseSignedInEmail(const QString& html) {
+    static QRegularExpression emailRe(
+        "\"email\"\\s*:\\s*\"([^\"]+@[^\"]+)\"",
+        QRegularExpression::CaseInsensitiveOption);
+    auto match = emailRe.match(html);
+    if (match.hasMatch()) {
+        return CodexIdentityResolver::normalizeEmail(match.captured(1));
+    }
+
+    static QRegularExpression userRe(
+        "\"user\"\\s*:\\s*\\{[^}]*\"email\"\\s*:\\s*\"([^\"]+@[^\"]+)\"",
+        QRegularExpression::CaseInsensitiveOption);
+    match = userRe.match(html);
+    if (match.hasMatch()) {
+        return CodexIdentityResolver::normalizeEmail(match.captured(1));
+    }
+
+    return {};
+}
+
 ProviderFetchResult CodexWebDashboardStrategy::fetchSync(const ProviderFetchContext& ctx) {
     ProviderFetchResult result;
     result.strategyID = "codex.web";
@@ -1059,16 +1081,20 @@ ProviderFetchResult CodexWebDashboardStrategy::fetchSync(const ProviderFetchCont
     result.sourceLabel = "web";
 
     QString cookieHeader;
-    if (ctx.manualCookieHeader.has_value()) {
+    if (ctx.manualCookieHeader.has_value() && !ctx.manualCookieHeader->isEmpty()) {
         cookieHeader = *ctx.manualCookieHeader;
     } else {
         cookieHeader = ctx.settings.get("manualCookieHeader").toString();
     }
 
+    if (cookieHeader.isEmpty()) {
+        cookieHeader = importBrowserCookie();
+    }
+
     qDebug() << "[CodexWeb] Cookie header length:" << cookieHeader.length();
     if (cookieHeader.isEmpty()) {
         result.success = false;
-        result.errorMessage = "No cookie header configured for web dashboard access";
+        result.errorMessage = "No cookie header available (browser import failed and no manual cookie configured)";
         return result;
     }
 
@@ -1098,6 +1124,42 @@ ProviderFetchResult CodexWebDashboardStrategy::fetchSync(const ProviderFetchCont
         result.errorMessage = "Could not parse usage data from web dashboard. Response preview: "
                             + html.left(300).replace('\n', ' ');
         return result;
+    }
+
+    QString signedInEmail = parseSignedInEmail(html);
+    qDebug() << "[CodexWeb] Signed-in email:" << signedInEmail;
+
+    auto authInput = CodexDashboardAuthorityContext::makeLiveWebInput(
+        signedInEmail, ctx, std::nullopt);
+    auto decision = CodexDashboardAuthority::evaluate(authInput);
+
+    qDebug() << "[CodexWeb] Authority disposition:" << static_cast<int>(decision.disposition)
+             << "reason:" << static_cast<int>(decision.reason);
+
+    if (decision.disposition == CodexDashboardDisposition::FailClosed) {
+        result.success = false;
+        QString detail;
+        switch (decision.reasonDetail.reason) {
+        case CodexDashboardDecisionReason::WrongEmail:
+            detail = QString("expected %1, got %2")
+                .arg(decision.reasonDetail.expectedEmail, decision.reasonDetail.actualEmail);
+            break;
+        case CodexDashboardDecisionReason::MissingDashboardSignedInEmail:
+            detail = "dashboard did not expose signed-in email";
+            break;
+        default:
+            detail = "policy rejected";
+            break;
+        }
+        result.errorMessage = "Web dashboard authority rejected: " + detail;
+        return result;
+    }
+
+    auto attachEmail = CodexDashboardAuthorityContext::attachmentEmail(authInput);
+    if (attachEmail.has_value()) {
+        snap.identity = ProviderIdentitySnapshot();
+        snap.identity->providerID = UsageProvider::codex;
+        snap.identity->accountEmail = *attachEmail;
     }
 
     result.usage = snap;

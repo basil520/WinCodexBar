@@ -47,7 +47,9 @@ CodexDashboardAuthorityDecision CodexDashboardAuthority::evaluate(const CodexDas
     if (!expectedScopedEmail.isEmpty() && dashboardSignedInEmail != expectedScopedEmail) {
         return makeDecision(CodexDashboardDisposition::FailClosed,
                            CodexDashboardDecisionReason::WrongEmail,
-                           input.sourceKind);
+                           input.sourceKind,
+                           expectedScopedEmail,
+                           dashboardSignedInEmail);
     }
 
     switch (currentIdentity.type()) {
@@ -73,7 +75,10 @@ CodexDashboardAuthorityDecision CodexDashboardAuthority::evaluate(const CodexDas
         if (knownOwnerCount(dashboardSignedInEmail, knownOwners) > 1) {
             return makeDecision(CodexDashboardDisposition::DisplayOnly,
                                CodexDashboardDecisionReason::SameEmailAmbiguity,
-                               input.sourceKind);
+                               input.sourceKind,
+                               {},
+                               {},
+                               dashboardSignedInEmail);
         }
         return makeDecision(CodexDashboardDisposition::FailClosed,
                            CodexDashboardDecisionReason::ProviderAccountLacksExactOwnershipProof,
@@ -85,12 +90,17 @@ CodexDashboardAuthorityDecision CodexDashboardAuthority::evaluate(const CodexDas
         if (dashboardSignedInEmail != normalizedEmail) {
             return makeDecision(CodexDashboardDisposition::FailClosed,
                                CodexDashboardDecisionReason::WrongEmail,
-                               input.sourceKind);
+                               input.sourceKind,
+                               normalizedEmail,
+                               dashboardSignedInEmail);
         }
         if (knownOwnerCount(normalizedEmail, knownOwners) > 1) {
             return makeDecision(CodexDashboardDisposition::DisplayOnly,
                                CodexDashboardDecisionReason::SameEmailAmbiguity,
-                               input.sourceKind);
+                               input.sourceKind,
+                               {},
+                               {},
+                               normalizedEmail);
         }
         return makeDecision(CodexDashboardDisposition::Attach,
                            CodexDashboardDecisionReason::TrustedEmailMatchNoCompetingOwner,
@@ -106,12 +116,17 @@ CodexDashboardAuthorityDecision CodexDashboardAuthority::evaluate(const CodexDas
         if (dashboardSignedInEmail != trustedCurrentUsageEmail) {
             return makeDecision(CodexDashboardDisposition::FailClosed,
                                CodexDashboardDecisionReason::WrongEmail,
-                               input.sourceKind);
+                               input.sourceKind,
+                               trustedCurrentUsageEmail,
+                               dashboardSignedInEmail);
         }
         if (knownOwnerCount(trustedCurrentUsageEmail, knownOwners) > 1) {
             return makeDecision(CodexDashboardDisposition::DisplayOnly,
                                CodexDashboardDecisionReason::SameEmailAmbiguity,
-                               input.sourceKind);
+                               input.sourceKind,
+                               {},
+                               {},
+                               trustedCurrentUsageEmail);
         }
         return makeDecision(CodexDashboardDisposition::Attach,
                            CodexDashboardDecisionReason::TrustedContinuityNoCompetingOwner,
@@ -176,11 +191,18 @@ int CodexDashboardAuthority::knownOwnerCount(
 CodexDashboardAuthorityDecision CodexDashboardAuthority::makeDecision(
     CodexDashboardDisposition disposition,
     CodexDashboardDecisionReason reason,
-    CodexDashboardSourceKind sourceKind)
+    CodexDashboardSourceKind sourceKind,
+    const QString& expectedEmail,
+    const QString& actualEmail,
+    const QString& ambiguousEmail)
 {
     CodexDashboardAuthorityDecision decision;
     decision.disposition = disposition;
     decision.reason = reason;
+    decision.reasonDetail.reason = reason;
+    decision.reasonDetail.expectedEmail = expectedEmail;
+    decision.reasonDetail.actualEmail = actualEmail;
+    decision.reasonDetail.ambiguousEmail = ambiguousEmail;
     decision.allowedEffects = allowedEffects(disposition, sourceKind);
     if (disposition != CodexDashboardDisposition::Attach) {
         decision.cleanup = QSet<CodexDashboardCleanup>({

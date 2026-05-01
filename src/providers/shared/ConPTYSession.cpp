@@ -87,13 +87,15 @@ QString ConPTYSession::quoteArg(const QString& arg) {
 
 bool ConPTYSession::start(const QString& command,
                           const QStringList& args,
-                          const QProcessEnvironment& env)
+                          const QProcessEnvironment& env,
+                          int cols,
+                          int rows)
 {
     terminate();
 
     if (isConPtyAvailable()) {
         m_useFallback = false;
-        if (startWithConPty(command, args, env)) {
+        if (startWithConPty(command, args, env, cols, rows)) {
             return true;
         }
         terminate();
@@ -294,7 +296,9 @@ void ConPTYSession::appendOutput(const QByteArray& data)
 
 bool ConPTYSession::startWithConPty(const QString& command,
                                      const QStringList& args,
-                                     const QProcessEnvironment& env)
+                                     const QProcessEnvironment& env,
+                                     int cols,
+                                     int rows)
 {
     m_useFallback = false;
     auto createPseudoConsole = createPseudoConsoleProc();
@@ -318,7 +322,7 @@ bool ConPTYSession::startWithConPty(const QString& command,
     SetHandleInformation(m_hOutput, HANDLE_FLAG_INHERIT, 0);
 
     HPCON hpc = nullptr;
-    COORD size = {120, 30};
+    COORD size = {static_cast<SHORT>(cols), static_cast<SHORT>(rows)};
     HRESULT hr = createPseudoConsole(size, ptyInputRead, ptyOutputWrite, 0, &hpc);
     if (FAILED(hr)) {
         closeHandle(ptyInputRead);

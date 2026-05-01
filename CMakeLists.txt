@@ -53,6 +53,7 @@ set(CORE_SOURCES
     src/providers/codex/CodexOAuthUsageFetcher.cpp
     src/providers/codex/CodexStatusProbe.cpp
     src/providers/codex/CodexDashboardAuthority.cpp
+    src/providers/codex/CodexDashboardAuthorityContext.cpp
     src/providers/codex/CodexSystemAccountObserver.cpp
     src/providers/codex/ManagedCodexAccount.cpp
     src/providers/codex/CodexAccountReconciliation.cpp

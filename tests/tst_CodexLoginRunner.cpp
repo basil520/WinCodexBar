@@ -163,6 +163,19 @@ private slots:
         QCOMPARE(prompt->userCode, QString("XYZ9-1234"));
     }
 
+    void parsesEnterThisOneTimeCodeOnNextLine() {
+        QString output =
+            "Visit https://auth.openai.com/codex/device\n"
+            "Enter this one-time code (expires in 15 minutes)\n"
+            "   DHTH-QEGTQ";
+
+        auto prompt = CodexLoginRunner::parseDeviceAuthPrompt(output);
+
+        QVERIFY(prompt.has_value());
+        QCOMPARE(prompt->verificationUri, QString("https://auth.openai.com/codex/device"));
+        QCOMPARE(prompt->userCode, QString("DHTH-QEGTQ"));
+    }
+
     void test_emptyOutputReturnsNullopt() {
         auto prompt = CodexLoginRunner::parseDeviceAuthPrompt(QString());
         QVERIFY(!prompt.has_value());
