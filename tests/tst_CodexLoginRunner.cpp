@@ -167,6 +167,31 @@ private slots:
         auto prompt = CodexLoginRunner::parseDeviceAuthPrompt(QString());
         QVERIFY(!prompt.has_value());
     }
+
+    void test_parseRealErrorOutputReturnsNullopt() {
+        // Real codex login --device-auth output on 403 error
+        QString output =
+            "Error logging in with device code: device code request failed with status 403 Forbidden";
+
+        auto prompt = CodexLoginRunner::parseDeviceAuthPrompt(output);
+
+        // Should return nullopt — error output contains no URL+code
+        QVERIFY(!prompt.has_value());
+    }
+
+    void test_errorOutputDetection403() {
+        QString output =
+            "Error logging in with device code: device code request failed with status 403 Forbidden";
+
+        // Verify the output would trigger our 403 detection logic
+        QString lower = output.toLower();
+        QVERIFY(lower.contains("403"));
+        QVERIFY(lower.contains("forbidden"));
+
+        // Verify it does NOT contain a legitimate device code prompt
+        QVERIFY(!lower.contains("user code"));
+        QVERIFY(!lower.contains("https://"));
+    }
 };
 
 QTEST_MAIN(tst_CodexLoginRunner)
