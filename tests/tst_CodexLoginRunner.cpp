@@ -135,6 +135,38 @@ private slots:
         QCOMPARE(accounts.first().email, QString("dev@example.com"));
         QCOMPARE(accounts.first().displayName, QString("dev@example.com"));
     }
+
+    void test_parseNoUrlInOutput() {
+        auto prompt = CodexLoginRunner::parseDeviceAuthPrompt(
+            "Some random text without any URL at all.");
+        QVERIFY(!prompt.has_value());
+    }
+
+    void test_parseUrlButNoCode() {
+        auto prompt = CodexLoginRunner::parseDeviceAuthPrompt(
+            "Visit https://example.com/setup to configure your account.");
+        QVERIFY(!prompt.has_value());
+    }
+
+    void test_parseSpacedUserCode() {
+        auto prompt = CodexLoginRunner::parseDeviceAuthPrompt(
+            "Open https://auth.openai.com/activate\nUser code: ABCD EFGH");
+        QVERIFY(prompt.has_value());
+        QCOMPARE(prompt->userCode, QString("ABCD-EFGH"));
+        QCOMPARE(prompt->verificationUri, QString("https://auth.openai.com/activate"));
+    }
+
+    void test_parseLowercaseCode() {
+        auto prompt = CodexLoginRunner::parseDeviceAuthPrompt(
+            "Go to https://auth.codex.ai/device\nenter the code xyz9-1234 to continue");
+        QVERIFY(prompt.has_value());
+        QCOMPARE(prompt->userCode, QString("XYZ9-1234"));
+    }
+
+    void test_emptyOutputReturnsNullopt() {
+        auto prompt = CodexLoginRunner::parseDeviceAuthPrompt(QString());
+        QVERIFY(!prompt.has_value());
+    }
 };
 
 QTEST_MAIN(tst_CodexLoginRunner)
