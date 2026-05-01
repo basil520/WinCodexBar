@@ -124,7 +124,10 @@ CodexLoginRunner::parseDeviceAuthPrompt(const QString& output)
         R"((https?://[^\s\]\)>'"`]+))",
         QRegularExpression::CaseInsensitiveOption);
     QRegularExpressionMatch urlMatch = urlRe.match(text);
-    if (!urlMatch.hasMatch()) return std::nullopt;
+    if (!urlMatch.hasMatch()) {
+        qDebug() << "[CodexLoginRunner] parseDeviceAuthPrompt: no URL found in output:" << text.left(200);
+        return std::nullopt;
+    }
 
     QString url = urlMatch.captured(1).trimmed();
     while (!url.isEmpty() && QStringLiteral(".,;:").contains(url.back())) {
@@ -152,7 +155,11 @@ CodexLoginRunner::parseDeviceAuthPrompt(const QString& output)
         }
     }
 
-    if (userCode.isEmpty()) return std::nullopt;
+    if (userCode.isEmpty()) {
+        qDebug() << "[CodexLoginRunner] parseDeviceAuthPrompt: URL found but no user code matched."
+                 << "URL:" << url << "Text preview:" << text.left(200);
+        return std::nullopt;
+    }
 
     DeviceAuthPrompt prompt;
     prompt.verificationUri = url;
@@ -176,6 +183,9 @@ void CodexLoginRunner::onReadyRead()
             m_promptEmitted = true;
             emit progressUpdate(QStringLiteral("Waiting for Codex device authorization..."));
             emit deviceAuthPromptReady(prompt->verificationUri, prompt->userCode);
+        } else {
+            qDebug() << "[CodexLoginRunner] parseDeviceAuthPrompt returned nullopt. Accumulated output size:"
+                     << m_output.size() << "bytes";
         }
     }
 }
@@ -214,7 +224,10 @@ void CodexLoginRunner::onProcessError(QProcess::ProcessError error)
 
     Result result;
     result.outcome = Result::Failed;
-    result.output = m_process ? m_process->errorString() : QStringLiteral("Unknown error");
+    QString processError = m_process ? m_process->errorString() : QStringLiteral("Unknown error");
+    result.output = processError;
+    if (!m_output.isEmpty())
+        result.output += QStringLiteral(" | Accumulated output: ") + m_output;
     result.exitCode = -1;
 
     delete m_process;
@@ -262,6 +275,8 @@ CodexLoginRunner::Result CodexLoginRunner::collectResult(int exitCode, QProcess:
         result.outcome = Result::Success;
         emit progressUpdate(QStringLiteral("Login successful"));
     } else {
+        qDebug() << "[CodexLoginRunner] Login process failed. Exit code:" << exitCode
+                 << "Output preview:" << result.output.left(500);
         result.outcome = Result::Failed;
         emit progressUpdate(QStringLiteral("Login failed"));
     }

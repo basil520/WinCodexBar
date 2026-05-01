@@ -37,6 +37,16 @@ ScrollView {
         ? UsageStore.codexAccountState
         : ({})
 
+    // Reactive binding for codexAccountState
+    Connections {
+        target: UsageStore
+        function onCodexAccountStateChanged() {
+            if (root.providerId === "codex") {
+                root.codexAccountState = UsageStore.codexAccountState
+            }
+        }
+    }
+
     function statusText(state) {
         if (state === "ok") return qsTr("Operational")
         if (state === "degraded") return qsTr("Degraded")

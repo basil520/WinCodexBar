@@ -6,8 +6,32 @@
 #include <QDebug>
 #include <QDir>
 #include <QJsonObject>
+#include <QRegularExpression>
 #include <QStandardPaths>
 #include <QUuid>
+
+namespace {
+
+QString sanitizeLoginOutput(const QString& raw)
+{
+    if (raw.isEmpty()) return raw;
+    QString sanitized = raw;
+
+    // Truncate to 500 chars
+    if (sanitized.length() > 500)
+        sanitized = sanitized.left(500) + QStringLiteral("...");
+
+    // Redact sensitive patterns
+    sanitized.replace(QRegularExpression(R"(sk-[a-zA-Z0-9]{20,})"), "[REDACTED]");
+    sanitized.replace(QRegularExpression(R"(Bearer\s+\S+)"), "Bearer [REDACTED]");
+    sanitized.replace(QRegularExpression(R"("access_token":\s*"[^"]+")"), "\"access_token\":\"[REDACTED]\"");
+    sanitized.replace(QRegularExpression(R"("refresh_token":\s*"[^"]+")"), "\"refresh_token\":\"[REDACTED]\"");
+    sanitized.replace(QRegularExpression(R"("id_token":\s*"[^"]+")"), "\"id_token\":\"[REDACTED]\"");
+
+    return sanitized;
+}
+
+} // namespace
 
 ManagedCodexAccountService::ManagedCodexAccountService(const QHash<QString, QString>& env, QObject* parent)
     : QObject(parent)
@@ -223,13 +247,21 @@ void ManagedCodexAccountService::onLoginFinished(const CodexLoginRunner::Result&
 
     if (result.outcome != CodexLoginRunner::Result::Success) {
         qWarning() << "Codex login failed:" << result.output.left(1000);
-        QString message = QStringLiteral("Codex login failed.");
+        QString message;
         if (result.outcome == CodexLoginRunner::Result::TimedOut) {
             message = QStringLiteral("Codex login timed out.");
+            if (!result.output.isEmpty())
+                message += QStringLiteral(" Last output: ") + sanitizeLoginOutput(result.output);
         } else if (result.outcome == CodexLoginRunner::Result::MissingBinary) {
             message = QStringLiteral("codex CLI not found in PATH.");
         } else if (result.outcome == CodexLoginRunner::Result::LaunchFailed) {
             message = QStringLiteral("Could not start codex login.");
+            if (!result.output.isEmpty())
+                message += QStringLiteral(" Error: ") + sanitizeLoginOutput(result.output);
+        } else {
+            message = QStringLiteral("Codex login failed.");
+            if (!result.output.isEmpty())
+                message += QStringLiteral(" Output: ") + sanitizeLoginOutput(result.output);
         }
         finalizeLoginFailure(homePath, message);
         return;
