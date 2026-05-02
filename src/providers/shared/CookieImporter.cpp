@@ -181,6 +181,15 @@ QByteArray decryptChromiumCookie(CookieImporter::Browser browser,
     if (encryptedValue.isEmpty()) return {};
 
     if (encryptedValue.startsWith("v20")) {
+        // v20 is App-Bound Encryption (Chrome 127+, Edge 127+)
+        // This requires system-level access and cannot be decrypted by third-party apps
+        static bool warned = false;
+        if (!warned) {
+            qDebug() << "[CookieImporter] v20 (App-Bound Encryption) detected. "
+                     << "Modern browsers use this encryption which prevents automatic cookie import. "
+                     << "Please manually configure cookies in settings.";
+            warned = true;
+        }
         return {};
     }
 
@@ -208,7 +217,15 @@ QVector<QNetworkCookie> importChromiumCookies(
 {
     QVector<QNetworkCookie> cookies;
     QString copy = copyDatabase(dbPath);
-    if (copy.isEmpty()) return cookies;
+    if (copy.isEmpty()) {
+        qDebug() << "[CookieImporter] Failed to copy database:" << dbPath;
+        return cookies;
+    }
+
+    int totalRows = 0;
+    int domainMatches = 0;
+    int decryptSuccess = 0;
+    int decryptFail = 0;
 
     QString connectionName = "wincodexbar-cookies-" + QUuid::createUuid().toString(QUuid::Id128);
     {
@@ -218,14 +235,20 @@ QVector<QNetworkCookie> importChromiumCookies(
             QSqlQuery query(db);
             if (query.exec("SELECT host_key, name, value, encrypted_value, path, expires_utc, is_secure, is_httponly FROM cookies")) {
                 while (query.next()) {
+                    totalRows++;
                     QString host = query.value(0).toString();
                     if (!hostMatchesAnyDomain(host, domains)) continue;
+                    domainMatches++;
 
                     QByteArray name = query.value(1).toByteArray();
                     QByteArray value = query.value(2).toByteArray();
                     QByteArray encrypted = query.value(3).toByteArray();
                     QByteArray decrypted = decryptChromiumCookie(browser, value, encrypted, masterKey);
-                    if (name.isEmpty() || decrypted.isEmpty()) continue;
+                    if (name.isEmpty() || decrypted.isEmpty()) {
+                        decryptFail++;
+                        continue;
+                    }
+                    decryptSuccess++;
 
                     QNetworkCookie cookie(name, decrypted);
                     cookie.setDomain(host);
@@ -237,12 +260,20 @@ QVector<QNetworkCookie> importChromiumCookies(
                     cookie.setHttpOnly(query.value(7).toInt() != 0);
                     cookies.append(cookie);
                 }
+            } else {
+                qDebug() << "[CookieImporter] Query failed:" << db.lastError().text();
             }
+        } else {
+            qDebug() << "[CookieImporter] Failed to open database:" << copy << db.lastError().text();
         }
         db.close();
     }
     QSqlDatabase::removeDatabase(connectionName);
     QFile::remove(copy);
+
+    qDebug() << "[CookieImporter] Stats: total=" << totalRows << "domainMatch=" << domainMatches
+             << "decryptOk=" << decryptSuccess << "decryptFail=" << decryptFail;
+
     return cookies;
 }
 
@@ -298,15 +329,21 @@ QVector<QNetworkCookie> CookieImporter::importCookies(
 
     if (browser == Firefox) {
         for (const auto& profile : BrowserDetection::profilePaths(browser)) {
-            result += importFirefoxCookies(profile + "/cookies.sqlite", domains);
+            QString dbPath = profile + "/cookies.sqlite";
+            qDebug() << "[CookieImporter] Firefox profile:" << profile << "db exists:" << QFileInfo::exists(dbPath);
+            result += importFirefoxCookies(dbPath, domains);
         }
         return result;
     }
 
     auto masterKey = chromiumMasterKey(browser);
+    qDebug() << "[CookieImporter] Chromium browser" << static_cast<int>(browser)
+             << "master key available:" << masterKey.has_value();
     for (const auto& profile : BrowserDetection::profilePaths(browser)) {
         QString dbPath = profile + "/Network/Cookies";
         if (!QFileInfo::exists(dbPath)) dbPath = profile + "/Cookies";
+        qDebug() << "[CookieImporter] Chromium profile:" << profile << "db:" << dbPath
+                 << "exists:" << QFileInfo::exists(dbPath);
         result += importChromiumCookies(browser, dbPath, domains, masterKey);
     }
     return result;

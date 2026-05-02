@@ -879,8 +879,21 @@ QString CodexWebDashboardStrategy::importBrowserCookie() {
     QStringList domains = {"chatgpt.com", "chat.openai.com"};
     auto browsers = BrowserDetection::installedBrowsers();
 
+    qDebug() << "[CodexWeb] Detected" << browsers.size() << "installed browsers";
+    for (auto b : browsers) {
+        qDebug() << "[CodexWeb] Browser" << static_cast<int>(b)
+                 << "profiles:" << BrowserDetection::profilePaths(b);
+    }
+
+    if (browsers.isEmpty()) {
+        qDebug() << "[CodexWeb] No browsers detected. Check if Edge/Chrome/Firefox is installed.";
+        return {};
+    }
+
     for (auto browser : browsers) {
+        qDebug() << "[CodexWeb] Trying browser" << static_cast<int>(browser);
         auto cookies = CookieImporter::importCookies(browser, domains);
+        qDebug() << "[CodexWeb] Got" << cookies.size() << "cookies from browser" << static_cast<int>(browser);
         if (cookies.isEmpty()) continue;
 
         QString cookieHeader;
@@ -894,6 +907,7 @@ QString CodexWebDashboardStrategy::importBrowserCookie() {
             return cookieHeader;
         }
     }
+    qDebug() << "[CodexWeb] No cookies imported from any browser";
     return {};
 }
 
@@ -1043,7 +1057,11 @@ ProviderFetchResult CodexWebDashboardStrategy::fetchSync(const ProviderFetchCont
     qDebug() << "[CodexWeb] Cookie header length:" << cookieHeader.length();
     if (cookieHeader.isEmpty()) {
         result.success = false;
-        result.errorMessage = "No cookie header available (browser import failed and no manual cookie configured)";
+        result.errorMessage = "No cookie header available. Modern browsers (Chrome 127+, Edge 127+) use "
+                              "App-Bound Encryption (v20) which prevents automatic cookie import. "
+                              "Please manually configure the cookie header in Settings > Providers > Codex > Manual cookie header. "
+                              "To get the cookie: open https://chatgpt.com/codex/settings/usage in your browser, "
+                              "press F12 > Application > Cookies, copy all cookies as a header string.";
         return result;
     }
 
