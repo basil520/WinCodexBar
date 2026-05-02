@@ -943,7 +943,7 @@
     <message>
         <location filename="../src/app/Localization.cpp" line="26"/>
         <source>Tokens</source>
-        <translation>Tokens</translation>
+        <translation>词元</translation>
     </message>
     <message>
         <location filename="../src/app/Localization.cpp" line="27"/>
@@ -1184,7 +1184,7 @@
     <message>
         <location filename="../qml/panes/TokenUsagePane.qml" line="50"/>
         <source>Token Usage Overview</source>
-        <translation>Token 用量总览</translation>
+        <translation>词元用量总览</translation>
     </message>
     <message>
         <location filename="../qml/panes/TokenUsagePane.qml" line="59"/>
@@ -1227,7 +1227,7 @@
         <location filename="../qml/panes/TokenUsagePane.qml" line="680"/>
         <location filename="../qml/panes/TokenUsagePane.qml" line="732"/>
         <source>tokens</source>
-        <translation>tokens</translation>
+        <translation>词元</translation>
     </message>
     <message>
         <location filename="../qml/panes/TokenUsagePane.qml" line="119"/>
@@ -1243,7 +1243,7 @@
     <message>
         <location filename="../qml/panes/TokenUsagePane.qml" line="129"/>
         <source>token sources</source>
-        <translation>token 来源</translation>
+        <translation>词元来源</translation>
     </message>
     <message>
         <location filename="../qml/panes/TokenUsagePane.qml" line="168"/>
@@ -1253,14 +1253,14 @@
     <message>
         <location filename="../qml/panes/TokenUsagePane.qml" line="198"/>
         <source>No token providers enabled</source>
-        <translation>未启用 Token 提供商</translation>
+        <translation>未启用词元提供商</translation>
     </message>
     <message>
         <location filename="../qml/panes/TokenUsagePane.qml" line="259"/>
         <location filename="../qml/panes/TokenUsagePane.qml" line="302"/>
         <location filename="../qml/panes/TokenUsagePane.qml" line="639"/>
         <source>Token</source>
-        <translation>令牌</translation>
+        <translation>词元</translation>
     </message>
     <message>
         <location filename="../qml/panes/TokenUsagePane.qml" line="300"/>
@@ -1293,7 +1293,7 @@
     <message>
         <location filename="../qml/TrayPanel.qml" line="154"/>
         <source>Token Usage</source>
-        <translation>Token 用量</translation>
+        <translation>词元用量</translation>
     </message>
     <message>
         <location filename="../qml/TrayPanel.qml" line="176"/>
@@ -1325,7 +1325,7 @@
         <location filename="../qml/TrayPanel.qml" line="245"/>
         <location filename="../qml/TrayPanel.qml" line="377"/>
         <source>tokens</source>
-        <translation>tokens</translation>
+        <translation>词元</translation>
     </message>
     <message>
         <location filename="../qml/TrayPanel.qml" line="243"/>
