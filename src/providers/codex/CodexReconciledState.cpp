@@ -35,6 +35,19 @@ std::optional<CodexReconciledState> CodexReconciledState::fromOAuth(
     return make(primary, secondary, identity, updatedAt);
 }
 
+std::optional<CodexReconciledState> CodexReconciledState::fromDashboard(
+    const UsageSnapshot& dashboardUsage,
+    const QString& accountEmail,
+    const QDateTime& updatedAt)
+{
+    ProviderIdentitySnapshot identity;
+    identity.providerID = UsageProvider::codex;
+    identity.accountEmail = accountEmail;
+    identity.loginMethod = "web";
+
+    return make(dashboardUsage.primary, dashboardUsage.secondary, identity, updatedAt);
+}
+
 UsageSnapshot CodexReconciledState::toUsageSnapshot() const
 {
     UsageSnapshot snap;

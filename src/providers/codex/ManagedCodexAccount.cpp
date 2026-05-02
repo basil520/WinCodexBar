@@ -1,4 +1,5 @@
 #include "ManagedCodexAccount.h"
+#include "../../models/CodexUsageResponse.h"
 
 #include <QFile>
 #include <QDir>
@@ -6,6 +7,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QStandardPaths>
+#include <QFileInfo>
 
 ManagedCodexAccount::ManagedCodexAccount()
 {
@@ -54,17 +56,68 @@ ManagedCodexAccountStore::ManagedCodexAccountStore()
 
 QVector<ManagedCodexAccount> ManagedCodexAccountStore::loadAccounts() const
 {
-    QVector<ManagedCodexAccount> accounts;
-
     QFile file(m_storePath);
-    if (!file.exists()) return accounts;
-    if (!file.open(QIODevice::ReadOnly)) return accounts;
+    if (!file.exists()) return {};
+    if (!file.open(QIODevice::ReadOnly)) return {};
 
     QJsonParseError err;
     QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &err);
-    if (err.error != QJsonParseError::NoError) return accounts;
+    if (err.error != QJsonParseError::NoError) return {};
 
-    QJsonArray array = doc.array();
+    if (doc.isArray()) {
+        return migrateV1(doc.array());
+    }
+
+    QJsonObject root = doc.object();
+    int version = root.value("version").toInt(0);
+    QJsonArray array = root.value("accounts").toArray();
+
+    if (version <= 0) return {};
+    if (version == 1) return migrateV1(array);
+    if (version == 2) return migrateV2(array);
+
+    if (version > currentVersion()) return {};
+    return migrateV2(array);
+}
+
+int ManagedCodexAccountStore::currentVersion()
+{
+    return 2;
+}
+
+QVector<ManagedCodexAccount> ManagedCodexAccountStore::migrateV1(const QJsonArray& array) const
+{
+    QVector<ManagedCodexAccount> accounts;
+    for (const auto& value : array) {
+        QJsonObject obj = value.toObject();
+        ManagedCodexAccount account;
+        account.id = obj.value("id").toString();
+        account.email = obj.value("email").toString();
+        account.providerAccountId = obj.value("providerAccountId").toString();
+        account.workspaceLabel = obj.value("workspaceLabel").toString();
+        account.workspaceAccountId = obj.value("workspaceAccountId").toString();
+        account.managedHomePath = obj.value("managedHomePath").toString();
+        account.createdAt = QDateTime::fromString(obj.value("createdAt").toString(), Qt::ISODate);
+        account.updatedAt = QDateTime::fromString(obj.value("updatedAt").toString(), Qt::ISODate);
+        account.lastAuthenticatedAt = QDateTime::fromString(obj.value("lastAuthenticatedAt").toString(), Qt::ISODate);
+
+        if (account.providerAccountId.isEmpty() && !account.managedHomePath.isEmpty()) {
+            QHash<QString, QString> scopedEnv;
+            scopedEnv["CODEX_HOME"] = account.managedHomePath;
+            auto creds = CodexOAuthCredentials::load(scopedEnv);
+            if (creds.has_value() && !creds->accountId.isEmpty()) {
+                account.providerAccountId = ManagedCodexAccount::normalizeProviderAccountID(creds->accountId);
+            }
+        }
+
+        accounts.append(account);
+    }
+    return accounts;
+}
+
+QVector<ManagedCodexAccount> ManagedCodexAccountStore::migrateV2(const QJsonArray& array) const
+{
+    QVector<ManagedCodexAccount> accounts;
     for (const auto& value : array) {
         QJsonObject obj = value.toObject();
         ManagedCodexAccount account;
@@ -79,7 +132,6 @@ QVector<ManagedCodexAccount> ManagedCodexAccountStore::loadAccounts() const
         account.lastAuthenticatedAt = QDateTime::fromString(obj.value("lastAuthenticatedAt").toString(), Qt::ISODate);
         accounts.append(account);
     }
-
     return accounts;
 }
 
@@ -102,10 +154,16 @@ void ManagedCodexAccountStore::saveAccounts(const QVector<ManagedCodexAccount>& 
         array.append(obj);
     }
 
+    QJsonObject root;
+    root["version"] = currentVersion();
+    root["accounts"] = array;
+
     QDir().mkpath(QFileInfo(m_storePath).absolutePath());
     QFile file(m_storePath);
     if (file.open(QIODevice::WriteOnly)) {
-        file.write(QJsonDocument(array).toJson(QJsonDocument::Compact));
+        file.write(QJsonDocument(root).toJson(QJsonDocument::Compact));
+        file.close();
+        QFile::setPermissions(m_storePath, QFile::ReadOwner | QFile::WriteOwner);
     }
 }
 

@@ -32,6 +32,11 @@ public:
         const CodexOAuthCredentials& credentials,
         const QDateTime& updatedAt = QDateTime::currentDateTime());
 
+    static std::optional<CodexReconciledState> fromDashboard(
+        const UsageSnapshot& dashboardUsage,
+        const QString& accountEmail,
+        const QDateTime& updatedAt = QDateTime::currentDateTime());
+
     UsageSnapshot toUsageSnapshot() const;
 
     static ProviderIdentitySnapshot oauthIdentity(

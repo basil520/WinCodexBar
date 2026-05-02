@@ -1,6 +1,8 @@
 #include "CodexProvider.h"
 #include "CodexHomeScope.h"
 #include "CodexDashboardAuthorityContext.h"
+#include "CodexDashboardCache.h"
+#include "CodexPersistentCLISession.h"
 #include "../../network/NetworkManager.h"
 #include "../../util/BinaryLocator.h"
 #include "../../util/TextParser.h"
@@ -30,15 +32,34 @@ QVector<IFetchStrategy*> CodexProvider::createStrategies(const ProviderFetchCont
     
     QString mode = ctx.settings.get("sourceMode", "auto").toString();
     
-    if (mode == "auto" || mode == "oauth") {
+    if (mode == "oauth") {
         strategies.append(new CodexOAuthStrategy());
+        return strategies;
     }
-    if (mode == "auto" || mode == "cli") {
+    if (mode == "cli") {
         strategies.append(new CodexAppServerStrategy());
         strategies.append(new CodexCLIPtyStrategy());
+        return strategies;
     }
-    if (mode == "auto" || mode == "web") {
+    if (mode == "web") {
         strategies.append(new CodexWebDashboardStrategy());
+        return strategies;
+    }
+    if (mode == "api") {
+        strategies.append(new CodexOAuthStrategy());
+        return strategies;
+    }
+
+    // auto mode: runtime-aware
+    if (ctx.isAppRuntime) {
+        strategies.append(new CodexOAuthStrategy());
+        strategies.append(new CodexAppServerStrategy());
+        strategies.append(new CodexCLIPtyStrategy());
+        strategies.append(new CodexWebDashboardStrategy());
+    } else {
+        strategies.append(new CodexWebDashboardStrategy());
+        strategies.append(new CodexAppServerStrategy());
+        strategies.append(new CodexCLIPtyStrategy());
     }
     
     return strategies;
@@ -800,106 +821,34 @@ ProviderFetchResult CodexCLIPtyStrategy::fetchSync(const ProviderFetchContext& c
         return result;
     }
 
-    // codex CLI requires a real terminal (PTY). QProcess won't work because
-    // codex checks isTTY() and fails with "stdin is not a terminal".
-    // We must use ConPTY on Windows.
     if (!ConPTYSession::isConPtyAvailable()) {
         result.errorMessage = "ConPTY is not available on this Windows version (requires Windows 10 1809+). codex CLI needs a terminal.";
         return result;
     }
 
-    // Build the command to run inside ConPTY.
-    // BinaryLocator now prefers .cmd over .ps1, so binary should be codex.cmd
-    // which can be executed directly in ConPTY (cmd environment).
-    // Build the command to run inside ConPTY.
-    // We run codex with no args, then send "/status" via stdin.
-    QStringList args;
-    args << "--no-alt-screen";
+    auto& session = CodexPersistentCLISession::instance();
+    auto captureResult = session.captureStatus(binary, 200, 60, 15000, ctx.env);
 
-    QProcessEnvironment env;
-    if (ctx.env.isEmpty()) {
-        env = QProcessEnvironment::systemEnvironment();
-    } else {
-        for (auto it = ctx.env.constBegin(); it != ctx.env.constEnd(); ++it) {
-            env.insert(it.key(), it.value());
-        }
-    }
-
-    ConPTYSession session;
-    qDebug() << "[CodexCLI] Starting ConPTY session:" << binary << args.join(' ');
-    if (!session.start(binary, args, env, 200, 60)) {
-        result.errorMessage = "Failed to start ConPTY session for codex CLI";
+    if (!captureResult.success) {
+        result.errorMessage = captureResult.errorMessage;
         return result;
     }
 
-    // Wait for codex to fully initialize (MCP server boot, UI draw, etc.)
-    // Then send /status command via PTY stdin.
-    QThread::msleep(2000);
-
-    if (!session.isRunning()) {
-        result.errorMessage = "codex CLI exited before we could send /status";
-        return result;
-    }
-
-    session.write(QByteArray("\x15/status\r\n", 10));
-    qDebug() << "[CodexCLI] Sent /status command";
-
-    // Give codex time to process /status and print output
-    QThread::msleep(1500);
-
-    QByteArray accumulatedOutput;
-    QDateTime deadline = QDateTime::currentDateTimeUtc().addSecs(15);
-
-    while (QDateTime::currentDateTimeUtc() < deadline) {
-        QByteArray chunk = session.readOutput(500);
-        if (!chunk.isEmpty()) {
-            accumulatedOutput.append(chunk);
-        }
-
-        if (!session.isRunning()) {
-            qDebug() << "[CodexCLI] Session ended";
-            break;
-        }
-
-        QThread::msleep(100);
-    }
-
-    if (session.isRunning()) {
-        session.terminate();
-    }
-
-    // Read any remaining output
-    QByteArray remaining = session.readOutput(1000);
-    accumulatedOutput.append(remaining);
-    
-    qDebug() << "[CodexCLI] Total output length:" << accumulatedOutput.length();
-
-    if (accumulatedOutput.isEmpty()) {
-        result.errorMessage = "empty CLI output";
-        return result;
-    }
-
-    // ConPTY outputs UTF-8, not local 8-bit encoding
-    QString combined = QString::fromUtf8(accumulatedOutput);
-
-    // Log full raw output for debugging (first 2000 chars)
+    QString combined = captureResult.text;
+    qDebug() << "[CodexCLI] Output length:" << combined.length();
     qDebug() << "[CodexCLI] Raw output preview:" << combined.left(2000);
 
-    // Check for "stdin is not a terminal" - this should not happen with ConPTY,
-    // but if it does, something is wrong with the PTY setup.
     QString lower = combined.toLower();
     if (lower.contains("stdin is not a terminal")) {
-        result.errorMessage = "codex CLI still reports 'stdin is not a terminal' even with ConPTY. Please report this issue.";
+        result.errorMessage = "codex CLI still reports 'stdin is not a terminal' even with ConPTY.";
         return result;
     }
 
-    // Check for update prompt
     if (lower.contains("update available") && lower.contains("codex")) {
         result.errorMessage = "Codex CLI update needed. Run `npm i -g @openai/codex` to continue.";
         return result;
     }
 
-    // Check for "data not available yet"
     if (lower.contains("data not available")) {
         result.errorMessage = "Codex data not available yet; will retry shortly.";
         return result;
@@ -1098,18 +1047,35 @@ ProviderFetchResult CodexWebDashboardStrategy::fetchSync(const ProviderFetchCont
         return result;
     }
 
-    QHash<QString, QString> headers;
-    headers["Cookie"] = cookieHeader;
-    headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
-    headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-    headers["Accept-Language"] = "en-US,en;q=0.9";
+    // Try to get expected email for cache lookup
+    QString expectedEmail;
+    CodexSystemAccountObserver observer;
+    auto sysAccount = observer.loadSystemAccount(ctx.env);
+    if (sysAccount.has_value()) {
+        expectedEmail = sysAccount->email;
+    }
 
-    qDebug() << "[CodexWeb] Fetching dashboard URL...";
-    QString html = NetworkManager::instance().getStringSync(
-        QUrl("https://chatgpt.com/codex/settings/usage"),
-        headers,
-        ctx.networkTimeoutMs
-    );
+    // Try cache first
+    QString html;
+    auto cached = CodexDashboardCache::load(expectedEmail);
+    if (cached.has_value()) {
+        qDebug() << "[CodexWeb] Using cached dashboard HTML, age:"
+                 << cached->updatedAt.secsTo(QDateTime::currentDateTime()) << "s";
+        html = cached->html;
+    } else {
+        QHash<QString, QString> headers;
+        headers["Cookie"] = cookieHeader;
+        headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
+        headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+        headers["Accept-Language"] = "en-US,en;q=0.9";
+
+        qDebug() << "[CodexWeb] Fetching dashboard URL...";
+        html = NetworkManager::instance().getStringSync(
+            QUrl("https://chatgpt.com/codex/settings/usage"),
+            headers,
+            ctx.networkTimeoutMs
+        );
+    }
 
     qDebug() << "[CodexWeb] Response length:" << html.length();
     if (html.isEmpty()) {
@@ -1160,6 +1126,9 @@ ProviderFetchResult CodexWebDashboardStrategy::fetchSync(const ProviderFetchCont
         snap.identity = ProviderIdentitySnapshot();
         snap.identity->providerID = UsageProvider::codex;
         snap.identity->accountEmail = *attachEmail;
+
+        // Cache the dashboard HTML for this account
+        CodexDashboardCache::save({*attachEmail, html, QDateTime::currentDateTime()});
     }
 
     result.usage = snap;

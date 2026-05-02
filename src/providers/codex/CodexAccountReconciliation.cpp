@@ -73,9 +73,11 @@ CodexAccountReconciliationSnapshot CodexAccountReconciliation::loadSnapshot()
 
     if (liveSystemAccount.has_value()) {
         auto liveIdentity = snapshot.runtimeIdentity(*liveSystemAccount);
+        QString liveEmail = CodexIdentityResolver::normalizeEmail(liveSystemAccount->email);
         for (const auto& account : accounts) {
             auto accountIdentity = runtimeIdentities.value(account.id);
-            if (CodexIdentityMatcher::matches(accountIdentity, liveIdentity)) {
+            QString accountEmail = runtimeEmails.value(account.id);
+            if (CodexIdentityMatcher::matches(accountIdentity, liveIdentity, accountEmail, liveEmail)) {
                 snapshot.matchingStoredAccountForLiveSystemAccount = account;
                 break;
             }

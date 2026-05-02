@@ -121,6 +121,23 @@ bool CodexIdentityMatcher::matches(const CodexIdentity& lhs, const CodexIdentity
     return false;
 }
 
+bool CodexIdentityMatcher::matches(const CodexIdentity& lhs, const CodexIdentity& rhs,
+                                    const QString& lhsEmail, const QString& rhsEmail)
+{
+    if (matches(lhs, rhs)) return true;
+
+    if (lhs.type() == CodexIdentityType::ProviderAccount &&
+        rhs.type() == CodexIdentityType::ProviderAccount) {
+        QString normLhs = CodexIdentityResolver::normalizeEmail(lhsEmail);
+        QString normRhs = CodexIdentityResolver::normalizeEmail(rhsEmail);
+        if (!normLhs.isEmpty() && !normRhs.isEmpty() && normLhs == normRhs) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 CodexIdentity CodexIdentityMatcher::normalized(const CodexIdentity& identity, const QString& fallbackEmail)
 {
     switch (identity.type()) {

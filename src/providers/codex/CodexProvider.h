@@ -37,11 +37,11 @@ public:
     QVector<ProviderSettingsDescriptor> settingsDescriptors() const override {
         return {
             {"sourceMode", "Data source", "picker", QVariant(QStringLiteral("auto")),
-             { {"auto", "Auto"}, {"oauth", "OAuth"}, {"cli", "CLI"}, {"web", "Web Dashboard"} }},
+             { {"auto", "Auto"}, {"oauth", "OAuth"}, {"cli", "CLI"}, {"web", "Web Dashboard"}, {"api", "API"} }},
             {"manualCookieHeader", "Manual cookie header", "secret", QVariant()}
         };
     }
-    QVector<QString> supportedSourceModes() const override { return {"auto", "oauth", "cli", "web"}; }
+    QVector<QString> supportedSourceModes() const override { return {"auto", "oauth", "cli", "web", "api"}; }
 
 };
 

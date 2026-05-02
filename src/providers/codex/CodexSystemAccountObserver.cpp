@@ -1,5 +1,7 @@
 #include "CodexSystemAccountObserver.h"
 #include "CodexHomeScope.h"
+#include "CodexOpenAIWorkspaceResolver.h"
+#include "CodexOpenAIWorkspaceIdentityCache.h"
 #include "../../models/CodexUsageResponse.h"
 
 #include <QJsonObject>
@@ -20,11 +22,29 @@ std::optional<ObservedSystemCodexAccount> CodexSystemAccountObserver::loadSystem
         return std::nullopt;
     }
 
+    QString workspaceAccountId = account.identity.type() == CodexIdentityType::ProviderAccount
+        ? account.identity.accountId() : QString();
+
+    QString workspaceLabel;
+    if (!workspaceAccountId.isEmpty()) {
+        CodexOpenAIWorkspaceIdentityCache cache;
+        workspaceLabel = cache.workspaceLabel(workspaceAccountId);
+        if (workspaceLabel.isEmpty()) {
+            auto credentials = CodexOAuthCredentials::load(env);
+            if (credentials.has_value()) {
+                auto resolved = CodexOpenAIWorkspaceResolver::resolve(*credentials, env);
+                if (resolved.has_value()) {
+                    workspaceLabel = resolved->workspaceLabel;
+                    cache.store(*resolved);
+                }
+            }
+        }
+    }
+
     ObservedSystemCodexAccount observed;
     observed.email = rawEmail.toLower();
-    observed.workspaceLabel = QString();
-    observed.workspaceAccountId = account.identity.type() == CodexIdentityType::ProviderAccount
-        ? account.identity.accountId() : QString();
+    observed.workspaceLabel = workspaceLabel;
+    observed.workspaceAccountId = workspaceAccountId;
     observed.codexHomePath = CodexHomeScope::ambientHomeURL(env);
     observed.observedAt = QDateTime::currentDateTime();
     observed.identity = account.identity;

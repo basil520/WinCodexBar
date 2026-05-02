@@ -43,8 +43,12 @@ public:
 
     QString storePath() const;
 
+    static int currentVersion();
+
 private:
     QString m_storePath;
 
     static QString defaultStorePath();
+    QVector<ManagedCodexAccount> migrateV1(const QJsonArray& array) const;
+    QVector<ManagedCodexAccount> migrateV2(const QJsonArray& array) const;
 };

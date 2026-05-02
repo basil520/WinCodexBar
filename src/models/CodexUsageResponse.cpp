@@ -291,6 +291,8 @@ bool CodexOAuthCredentials::save(const QHash<QString, QString>& env) const {
     QFile writeFile(authPath);
     if (!writeFile.open(QIODevice::WriteOnly)) return false;
     writeFile.write(QJsonDocument(existingJson).toJson(QJsonDocument::Compact));
+    writeFile.close();
+    QFile::setPermissions(authPath, QFile::ReadOwner | QFile::WriteOwner);
     return true;
 }
 

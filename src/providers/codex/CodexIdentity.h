@@ -46,6 +46,8 @@ public:
 class CodexIdentityMatcher {
 public:
     static bool matches(const CodexIdentity& lhs, const CodexIdentity& rhs);
+    static bool matches(const CodexIdentity& lhs, const CodexIdentity& rhs,
+                        const QString& lhsEmail, const QString& rhsEmail);
     static CodexIdentity normalized(const CodexIdentity& identity, const QString& fallbackEmail);
     static QString selectionKey(const CodexIdentity& identity, const QString& fallbackEmail);
 };

@@ -38,11 +38,64 @@ RPC 失败时会给 UI 短错误并进入 fallback。原始 stdout/stderr、ANSI
 
 `codex.cli.pty` 策略使用 ConPTY 启动 codex CLI，并支持自动重试：
 
-- 首次尝试：200x60 终端尺寸，8秒超时。
-- 若解析失败（`ParseFailed`），自动重试：220x70 终端尺寸，4秒超时。
-- 其他错误（如 `CodexNotInstalled`、`TimedOut`）不重试。
+- 使用持久化会话（`CodexPersistentCLISession`），避免每次重启进程。
+- 首次尝试：200x60 终端尺寸，15秒超时。
+- 支持 update prompt 检测和自动跳过（发送下箭头+回车）。
+- 支持 cursor query 响应（`ESC[6n` → `ESC[1;1R`）。
+- 会话按 binary path + environment 自动复用。
 
 `ConPTYSession::start()` 支持自定义 `cols`/`rows` 参数，默认值为 120x30。
+
+### Web Dashboard 缓存
+
+Web Dashboard 策略支持 HTML 缓存：
+
+- 缓存路径：`%AppData%/CodexBar/codex-dashboard-cache.json`。
+- 缓存内容：`{accountEmail, html, updatedAt}`。
+- 使用时机：authority evaluate 通过后保存；下次加载时先检查缓存。
+- 失效条件：authority 拒绝、email 不匹配、手动清除。
+- 安全权限：缓存文件仅所有者可读写（`QFile::ReadOwner | QFile::WriteOwner`）。
+
+### Runtime 感知策略解析
+
+`auto` source mode 根据运行时环境返回不同策略顺序：
+
+- `isAppRuntime=true`（托盘应用）：OAuth → CLI RPC → CLI PTY → Web Dashboard。
+- `isAppRuntime=false`（CLI 工具）：Web Dashboard → CLI RPC → CLI PTY。
+- `.api` source mode：只使用 OAuth API。
+
+### 账户存储版本迁移
+
+`ManagedCodexAccountStore` 支持版本化 JSON 格式：
+
+- 当前版本：2。
+- JSON 格式：`{"version": 2, "accounts": [...]}`。
+- v1 迁移：从 JWT 中提取 provider account ID。
+- 向后兼容：如果 JSON 是数组（v1 无版本号），自动迁移。
+
+### 安全文件权限
+
+敏感文件使用仅所有者可读写权限：
+
+- `auth.json`：`QFile::ReadOwner | QFile::WriteOwner`。
+- `managed-codex-accounts.json`：`QFile::ReadOwner | QFile::WriteOwner`。
+- `codex-dashboard-cache.json`：`QFile::ReadOwner | QFile::WriteOwner`。
+
+### IdentityMatcher 邮箱交叉检查
+
+`CodexIdentityMatcher::matches()` 支持邮箱交叉检查：
+
+- 基础匹配：identity type 和 accountId/email 直接比较。
+- 邮箱交叉检查：`providerAccount` 类型先检查 accountId，不匹配时检查 email。
+- 用于账户 reconciliation 中匹配 managed account 和 live system account。
+
+### Workspace 标签解析
+
+`CodexSystemAccountObserver::loadSystemAccount()` 集成了 workspace 标签解析：
+
+- 使用 `CodexOpenAIWorkspaceIdentityCache` 缓存 workspace 标签。
+- 缓存未命中时调用 `CodexOpenAIWorkspaceResolver::resolve()` 从 API 获取。
+- 结果缓存到本地文件，避免重复 API 调用。
 
 ### Web Dashboard 浏览器 Cookie 自动导入
 
