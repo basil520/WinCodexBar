@@ -15,6 +15,8 @@
 #include "SessionQuotaNotifications.h"
 #include "../providers/IFetchStrategy.h"
 #include "../providers/ProviderFetchContext.h"
+#include "../providers/codex/CodexConsumerProjection.h"
+#include "../providers/codex/CodexCreditsFetcher.h"
 
 class ProviderRegistry;
 class ProviderPipeline;
@@ -30,6 +32,8 @@ class UsageStore : public QObject {
     Q_PROPERTY(int snapshotRevision READ snapshotRevision NOTIFY snapshotRevisionChanged)
     Q_PROPERTY(int statusRevision READ statusRevision NOTIFY statusRevisionChanged)
     Q_PROPERTY(QVariantMap codexAccountState READ codexAccountState NOTIFY codexAccountStateChanged)
+    Q_PROPERTY(QVariantList codexFetchAttempts READ codexFetchAttempts NOTIFY codexFetchAttemptsChanged)
+    Q_PROPERTY(QString lastKnownSessionWindowSource READ lastKnownSessionWindowSource NOTIFY lastKnownSessionWindowSourceChanged)
 
 public:
     explicit UsageStore(QObject* parent = nullptr);
@@ -68,6 +72,9 @@ public:
     Q_INVOKABLE QVariantMap providerCostUsageData(const QString& providerId) const;
 
     Q_INVOKABLE QVariantList utilizationChartData(const QString& providerId, const QString& seriesName) const;
+    Q_INVOKABLE QVariantList codexFetchAttempts() const;
+    Q_INVOKABLE QVariantMap providerDashboardData(const QString& providerId) const;
+    QString lastKnownSessionWindowSource() const;
 
     // Codex multi-account management
     Q_INVOKABLE QVariantList codexAccounts() const;
@@ -78,6 +85,7 @@ public:
     Q_INVOKABLE void cancelCodexAuthentication();
     Q_INVOKABLE bool removeCodexAccount(const QString& accountID);
     Q_INVOKABLE bool reauthenticateCodexAccount(const QString& accountID);
+    Q_INVOKABLE bool promoteCodexAccount(const QString& accountID);
     Q_INVOKABLE bool isCodexAuthenticating() const;
     Q_INVOKABLE bool isCodexRemoving() const;
     Q_INVOKABLE QString codexAuthenticatingAccountID() const;
@@ -124,6 +132,11 @@ signals:
     void codexRemovalFinished(const QString& accountID, bool success);
     void codexAccountStateChanged();
 
+    // Codex credits signals
+    void codexCreditsChanged();
+    void codexFetchAttemptsChanged();
+    void lastKnownSessionWindowSourceChanged();
+
 private:
     std::optional<ProviderSettingsDescriptor> settingDescriptor(const QString& providerId,
                                                                 const QString& key) const;
@@ -141,6 +154,9 @@ private:
     QHash<QString, QVariantMap> m_providerStatuses;
     QHash<QString, QSharedPointer<QAtomicInt>> m_loginCancelFlags;
     QHash<QString, std::optional<double>> m_lastKnownSessionRemaining;
+    QHash<QString, QVector<ProviderFetchAttempt>> m_lastFetchAttempts;
+    QHash<QString, QVariantMap> m_dashboardData;
+    QString m_lastKnownSessionWindowSource;
     QStringList m_providerIDs;
     bool m_isRefreshing = false;
 
@@ -158,4 +174,58 @@ private:
 
     // Codex multi-account
     class ManagedCodexAccountService* m_codexAccountService = nullptr;
+
+    // Codex credits cache
+    struct CodexCreditsCache {
+        std::optional<CreditsSnapshot> snapshot;
+        QString accountKey;
+        QDateTime updatedAt;
+        int failureStreak = 0;
+        QString lastError;
+    };
+    CodexCreditsCache m_codexCreditsCache;
+
+    // Codex account refresh guard
+    struct CodexAccountRefreshGuard {
+        QString source;  // "liveSystem" or "managedAccount"
+        QString identity;
+        QString accountKey;
+
+        bool operator==(const CodexAccountRefreshGuard& other) const {
+            return source == other.source && identity == other.identity && accountKey == other.accountKey;
+        }
+        bool operator!=(const CodexAccountRefreshGuard& other) const {
+            return !(*this == other);
+        }
+        bool isEmpty() const {
+            return source.isEmpty() && identity.isEmpty() && accountKey.isEmpty();
+        }
+    };
+    CodexAccountRefreshGuard m_lastCodexRefreshGuard;
+
+    CodexAccountRefreshGuard currentCodexAccountRefreshGuard() const;
+    bool shouldApplyCodexScopedNonUsageResult(const CodexAccountRefreshGuard& expectedGuard) const;
+
+    // Codex credits methods
+    void refreshCodexCredits(const CodexAccountRefreshGuard& expectedGuard = {});
+    void applyCodexCreditsFetchResult(const CodexCreditsFetcher::FetchResult& result,
+                                       const CodexAccountRefreshGuard& expectedGuard = {});
+    QString currentCodexAccountKey() const;
+    std::optional<CreditsSnapshot> cachedCodexCredits() const;
+    QString codexCreditsError() const;
+    bool codexCreditsRefreshing() const { return m_codexCreditsRefreshing; }
+
+    // Codex consumer projection
+    QVariantMap codexConsumerProjectionData() const;
+
+    // Wait for codex snapshot to be at least as fresh as minimumUpdatedAt (mirrors original CodexBar)
+    UsageSnapshot waitForCodexSnapshot(const QDateTime& minimumUpdatedAt, int timeoutMs = 6000) const;
+
+    void clearCodexOpenAIWebState();
+
+    bool m_codexCreditsRefreshing = false;
+    int m_pendingCreditsRefresh = 0;
+
+    // Test injection point for credits fetching (mirrors original _test_codexCreditsLoaderOverride)
+    std::function<std::optional<CreditsSnapshot>()> _test_codexCreditsLoaderOverride;
 };

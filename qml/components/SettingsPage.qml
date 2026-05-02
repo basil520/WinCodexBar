@@ -14,7 +14,7 @@ ScrollView {
     contentWidth: availableWidth
     ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
-    Item {
+    contentItem: Item {
         width: root.availableWidth
         height: body.implicitHeight + 48
 

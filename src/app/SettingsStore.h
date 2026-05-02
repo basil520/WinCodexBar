@@ -13,6 +13,8 @@ class SettingsStore : public QObject {
     Q_PROPERTY(bool launchAtLogin READ launchAtLogin WRITE setLaunchAtLogin NOTIFY launchAtLoginChanged)
     Q_PROPERTY(bool checkForUpdates READ checkForUpdates WRITE setCheckForUpdates NOTIFY checkForUpdatesChanged)
     Q_PROPERTY(bool debugMenuEnabled READ debugMenuEnabled WRITE setDebugMenuEnabled NOTIFY debugMenuEnabledChanged)
+    Q_PROPERTY(bool codexVerboseLogging READ codexVerboseLogging WRITE setCodexVerboseLogging NOTIFY codexVerboseLoggingChanged)
+    Q_PROPERTY(bool codexWebDebugDumpHTML READ codexWebDebugDumpHTML WRITE setCodexWebDebugDumpHTML NOTIFY codexWebDebugDumpHTMLChanged)
     Q_PROPERTY(bool mergeIcons READ mergeIcons WRITE setMergeIcons NOTIFY mergeIconsChanged)
     Q_PROPERTY(bool statusChecksEnabled READ statusChecksEnabled WRITE setStatusChecksEnabled NOTIFY statusChecksEnabledChanged)
     Q_PROPERTY(bool usageBarsShowUsed READ usageBarsShowUsed WRITE setUsageBarsShowUsed NOTIFY usageBarsShowUsedChanged)
@@ -35,6 +37,12 @@ public:
 
     bool debugMenuEnabled() const { return m_debugMenuEnabled; }
     void setDebugMenuEnabled(bool enable);
+
+    bool codexVerboseLogging() const { return m_codexVerboseLogging; }
+    void setCodexVerboseLogging(bool enable);
+
+    bool codexWebDebugDumpHTML() const { return m_codexWebDebugDumpHTML; }
+    void setCodexWebDebugDumpHTML(bool enable);
 
     bool mergeIcons() const { return m_mergeIcons; }
     void setMergeIcons(bool enable);
@@ -79,6 +87,8 @@ signals:
     void launchAtLoginChanged();
     void checkForUpdatesChanged();
     void debugMenuEnabledChanged();
+    void codexVerboseLoggingChanged();
+    void codexWebDebugDumpHTMLChanged();
     void mergeIconsChanged();
     void statusChecksEnabledChanged();
     void usageBarsShowUsedChanged();
@@ -97,6 +107,8 @@ private:
     bool m_launchAtLogin = false;
     bool m_checkForUpdates = true;
     bool m_debugMenuEnabled = false;
+    bool m_codexVerboseLogging = false;
+    bool m_codexWebDebugDumpHTML = false;
     bool m_mergeIcons = true;
     bool m_statusChecksEnabled = true;
     bool m_usageBarsShowUsed = false;

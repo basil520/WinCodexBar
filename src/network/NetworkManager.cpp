@@ -3,6 +3,7 @@
 #include <QEventLoop>
 #include <QTimer>
 #include <QUrlQuery>
+#include <memory>
 
 static bool g_shuttingDown = false;
 
@@ -77,18 +78,27 @@ NetworkManager& NetworkManager::instance() {
 NetworkManager::NetworkManager()
     : QObject(nullptr) {}
 
+QNetworkAccessManager* NetworkManager::threadLocalNam()
+{
+    static thread_local std::unique_ptr<QNetworkAccessManager> nam;
+    if (!nam) {
+        nam = std::make_unique<QNetworkAccessManager>();
+    }
+    return nam.get();
+}
+
 QJsonObject NetworkManager::getJsonSync(
     const QUrl& url,
     const QHash<QString, QString>& headers,
     int timeoutMs,
     bool http2Allowed)
 {
-    QNetworkAccessManager nam;
+    QNetworkAccessManager* nam = threadLocalNam();
     QNetworkRequest request(url);
     request.setAttribute(QNetworkRequest::Http2AllowedAttribute, http2Allowed);
     applyHeaders(request, headers);
     return parseJsonObject(waitForReply(
-        nam.get(request),
+        nam->get(request),
         timeoutMs > 0 ? timeoutMs : m_defaultTimeout));
 }
 
@@ -98,12 +108,12 @@ QString NetworkManager::getStringSync(
     int timeoutMs,
     bool http2Allowed)
 {
-    QNetworkAccessManager nam;
+    QNetworkAccessManager* nam = threadLocalNam();
     QNetworkRequest request(url);
     request.setAttribute(QNetworkRequest::Http2AllowedAttribute, http2Allowed);
     applyHeaders(request, headers);
     return QString::fromUtf8(waitForReply(
-        nam.get(request),
+        nam->get(request),
         timeoutMs > 0 ? timeoutMs : m_defaultTimeout));
 }
 
@@ -114,13 +124,13 @@ QJsonObject NetworkManager::postFormSync(
     int timeoutMs,
     bool http2Allowed)
 {
-    QNetworkAccessManager nam;
+    QNetworkAccessManager* nam = threadLocalNam();
     QNetworkRequest request(url);
     request.setAttribute(QNetworkRequest::Http2AllowedAttribute, http2Allowed);
     applyHeaders(request, headers);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
     return parseJsonObject(waitForReply(
-        nam.post(request, formData),
+        nam->post(request, formData),
         timeoutMs > 0 ? timeoutMs : m_defaultTimeout));
 }
 
@@ -131,14 +141,14 @@ QJsonObject NetworkManager::postJsonSync(
     int timeoutMs,
     bool http2Allowed)
 {
-    QNetworkAccessManager nam;
+    QNetworkAccessManager* nam = threadLocalNam();
     QNetworkRequest request(url);
     request.setAttribute(QNetworkRequest::Http2AllowedAttribute, http2Allowed);
     applyHeaders(request, headers);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     QByteArray data = QJsonDocument(body).toJson();
     return parseJsonObject(waitForReply(
-        nam.post(request, data),
+        nam->post(request, data),
         timeoutMs > 0 ? timeoutMs : m_defaultTimeout));
 }
 

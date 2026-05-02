@@ -3,8 +3,11 @@
 #include "../models/UsageSnapshot.h"
 #include "../models/CreditsSnapshot.h"
 #include "ProviderFetchKind.h"
+#include "ProviderFetchAttempt.h"
 
 #include <QString>
+#include <QVector>
+#include <QJsonObject>
 #include <optional>
 
 struct ProviderFetchResult {
@@ -15,4 +18,6 @@ struct ProviderFetchResult {
     int strategyKind = ProviderFetchKind::CLI;
     bool success = false;
     QString errorMessage;
+    QVector<ProviderFetchAttempt> attempts;
+    std::optional<QJsonObject> dashboard;
 };

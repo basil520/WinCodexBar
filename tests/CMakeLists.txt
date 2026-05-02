@@ -184,3 +184,13 @@ target_include_directories(opencode_debug_test PRIVATE ${COMMON_INCLUDE})
 target_compile_definitions(opencode_debug_test PRIVATE ${COMMON_DEFINES})
 target_link_libraries(opencode_debug_test PRIVATE Qt6::Core Qt6::Test Qt6::Sql)
 add_wincodexbar_test(opencode_debug_test opencode_debug_test)
+
+# QML smoke test (load, render, interaction)
+add_executable(tst_QmlSmoke
+    tst_QmlSmoke.cpp
+)
+target_include_directories(tst_QmlSmoke PRIVATE ${COMMON_INCLUDE})
+target_compile_definitions(tst_QmlSmoke PRIVATE ${COMMON_DEFINES})
+target_link_libraries(tst_QmlSmoke PRIVATE Qt6::Core Qt6::Test Qt6::Quick Qt6::Qml)
+target_sources(tst_QmlSmoke PRIVATE ${CMAKE_SOURCE_DIR}/resources/qml.qrc)
+add_wincodexbar_test(tst_QmlSmoke tst_QmlSmoke)

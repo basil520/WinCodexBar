@@ -40,6 +40,7 @@ public:
     // Account management
     bool addAccount(const QString& email, const QString& homePath);
     bool authenticateNewAccount();
+    bool promoteAccount(const QString& accountID);
     bool removeAccount(const QString& accountID);
     bool setActiveAccount(const QString& accountID);
     bool reauthenticateAccount(const QString& accountID);

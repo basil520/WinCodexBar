@@ -105,4 +105,111 @@ SettingsPage {
             }
         }
     }
+
+    SettingsGroupBox {
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 8
+
+            Label {
+                text: qsTr("Codex Diagnostics")
+                color: AppTheme.textPrimary
+                font.pixelSize: AppTheme.fontSizeMd
+                font.bold: true
+                Layout.fillWidth: true
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 12
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 3
+
+                    Label {
+                        text: qsTr("Test Codex Connection")
+                        color: AppTheme.textPrimary
+                        font.pixelSize: AppTheme.fontSizeMd
+                        font.bold: true
+                    }
+
+                    Label {
+                        text: qsTr("Run a single fetch attempt and record diagnostics.")
+                        color: AppTheme.textSecondary
+                        font.pixelSize: AppTheme.fontSizeSm
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                }
+
+                SettingsButton {
+                    text: qsTr("Test")
+                    primary: true
+                    onClicked: UsageStore.testProviderConnection("codex")
+                }
+            }
+
+            // Last known session window source
+            RowLayout {
+                Layout.fillWidth: true
+                visible: UsageStore.lastKnownSessionWindowSource !== ""
+                spacing: 8
+                Label {
+                    text: qsTr("Last session source")
+                    color: AppTheme.textSecondary
+                    font.pixelSize: AppTheme.fontSizeSm
+                }
+                Label {
+                    text: UsageStore.lastKnownSessionWindowSource
+                    color: AppTheme.textPrimary
+                    font.pixelSize: AppTheme.fontSizeSm
+                    font.bold: true
+                }
+            }
+
+            // Fetch attempts list
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 4
+                visible: UsageStore.codexFetchAttempts.length > 0
+
+                Label {
+                    text: qsTr("Recent Fetch Attempts")
+                    color: AppTheme.textPrimary
+                    font.pixelSize: AppTheme.fontSizeMd
+                    font.bold: true
+                }
+
+                Repeater {
+                    model: UsageStore.codexFetchAttempts
+                    delegate: RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+                        Label {
+                            text: modelData.strategyID || ""
+                            color: AppTheme.textSecondary
+                            font.pixelSize: AppTheme.fontSizeSm
+                            Layout.preferredWidth: 120
+                        }
+                        Label {
+                            text: modelData.available ? (modelData.success ? "OK" : "FAIL") : "N/A"
+                            color: modelData.available ? (modelData.success ? "#4CAF50" : "#F44336") : "#888"
+                            font.pixelSize: AppTheme.fontSizeSm
+                            font.bold: true
+                            Layout.preferredWidth: 40
+                        }
+                        Label {
+                            text: modelData.errorMessage || ""
+                            color: AppTheme.textSecondary
+                            font.pixelSize: AppTheme.fontSizeSm
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

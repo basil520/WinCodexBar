@@ -29,6 +29,7 @@ Rectangle {
     signal copyText(string text)
     signal removeAccount(string accountID)
     signal reauthenticateAccount(string accountID)
+    signal promoteAccount(string accountID)
 
     ColumnLayout {
         anchors.fill: parent
@@ -327,6 +328,32 @@ Rectangle {
                             ToolTip.text: root.isAuthenticating && root.authenticatingAccountID === modelData.id
                                 ? qsTr("Re-authenticating...")
                                 : qsTr("Re-authenticate")
+                            ToolTip.visible: hovered
+                        }
+
+                        Button {
+                            Layout.preferredWidth: 58
+                            Layout.preferredHeight: 28
+                            width: 58
+                            height: 28
+                            visible: !modelData.isLive
+                            enabled: !root.isAuthenticating && !root.isRemoving
+                            onClicked: root.promoteAccount(modelData.id)
+
+                            background: Rectangle {
+                                color: parent.hovered ? "#4CAF50" : "transparent"
+                                radius: 4
+                            }
+                            contentItem: Text {
+                                text: qsTr("Promote")
+                                color: "#4CAF50"
+                                font.pixelSize: 11
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                elide: Text.ElideRight
+                            }
+
+                            ToolTip.text: qsTr("Promote to system account")
                             ToolTip.visible: hovered
                         }
 

@@ -16,6 +16,8 @@ SettingsStore::SettingsStore(QObject* parent)
     m_launchAtLogin = m_settings.value("launchAtLogin", false).toBool();
     m_checkForUpdates = m_settings.value("checkForUpdates", true).toBool();
     m_debugMenuEnabled = m_settings.value("debugMenuEnabled", false).toBool();
+    m_codexVerboseLogging = m_settings.value("codexVerboseLogging", false).toBool();
+    m_codexWebDebugDumpHTML = m_settings.value("codexWebDebugDumpHTML", false).toBool();
     m_mergeIcons = m_settings.value("mergeIcons", true).toBool();
     m_statusChecksEnabled = m_settings.value("statusChecksEnabled", true).toBool();
     m_usageBarsShowUsed = m_settings.value("usageBarsShowUsed", false).toBool();
@@ -66,6 +68,22 @@ void SettingsStore::setDebugMenuEnabled(bool enable) {
         m_debugMenuEnabled = enable;
         m_settings.setValue("debugMenuEnabled", enable);
         emit debugMenuEnabledChanged();
+    }
+}
+
+void SettingsStore::setCodexVerboseLogging(bool enable) {
+    if (m_codexVerboseLogging != enable) {
+        m_codexVerboseLogging = enable;
+        m_settings.setValue("codexVerboseLogging", enable);
+        emit codexVerboseLoggingChanged();
+    }
+}
+
+void SettingsStore::setCodexWebDebugDumpHTML(bool enable) {
+    if (m_codexWebDebugDumpHTML != enable) {
+        m_codexWebDebugDumpHTML = enable;
+        m_settings.setValue("codexWebDebugDumpHTML", enable);
+        emit codexWebDebugDumpHTMLChanged();
     }
 }
 

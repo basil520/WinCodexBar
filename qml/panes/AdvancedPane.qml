@@ -70,5 +70,23 @@ SettingsPage {
                 SettingsStore.debugMenuEnabled = checked
             }
         }
+
+        SettingsToggleRow {
+            title: qsTr("Codex Verbose Logging")
+            subtitle: qsTr("Log detailed strategy-level diagnostics during Codex fetches.")
+            checked: SettingsStore.codexVerboseLogging
+            onToggled: function(checked) {
+                SettingsStore.codexVerboseLogging = checked
+            }
+        }
+
+        SettingsToggleRow {
+            title: qsTr("Web Dashboard Debug Dump")
+            subtitle: qsTr("Save raw HTML from web dashboard fetches for troubleshooting.")
+            checked: SettingsStore.codexWebDebugDumpHTML
+            onToggled: function(checked) {
+                SettingsStore.codexWebDebugDumpHTML = checked
+            }
+        }
     }
 }

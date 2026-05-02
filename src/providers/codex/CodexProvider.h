@@ -37,7 +37,7 @@ public:
     QVector<ProviderSettingsDescriptor> settingsDescriptors() const override {
         return {
             {"sourceMode", "Data source", "picker", QVariant(QStringLiteral("auto")),
-             { {"auto", "Auto"}, {"oauth", "OAuth"}, {"cli", "CLI"}, {"web", "Web Dashboard"}, {"api", "API"} }},
+             { {"auto", "Auto"}, {"oauth", "OAuth"}, {"cli", "CLI"}, {"web", "Web Dashboard"} }},
             {"manualCookieHeader", "Manual cookie header", "secret", QVariant()}
         };
     }

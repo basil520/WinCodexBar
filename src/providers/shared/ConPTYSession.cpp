@@ -206,6 +206,10 @@ void ConPTYSession::terminate()
     bool wasRunning = m_running;
     m_running = false;
 
+    if (m_hExitEvent) {
+        SetEvent(m_hExitEvent);
+    }
+
     if (m_process) {
         m_process->kill();
         m_process->waitForFinished(2000);
@@ -230,13 +234,16 @@ void ConPTYSession::terminate()
     }
 
     if (m_readerThread.joinable()) {
-        CancelSynchronousIo(reinterpret_cast<HANDLE>(m_readerThread.native_handle()));
         m_readerThread.join();
     }
 
     closeHandle(m_hOutput);
     closeHandle(m_hThread);
     closeHandle(m_hProcess);
+    if (m_hExitEvent) {
+        CloseHandle(m_hExitEvent);
+        m_hExitEvent = nullptr;
+    }
     if (wasRunning) emit processFinished(0);
 }
 
@@ -256,23 +263,24 @@ bool ConPTYSession::isConPtyAvailable()
 void ConPTYSession::readerLoop()
 {
     char buffer[4096];
-    while (m_running && m_hOutput) {
-        DWORD bytesAvail = 0;
-        if (!PeekNamedPipe(m_hOutput, nullptr, 0, nullptr, &bytesAvail, nullptr)) {
-            DWORD err = GetLastError();
-            if (err != ERROR_BROKEN_PIPE && err != ERROR_HANDLE_EOF) {
-                qDebug() << "[ConPTY] PeekNamedPipe failed, error=" << err;
-            }
+    while (m_running && m_hOutput && m_hExitEvent) {
+        HANDLE handles[] = { m_hOutput, m_hExitEvent };
+        DWORD wait = WaitForMultipleObjects(2, handles, FALSE, 100);
+
+        if (wait == WAIT_OBJECT_0 + 1) {
             break;
         }
-        if (bytesAvail > 0) {
-            DWORD toRead = qMin(bytesAvail, static_cast<DWORD>(sizeof(buffer)));
+        if (wait == WAIT_OBJECT_0) {
             DWORD read = 0;
-            BOOL ok = ReadFile(m_hOutput, buffer, toRead, &read, nullptr);
+            BOOL ok = ReadFile(m_hOutput, buffer, sizeof(buffer), &read, nullptr);
             if (!ok || read == 0) break;
             appendOutput(QByteArray(buffer, static_cast<int>(read)));
-        } else {
-            QThread::msleep(10);
+            continue;
+        }
+        if (wait == WAIT_FAILED) {
+            DWORD err = GetLastError();
+            qDebug() << "[ConPTY] WaitForMultipleObjects failed, error=" << err;
+            break;
         }
     }
 
@@ -402,6 +410,16 @@ bool ConPTYSession::startWithConPty(const QString& command,
     {
         QMutexLocker locker(&m_bufferMutex);
         m_buffer.clear();
+    }
+
+    m_hExitEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+    if (!m_hExitEvent) {
+        TerminateProcess(m_hProcess, 0);
+        WaitForSingleObject(m_hProcess, 1000);
+        closeHandle(m_hProcess);
+        closeHandle(m_hThread);
+        terminate();
+        return false;
     }
 
     m_readerThread = std::thread([this]() { readerLoop(); });

@@ -1,6 +1,7 @@
 #include "ProviderPipeline.h"
 #include "IProvider.h"
 
+#include <QElapsedTimer>
 #include <QtAlgorithms>
 
 namespace {
@@ -55,15 +56,43 @@ ProviderFetchResult ProviderPipeline::execute(
 {
     ProviderFetchResult lastResult;
     lastResult.success = false;
+    QVector<ProviderFetchAttempt> attempts;
+
+    QElapsedTimer pipelineTimer;
+    pipelineTimer.start();
 
     for (auto* strategy : strategies) {
         if (!strategy) continue;
-        if (!strategy->isAvailable(ctx)) continue;
+
+        if (pipelineTimer.elapsed() > PIPELINE_TIMEOUT_MS) {
+            lastResult.success = false;
+            lastResult.errorMessage = QString("Pipeline timeout after %1ms")
+                .arg(QString::number(PIPELINE_TIMEOUT_MS));
+            lastResult.attempts = attempts;
+            emit pipelineComplete(lastResult);
+            return lastResult;
+        }
+
+        ProviderFetchAttempt attempt;
+        attempt.strategyID = strategy->id();
+        attempt.available = strategy->isAvailable(ctx);
+        attempt.attemptedAt = QDateTime::currentDateTime();
+
+        if (!attempt.available) {
+            attempts.append(attempt);
+            continue;
+        }
 
         emit strategyStarted(strategy->id());
 
         ProviderFetchResult result = strategy->fetchSync(ctx);
+        attempt.strategyKindLabel = result.sourceLabel;
+        attempt.success = result.success;
+        attempt.errorMessage = result.errorMessage;
+        attempts.append(attempt);
+
         if (result.success) {
+            result.attempts = attempts;
             emit pipelineComplete(result);
             return result;
         }
@@ -73,6 +102,7 @@ ProviderFetchResult ProviderPipeline::execute(
         }
     }
 
+    lastResult.attempts = attempts;
     emit pipelineComplete(lastResult);
     return lastResult;
 }

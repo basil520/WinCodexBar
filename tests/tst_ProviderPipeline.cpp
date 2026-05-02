@@ -1,4 +1,5 @@
 #include <QtTest/QtTest>
+#include <QThread>
 
 #include "../src/providers/IProvider.h"
 #include "../src/providers/ProviderPipeline.h"
@@ -160,6 +161,43 @@ private slots:
         QVERIFY(result.success);
         QCOMPARE(result.strategyID, QString("second"));
         QCOMPARE(FakeStrategy::destroyedCount, 3);
+    }
+
+    void pipelineTimeoutEnforced() {
+        ProviderPipeline pipeline;
+        ProviderFetchContext ctx;
+
+        // Strategy that takes longer than PIPELINE_TIMEOUT_MS (30s)
+        // to trigger the timeout check branch
+        class SlowStrategy : public IFetchStrategy {
+        public:
+            QString id() const override { return "slow"; }
+            int kind() const override { return ProviderFetchKind::APIToken; }
+            bool isAvailable(const ProviderFetchContext&) const override { return true; }
+            ProviderFetchResult fetchSync(const ProviderFetchContext&) override {
+                QThread::sleep(1); // 1s per call is fast enough for a test
+                return {};
+            }
+            bool shouldFallback(const ProviderFetchResult&, const ProviderFetchContext&) const override {
+                return true; // keep falling back so next strategy is checked
+            }
+        };
+
+        // Create 35 failed strategies (35s > 30s PIPELINE_TIMEOUT_MS)
+        QVector<IFetchStrategy*> strategies;
+        for (int i = 0; i < 35; ++i) {
+            strategies.append(new SlowStrategy());
+        }
+
+        ProviderFetchResult result = pipeline.execute(strategies, ctx);
+
+        // Pipeline should timeout before all 35 strategies run
+        QVERIFY(!result.success);
+        QVERIFY(result.errorMessage.contains("timeout"));
+        QVERIFY(result.errorMessage.contains("30000"));
+
+        // Cleanup: delete remaining strategies that didn't get cleanup'd
+        qDeleteAll(strategies);
     }
 };
 

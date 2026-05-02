@@ -49,5 +49,6 @@ public:
 
 private:
     NetworkManager();
+    static QNetworkAccessManager* threadLocalNam();
     int m_defaultTimeout = 15000;
 };

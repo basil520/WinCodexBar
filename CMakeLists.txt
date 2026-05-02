@@ -46,6 +46,8 @@ set(CORE_SOURCES
     src/providers/mistral/MistralProvider.cpp
     src/providers/ollama/OllamaProvider.cpp
     src/providers/codex/CodexProvider.cpp
+    src/providers/codex/CodexUIErrorMapper.cpp
+    src/providers/codex/CodexConsumerProjection.cpp
     src/providers/codex/CodexIdentity.cpp
     src/providers/codex/CodexRateWindowNormalizer.cpp
     src/providers/codex/CodexReconciledState.cpp
@@ -56,6 +58,9 @@ set(CORE_SOURCES
     src/providers/codex/CodexDashboardAuthorityContext.cpp
     src/providers/codex/CodexDashboardCache.cpp
     src/providers/codex/CodexPersistentCLISession.cpp
+    src/providers/codex/CodexRpcClient.cpp
+    src/providers/codex/CodexCreditsFetcher.cpp
+    src/providers/codex/OpenAIDashboardFetcher.cpp
     src/providers/codex/CodexSystemAccountObserver.cpp
     src/providers/codex/ManagedCodexAccount.cpp
     src/providers/codex/CodexAccountReconciliation.cpp
@@ -118,11 +123,14 @@ set(CORE_HEADERS
     src/models/ClaudeUsageSnapshot.h
 
     src/providers/codex/CodexIdentity.h
+    src/providers/codex/CodexUIErrorMapper.h
+    src/providers/codex/CodexConsumerProjection.h
     src/providers/codex/CodexRateWindowNormalizer.h
     src/providers/codex/CodexReconciledState.h
     src/providers/codex/CodexTokenRefresher.h
     src/providers/codex/CodexOAuthUsageFetcher.h
     src/providers/codex/CodexStatusProbe.h
+    src/providers/codex/CodexCreditsFetcher.h
     src/providers/codex/CodexDashboardAuthority.h
     src/providers/codex/CodexSystemAccountObserver.h
     src/providers/codex/ManagedCodexAccount.h

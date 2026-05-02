@@ -2,6 +2,7 @@
 
 #include "../src/providers/ProviderSettingsSnapshot.h"
 #include "../src/providers/codex/CodexProvider.h"
+#include "../src/providers/codex/CodexDashboardCache.h"
 
 class tst_CodexProvider : public QObject {
     Q_OBJECT
@@ -123,6 +124,27 @@ private slots:
         QVERIFY(result.usage.identity.has_value());
         QCOMPARE(result.usage.identity->accountEmail.value(), QString("dev@example.com"));
         QCOMPARE(result.usage.identity->loginMethod.value(), QString("plus"));
+    }
+
+    void codexDashboardCacheClearRemovesFile() {
+        // Save a dummy entry
+        CodexDashboardCacheEntry entry;
+        entry.accountEmail = "test@example.com";
+        entry.html = "<html>test</html>";
+        entry.updatedAt = QDateTime::currentDateTime();
+        CodexDashboardCache::save(entry);
+
+        // Verify saved
+        auto loaded = CodexDashboardCache::load("test@example.com");
+        QVERIFY(loaded.has_value());
+        QCOMPARE(loaded->html, QString("<html>test</html>"));
+
+        // Clear
+        CodexDashboardCache::clear();
+
+        // Verify cleared
+        auto afterClear = CodexDashboardCache::load("test@example.com");
+        QVERIFY(!afterClear.has_value());
     }
 };
 

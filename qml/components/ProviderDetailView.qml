@@ -36,6 +36,9 @@ ScrollView {
     property var codexAccountState: root.providerId === "codex"
         ? UsageStore.codexAccountState
         : ({})
+    property var codexProjection: root.providerId === "codex"
+        ? UsageStore.codexConsumerProjectionData()
+        : ({})
 
     // Reactive binding for codexAccountState
     Connections {
@@ -43,6 +46,16 @@ ScrollView {
         function onCodexAccountStateChanged() {
             if (root.providerId === "codex") {
                 root.codexAccountState = UsageStore.codexAccountState
+            }
+        }
+        function onCodexCreditsChanged() {
+            if (root.providerId === "codex") {
+                root.codexProjection = UsageStore.codexConsumerProjectionData()
+            }
+        }
+        function onSnapshotChanged(providerId) {
+            if (providerId === "codex" && root.providerId === "codex") {
+                root.codexProjection = UsageStore.codexConsumerProjectionData()
             }
         }
     }
@@ -593,6 +606,166 @@ ScrollView {
                         }
                         onReauthenticateAccount: function(accountID) {
                             UsageStore.reauthenticateCodexAccount(accountID)
+                        }
+                        onPromoteAccount: function(accountID) {
+                            UsageStore.promoteCodexAccount(accountID)
+                        }
+                    }
+                }
+            }
+
+            SettingsGroupBox {
+                visible: root.providerId === "codex"
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    SectionTitle { text: qsTr("Usage Projection") }
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("Projected rate lanes and credits from the current active account.")
+                        color: AppTheme.textSecondary
+                        font.pixelSize: AppTheme.fontSizeSm
+                        wrapMode: Text.WordWrap
+                    }
+
+                    // Plan utilization lanes (session / weekly rates)
+                    Repeater {
+                        model: root.codexProjection && root.codexProjection.planUtilizationLanes
+                            ? root.codexProjection.planUtilizationLanes
+                            : []
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 36
+                            color: AppTheme.bgTertiary
+                            radius: 6
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.margins: 10
+                                spacing: 10
+
+                                Label {
+                                    Layout.preferredWidth: 80
+                                    text: model.modelData && model.modelData.role === 0
+                                        ? qsTr("Session")
+                                        : qsTr("Weekly")
+                                    color: AppTheme.textSecondary
+                                    font.pixelSize: AppTheme.fontSizeSm
+                                }
+
+                                UsageProgressBar {
+                                    Layout.fillWidth: true
+                                    value: model.modelData
+                                        ? (model.modelData.remainingPercent || 0)
+                                        : 0
+                                    tintColor: {
+                                        var r = model.modelData ? (model.modelData.remainingPercent || 100) : 100
+                                        return r < 20 ? "#F44336" : AppTheme.accentColor
+                                    }
+                                }
+
+                                Label {
+                                    Layout.preferredWidth: 44
+                                    text: {
+                                        var p = model.modelData ? (model.modelData.remainingPercent || 0) : 0
+                                        return Math.round(p) + "%"
+                                    }
+                                    color: AppTheme.textPrimary
+                                    font.pixelSize: AppTheme.fontSizeSm
+                                    horizontalAlignment: Text.AlignRight
+                                }
+                            }
+                        }
+                    }
+
+                    // Credits balance
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+                        visible: root.codexProjection && root.codexProjection.hasCredits
+
+                        Label {
+                            Layout.preferredWidth: 80
+                            text: qsTr("Credits")
+                            color: AppTheme.textSecondary
+                            font.pixelSize: AppTheme.fontSizeSm
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        Label {
+                            text: "$" + Number(root.codexProjection.creditsRemaining || 0).toFixed(2)
+                            color: AppTheme.textPrimary
+                            font.pixelSize: AppTheme.fontSizeLg
+                            font.bold: true
+                        }
+                    }
+
+                    // Buy Credits button (when rate lane exhausted)
+                    Button {
+                        Layout.fillWidth: true
+                        visible: root.codexProjection
+                            && root.codexProjection.canShowBuyCredits
+                            && root.codexProjection.hasExhaustedRateLane
+                        text: qsTr("Buy More Credits")
+                        onClicked: root.descriptor && root.descriptor.dashboardURL
+                            ? AppController.openExternalUrl(root.descriptor.dashboardURL)
+                            : {}
+
+                        background: Rectangle {
+                            color: parent.hovered ? "#4CAF50" : Qt.rgba(0.30, 0.65, 0.31, 0.35)
+                            radius: 6
+                            border.color: "#4CAF50"
+                            border.width: 1
+                        }
+                        contentItem: Label {
+                            text: parent.text
+                            color: "#4CAF50"
+                            font.pixelSize: 13
+                            font.bold: true
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                    }
+
+                    // Supplemental metrics
+                    ColumnLayout {
+                        visible: root.codexProjection
+                            && root.codexProjection.supplementalMetrics
+                            && root.codexProjection.supplementalMetrics.length > 0
+                        spacing: 4
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 1
+                            color: AppTheme.borderColor
+                        }
+
+                        Label {
+                            text: qsTr("Supplemental Metrics")
+                            color: AppTheme.textTertiary
+                            font.pixelSize: AppTheme.fontSizeSm
+                            font.bold: true
+                        }
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: {
+                                var m = root.codexProjection.supplementalMetrics || []
+                                var names = []
+                                for (var i = 0; i < m.length; i++) {
+                                    if (m[i] === 0) names.push("Code Review")
+                                    else names.push("Metric #" + m[i])
+                                }
+                                return names.join(", ")
+                            }
+                            color: AppTheme.textSecondary
+                            font.pixelSize: AppTheme.fontSizeSm
+                            wrapMode: Text.WordWrap
                         }
                     }
                 }

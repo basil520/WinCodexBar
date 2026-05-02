@@ -46,6 +46,7 @@ private:
     HANDLE m_hOutput = nullptr;
     HANDLE m_hProcess = nullptr;
     HANDLE m_hThread = nullptr;
+    HANDLE m_hExitEvent = nullptr;
     void* m_procInfo = nullptr;
 
     // QProcess fallback state

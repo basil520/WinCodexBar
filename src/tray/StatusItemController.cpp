@@ -99,6 +99,12 @@ bool StatusItemController::createTrayIcon() {
 }
 
 void StatusItemController::destroyTrayIcon() {
+    if (m_nid.hIcon) {
+        HICON defaultIcon = LoadIconW(nullptr, IDI_APPLICATION);
+        if (m_nid.hIcon != defaultIcon) {
+            DestroyIcon(m_nid.hIcon);
+        }
+    }
     if (m_nid.hWnd) {
         Shell_NotifyIconW(NIM_DELETE, &m_nid);
         memset(&m_nid, 0, sizeof(m_nid));
@@ -192,7 +198,12 @@ void StatusItemController::applyIcon(const QString& providerId) {
     QIcon icon = m_renderer->makeIcon(primary, weekly, std::nullopt, false,
                                        TrayIconRenderer::IconStyle::Default);
     int iconSize = GetSystemMetrics(SM_CXSMICON);
+    HICON prevIcon = m_nid.hIcon;
     m_nid.hIcon = icon.pixmap(iconSize, iconSize).toImage().toHICON();
+    HICON defaultIcon = LoadIconW(nullptr, IDI_APPLICATION);
+    if (prevIcon && prevIcon != defaultIcon) {
+        DestroyIcon(prevIcon);
+    }
     m_nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
 
     QString tip = m_store->providerDisplayName(providerId);
@@ -245,9 +256,14 @@ void StatusItemController::applyMergedIcon() {
     }
 
     QIcon icon = m_renderer->makeIcon(lowestPrimary, lowestWeekly, std::nullopt, false,
-                                      TrayIconRenderer::IconStyle::Default);
+                                       TrayIconRenderer::IconStyle::Default);
     int iconSize = GetSystemMetrics(SM_CXSMICON);
+    HICON prevIcon = m_nid.hIcon;
     m_nid.hIcon = icon.pixmap(iconSize, iconSize).toImage().toHICON();
+    HICON defaultIcon = LoadIconW(nullptr, IDI_APPLICATION);
+    if (prevIcon && prevIcon != defaultIcon) {
+        DestroyIcon(prevIcon);
+    }
     m_nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
 
     QString tip = tr("CodexBar");

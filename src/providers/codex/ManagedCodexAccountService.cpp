@@ -498,6 +498,75 @@ bool ManagedCodexAccountService::reauthenticateAccount(const QString& accountID)
     return false;
 }
 
+bool ManagedCodexAccountService::promoteAccount(const QString& accountID)
+{
+    if (m_isAuthenticating || m_isRemoving) return false;
+
+    auto account = m_store.account(accountID);
+    if (!account.has_value() || account->id == "live-system") return false;
+
+    QHash<QString, QString> scopedEnv = CodexHomeScope::scopedEnvironment(m_env, account->managedHomePath);
+    auto credentials = CodexOAuthCredentials::load(scopedEnv);
+    if (!credentials.has_value()) return false;
+
+    QDir managedDir(account->managedHomePath);
+    QString managedAuthPath = managedDir.filePath("auth.json");
+    QByteArray managedAuthContent;
+    {
+        QFile f(managedAuthPath);
+        if (!f.open(QIODevice::ReadOnly)) return false;
+        managedAuthContent = f.readAll();
+    }
+
+    QString liveHome = CodexHomeScope::ambientHomeURL(m_env);
+    QString liveAuthPath = liveHome + "/auth.json";
+    QByteArray liveAuthBackup;
+    {
+        QFile f(liveAuthPath);
+        if (f.exists()) {
+            if (!f.open(QIODevice::ReadOnly)) return false;
+            liveAuthBackup = f.readAll();
+        }
+    }
+
+    if (!liveAuthBackup.isEmpty()) {
+        auto backupCreds = CodexOAuthCredentials::load(m_env);
+        if (backupCreds.has_value()) {
+            QString backupHome = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+                + "/managed-codex-homes/" + QUuid::createUuid().toString(QUuid::WithoutBraces);
+            QDir().mkpath(backupHome);
+            QFile backupAuthFile(backupHome + "/auth.json");
+            if (backupAuthFile.open(QIODevice::WriteOnly)) {
+                backupAuthFile.write(liveAuthBackup);
+                backupAuthFile.close();
+            }
+
+            ManagedCodexAccount backupAccount;
+            backupAccount.id = QUuid::createUuid().toString(QUuid::WithoutBraces);
+            backupAccount.email = resolveEmailFromCredentials(*backupCreds);
+            backupAccount.providerAccountId = backupCreds->accountId;
+            backupAccount.managedHomePath = backupHome;
+            backupAccount.createdAt = QDateTime::currentDateTime();
+            backupAccount.updatedAt = QDateTime::currentDateTime();
+            m_store.addAccount(backupAccount);
+        }
+    }
+
+    QFile targetLiveFile(liveAuthPath);
+    if (!targetLiveFile.open(QIODevice::WriteOnly)) return false;
+    targetLiveFile.write(managedAuthContent);
+    targetLiveFile.close();
+
+    m_activeAccountID = "live-system";
+
+    refresh();
+
+    emit activeAccountChanged("live-system");
+    emit accountsChanged();
+
+    return true;
+}
+
 bool ManagedCodexAccountService::isAuthenticating() const
 {
     return m_isAuthenticating;
@@ -562,6 +631,23 @@ void ManagedCodexAccountService::refresh()
     // If no active account set, default to live system
     if (m_activeAccountID.isEmpty()) {
         m_activeAccountID = "live-system";
+    }
+    
+    // If active managed account no longer exists, fall back to live system
+    if (m_activeAccountID != "live-system") {
+        bool activeAccountStillExists = false;
+        for (const auto& stored : m_snapshot.storedAccounts) {
+            if (stored.id == m_activeAccountID) {
+                activeAccountStillExists = true;
+                break;
+            }
+        }
+        if (!activeAccountStillExists) {
+            qDebug() << "[ManagedCodexAccountService] Active managed account" << m_activeAccountID
+                     << "no longer exists; falling back to live system";
+            m_activeAccountID = "live-system";
+            emit activeAccountChanged(m_activeAccountID);
+        }
     }
     
     emit accountsChanged();

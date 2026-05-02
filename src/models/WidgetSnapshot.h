@@ -1,5 +1,10 @@
 #pragma once
 
+// NOTE: WidgetSnapshot is currently unused in WinCodexBar.
+// It was ported from the macOS upstream CodexBar for potential
+// future Windows Widgets (Win11) support. All references are
+// currently dead code.
+
 #include "RateWindow.h"
 #include "ProviderIdentitySnapshot.h"
 

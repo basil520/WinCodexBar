@@ -12,10 +12,13 @@
 #include "../util/UsagePaceText.h"
 #include "../models/UsagePace.h"
 #include "../providers/codex/ManagedCodexAccountService.h"
+#include "../providers/codex/CodexCreditsFetcher.h"
+#include "../providers/codex/CodexDashboardCache.h"
 
 #include <QDateTime>
 #include <QJsonObject>
 #include <QProcessEnvironment>
+#include <QCryptographicHash>
 #include <QStandardPaths>
 #include <QThread>
 #include <QUrl>
@@ -445,6 +448,71 @@ QVariantMap UsageStore::snapshotData(const QString& id) const {
     if (snap.secondary.has_value()) addPaceFields("secondary", *snap.secondary);
 
     m["error"] = Localization::providerError(m_errors.value(id, ""));
+
+    // Codex-specific: Consumer Projection
+    if (id == "codex") {
+        CodexConsumerProjection::Context ctx;
+        ctx.snapshot = snap;
+        ctx.rawUsageError = m_errors.value(id);
+        ctx.now = QDateTime::currentDateTime();
+
+        if (m_codexCreditsCache.snapshot.has_value() &&
+            m_codexCreditsCache.accountKey == currentCodexAccountKey()) {
+            ctx.credits = &m_codexCreditsCache.snapshot.value();
+            ctx.rawCreditsError = m_codexCreditsCache.lastError;
+        }
+
+        auto projection = CodexConsumerProjection::make(
+            CodexConsumerProjection::Surface::LiveCard, ctx);
+
+        // Override primary/secondary with projected lanes
+        auto sessionWindow = CodexConsumerProjection::rateWindow(projection, CodexConsumerProjection::RateLane::Session);
+        if (sessionWindow.has_value()) {
+            addWindowFields("primary", *sessionWindow);
+        }
+        auto weeklyWindow = CodexConsumerProjection::rateWindow(projection, CodexConsumerProjection::RateLane::Weekly);
+        if (weeklyWindow.has_value()) {
+            addWindowFields("secondary", *weeklyWindow);
+            m["hasSecondary"] = true;
+        }
+
+        // Dashboard visibility
+        m["dashboardVisibility"] = static_cast<int>(projection.dashboardVisibility);
+
+        // Menu bar fallback
+        m["menuBarFallback"] = static_cast<int>(projection.menuBarFallback);
+
+        // User-facing errors (override raw error)
+        if (!projection.userFacingErrors.usage.isEmpty()) {
+            m["error"] = projection.userFacingErrors.usage;
+        }
+
+        // Credits data - try from projection first, then from providerCost
+        if (projection.credits.has_value() && projection.credits->snapshot.has_value()) {
+            m["hasCredits"] = true;
+            m["creditsRemaining"] = projection.credits->snapshot->remaining;
+            if (!projection.credits->userFacingError.isEmpty()) {
+                m["creditsError"] = projection.credits->userFacingError;
+            }
+        } else if (snap.providerCost.has_value()) {
+            // Fallback: use providerCost directly (credits are stored here)
+            m["hasCredits"] = true;
+            m["creditsRemaining"] = snap.providerCost->used;
+        } else {
+            m["hasCredits"] = false;
+        }
+
+        // For Codex, providerCost represents credits, not "extra usage"
+        if (snap.providerCost.has_value() && 
+            snap.providerCost->period.has_value() && 
+            snap.providerCost->period.value() == "Credits") {
+            m["hasProviderCost"] = false;  // Hide "Extra usage" for Codex credits
+        }
+
+        // Exhausted lane flag
+        m["hasExhaustedRateLane"] = CodexConsumerProjection::hasExhaustedRateLane(projection);
+    }
+
     return m;
 }
 
@@ -773,6 +841,12 @@ QVariantMap UsageStore::providerCostUsageData(const QString& providerId) const {
 void UsageStore::refresh() {
     refreshCostUsage();
 
+    auto currentGuard = currentCodexAccountRefreshGuard();
+    if (currentGuard != m_lastCodexRefreshGuard) {
+        clearCodexOpenAIWebState();
+        m_lastCodexRefreshGuard = currentGuard;
+    }
+
     if (m_isRefreshing) return;
     m_isRefreshing = true;
     emit refreshingChanged();
@@ -784,6 +858,70 @@ void UsageStore::refresh() {
         return;
     }
 
+    QDateTime refreshStartedAt = QDateTime::currentDateTime();
+
+    // Parallel credits refresh for Codex (mirrors original CodexBar behavior)
+    if (isProviderEnabled("codex")) {
+        auto expectedGuard = currentCodexAccountRefreshGuard();
+        m_lastCodexRefreshGuard = expectedGuard;
+
+        // If identity is unresolved, wait for usage refresh to establish identity first
+        if (expectedGuard.identity.isEmpty()) {
+            ++m_pendingCreditsRefresh;
+            // Fire-and-forget delayed credits refresh after usage establishes identity
+            QtConcurrent::run([this, refreshStartedAt, expectedGuard]() mutable {
+                auto snap = waitForCodexSnapshot(refreshStartedAt, 6000);
+                if (!snap.updatedAt.isValid()) {
+                    // Usage refresh failed or timed out; still try credits with current guard
+                }
+                auto updatedGuard = currentCodexAccountRefreshGuard();
+                if (!updatedGuard.isEmpty()) {
+                    expectedGuard = updatedGuard;
+                }
+
+                QHash<QString, QString> creditsEnv;
+                QProcessEnvironment systemEnv = QProcessEnvironment::systemEnvironment();
+                for (const auto& key : systemEnv.keys()) {
+                    creditsEnv.insert(key, systemEnv.value(key));
+                }
+                if (m_codexAccountService) {
+                    QString managedHome = m_codexAccountService->activeManagedHomePath();
+                    if (!managedHome.isEmpty()) {
+                        creditsEnv.insert("CODEX_HOME", managedHome);
+                    }
+                }
+
+                CodexCreditsFetcher fetcher(creditsEnv);
+                auto result = fetcher.fetchCreditsSync(ProviderPipeline::STRATEGY_TIMEOUT_MS);
+                QMetaObject::invokeMethod(this, [this, result, expectedGuard]() {
+                    applyCodexCreditsFetchResult(result, expectedGuard);
+                }, Qt::QueuedConnection);
+            });
+        } else {
+            // Identity known; proceed immediately
+            QHash<QString, QString> creditsEnv;
+            QProcessEnvironment systemEnv = QProcessEnvironment::systemEnvironment();
+            for (const auto& key : systemEnv.keys()) {
+                creditsEnv.insert(key, systemEnv.value(key));
+            }
+            if (m_codexAccountService) {
+                QString managedHome = m_codexAccountService->activeManagedHomePath();
+                if (!managedHome.isEmpty()) {
+                    creditsEnv.insert("CODEX_HOME", managedHome);
+                }
+            }
+
+            ++m_pendingCreditsRefresh;
+            QtConcurrent::run([this, creditsEnv, expectedGuard]() {
+                CodexCreditsFetcher fetcher(creditsEnv);
+                auto result = fetcher.fetchCreditsSync(ProviderPipeline::STRATEGY_TIMEOUT_MS);
+                QMetaObject::invokeMethod(this, [this, result, expectedGuard]() {
+                    applyCodexCreditsFetchResult(result, expectedGuard);
+                }, Qt::QueuedConnection);
+            });
+        }
+    }
+
     m_pendingRefreshes = ids.size();
     for (const auto& id : ids) {
         refreshProvider(id);
@@ -791,7 +929,84 @@ void UsageStore::refresh() {
 }
 
 void UsageStore::refreshAll() {
-    refresh();
+    refreshCostUsage();
+
+    auto currentGuard = currentCodexAccountRefreshGuard();
+    if (currentGuard != m_lastCodexRefreshGuard) {
+        clearCodexOpenAIWebState();
+        m_lastCodexRefreshGuard = currentGuard;
+    }
+
+    if (m_isRefreshing) return;
+    m_isRefreshing = true;
+    emit refreshingChanged();
+
+    auto ids = ProviderRegistry::instance().providerIDs();
+    if (ids.isEmpty()) {
+        m_isRefreshing = false;
+        emit refreshingChanged();
+        return;
+    }
+
+    QDateTime refreshStartedAt = QDateTime::currentDateTime();
+
+    // Parallel credits refresh for Codex
+    if (ProviderRegistry::instance().isProviderEnabled("codex")) {
+        auto expectedGuard = currentCodexAccountRefreshGuard();
+        m_lastCodexRefreshGuard = expectedGuard;
+
+        if (expectedGuard.identity.isEmpty()) {
+            ++m_pendingCreditsRefresh;
+            QtConcurrent::run([this, refreshStartedAt, expectedGuard]() mutable {
+                auto snap = waitForCodexSnapshot(refreshStartedAt, 6000);
+                auto updatedGuard = currentCodexAccountRefreshGuard();
+                if (!updatedGuard.isEmpty()) {
+                    expectedGuard = updatedGuard;
+                }
+                QHash<QString, QString> creditsEnv;
+                QProcessEnvironment systemEnv = QProcessEnvironment::systemEnvironment();
+                for (const auto& key : systemEnv.keys()) {
+                    creditsEnv.insert(key, systemEnv.value(key));
+                }
+                if (m_codexAccountService) {
+                    QString managedHome = m_codexAccountService->activeManagedHomePath();
+                    if (!managedHome.isEmpty()) {
+                        creditsEnv.insert("CODEX_HOME", managedHome);
+                    }
+                }
+                CodexCreditsFetcher fetcher(creditsEnv);
+                auto result = fetcher.fetchCreditsSync(ProviderPipeline::STRATEGY_TIMEOUT_MS);
+                QMetaObject::invokeMethod(this, [this, result, expectedGuard]() {
+                    applyCodexCreditsFetchResult(result, expectedGuard);
+                }, Qt::QueuedConnection);
+            });
+        } else {
+            QHash<QString, QString> creditsEnv;
+            QProcessEnvironment systemEnv = QProcessEnvironment::systemEnvironment();
+            for (const auto& key : systemEnv.keys()) {
+                creditsEnv.insert(key, systemEnv.value(key));
+            }
+            if (m_codexAccountService) {
+                QString managedHome = m_codexAccountService->activeManagedHomePath();
+                if (!managedHome.isEmpty()) {
+                    creditsEnv.insert("CODEX_HOME", managedHome);
+                }
+            }
+            ++m_pendingCreditsRefresh;
+            QtConcurrent::run([this, creditsEnv, expectedGuard]() {
+                CodexCreditsFetcher fetcher(creditsEnv);
+                auto result = fetcher.fetchCreditsSync(ProviderPipeline::STRATEGY_TIMEOUT_MS);
+                QMetaObject::invokeMethod(this, [this, result, expectedGuard]() {
+                    applyCodexCreditsFetchResult(result, expectedGuard);
+                }, Qt::QueuedConnection);
+            });
+        }
+    }
+
+    m_pendingRefreshes = ids.size();
+    for (const auto& id : ids) {
+        refreshProvider(id);
+    }
 }
 
 void UsageStore::clearCache() {
@@ -835,6 +1050,16 @@ void UsageStore::refreshProvider(const QString& providerId) {
         ProviderFetchResult result = pipeline.executeProvider(provider, ctx);
 
         QMetaObject::invokeMethod(this, [this, providerId, result]() {
+            m_lastFetchAttempts[providerId] = result.attempts;
+            if (providerId == "codex") {
+                emit codexFetchAttemptsChanged();
+            }
+            if (result.dashboard.has_value()) {
+                m_dashboardData[providerId] = result.dashboard->toVariantMap();
+            } else {
+                m_dashboardData.remove(providerId);
+            }
+
             if (result.success) {
                 m_snapshots[providerId] = result.usage;
                 m_errors.remove(providerId);
@@ -858,6 +1083,23 @@ void UsageStore::refreshProvider(const QString& providerId) {
                         SessionQuotaNotifier::post(t, name);
                     }
                     m_lastKnownSessionRemaining[providerId] = currentRemaining;
+                    if (providerId == "codex" && !result.sourceLabel.isEmpty() &&
+                        m_lastKnownSessionWindowSource != result.sourceLabel) {
+                        QString label = result.sourceLabel;
+                        bool hasAttachedDashboard = result.dashboard.has_value()
+                            && result.dashboard->toVariantMap().value("visibility", "hidden").toString() == "attached";
+                        if (hasAttachedDashboard) {
+                            label += " + openai-web";
+                        }
+                        m_lastKnownSessionWindowSource = label;
+                        emit lastKnownSessionWindowSourceChanged();
+                    }
+                }
+
+                // Codex-specific: refresh credits after successful usage fetch
+                if (providerId == "codex") {
+                    auto guard = currentCodexAccountRefreshGuard();
+                    refreshCodexCredits(guard);
                 }
             } else {
                 m_errors[providerId] = result.errorMessage;
@@ -868,7 +1110,7 @@ void UsageStore::refreshProvider(const QString& providerId) {
             emit snapshotChanged(providerId);
 
             m_pendingRefreshes--;
-            if (m_pendingRefreshes <= 0) {
+            if (m_pendingRefreshes <= 0 && m_pendingCreditsRefresh <= 0) {
                 m_isRefreshing = false;
                 emit refreshingChanged();
             }
@@ -1207,6 +1449,15 @@ void UsageStore::testProviderConnection(const QString& providerId) {
         ProviderPipeline pipeline;
         ProviderFetchResult result = pipeline.executeProvider(provider, ctx);
         QMetaObject::invokeMethod(this, [this, providerId, result, startedAt]() {
+            m_lastFetchAttempts[providerId] = result.attempts;
+            if (providerId == "codex") {
+                emit codexFetchAttemptsChanged();
+            }
+            if (result.dashboard.has_value()) {
+                m_dashboardData[providerId] = result.dashboard->toVariantMap();
+            } else {
+                m_dashboardData.remove(providerId);
+            }
             const qint64 finishedAt = QDateTime::currentDateTime().toMSecsSinceEpoch();
             qDebug() << "[TestConnection] Provider:" << providerId << "success:" << result.success << "error:" << result.errorMessage;
             if (result.success) {
@@ -1497,14 +1748,28 @@ QString UsageStore::codexActiveAccountID() const
 void UsageStore::setCodexActiveAccount(const QString& accountID)
 {
     if (!m_codexAccountService) return;
+
+    QString previousID = m_codexAccountService->activeAccountID();
+    if (previousID == accountID) return;
+
+    clearCodexOpenAIWebState();
+    m_lastCodexRefreshGuard = {}; // force guard re-evaluation on next refresh
+
     m_codexAccountService->setActiveAccount(accountID);
+
+    emit codexActiveAccountChanged(accountID);
+    emit codexAccountsChanged();
+
+    refreshProvider("codex");
 }
 
 bool UsageStore::addCodexAccount(const QString& email, const QString& homePath)
 {
     if (!m_codexAccountService) return false;
 
-    // If email is empty, use interactive login flow
+    clearCodexOpenAIWebState();
+    m_lastCodexRefreshGuard = {};
+
     if (email.isEmpty()) {
         return m_codexAccountService->authenticateNewAccount();
     }
@@ -1528,6 +1793,23 @@ bool UsageStore::reauthenticateCodexAccount(const QString& accountID)
 {
     if (!m_codexAccountService) return false;
     return m_codexAccountService->reauthenticateAccount(accountID);
+}
+
+bool UsageStore::promoteCodexAccount(const QString& accountID)
+{
+    if (!m_codexAccountService) return false;
+
+    // Clear state before promotion
+    clearCodexOpenAIWebState();
+    m_lastCodexRefreshGuard = {};
+
+    bool ok = m_codexAccountService->promoteAccount(accountID);
+
+    if (ok) {
+        refreshProvider("codex");
+    }
+
+    return ok;
 }
 
 bool UsageStore::isCodexAuthenticating() const
@@ -1558,4 +1840,332 @@ bool UsageStore::hasCodexUnreadableStore() const
 {
     if (!m_codexAccountService) return false;
     return m_codexAccountService->hasUnreadableStore();
+}
+
+// ============================================================================
+// Codex Account Refresh Guard (mirrors original CodexBar)
+// ============================================================================
+
+UsageStore::CodexAccountRefreshGuard UsageStore::currentCodexAccountRefreshGuard() const
+{
+    CodexAccountRefreshGuard guard;
+    guard.accountKey = currentCodexAccountKey();
+
+    if (!m_codexAccountService) {
+        guard.source = "liveSystem";
+        auto snap = snapshot("codex");
+        if (snap.identity.has_value() && snap.identity->accountEmail.has_value()) {
+            guard.identity = snap.identity->accountEmail.value().toLower();
+        }
+        return guard;
+    }
+
+    QString activeId = m_codexAccountService->activeAccountID();
+    if (activeId.isEmpty() || activeId == "live-system") {
+        guard.source = "liveSystem";
+        auto snap = snapshot("codex");
+        if (snap.identity.has_value() && snap.identity->accountEmail.has_value()) {
+            guard.identity = snap.identity->accountEmail.value().toLower();
+        }
+    } else {
+        guard.source = "managedAccount";
+        guard.identity = activeId.toLower();
+    }
+    return guard;
+}
+
+bool UsageStore::shouldApplyCodexScopedNonUsageResult(const CodexAccountRefreshGuard& expectedGuard) const
+{
+    auto currentGuard = currentCodexAccountRefreshGuard();
+    if (currentGuard.source != expectedGuard.source) return false;
+    if (expectedGuard.identity.isEmpty()) return false;
+    return currentGuard.identity == expectedGuard.identity;
+}
+
+UsageSnapshot UsageStore::waitForCodexSnapshot(const QDateTime& minimumUpdatedAt, int timeoutMs) const
+{
+    QElapsedTimer timer;
+    timer.start();
+    while (timer.elapsed() < timeoutMs) {
+        auto snap = snapshot("codex");
+        if (snap.updatedAt.isValid() && snap.updatedAt >= minimumUpdatedAt) {
+            return snap;
+        }
+        QThread::msleep(100);
+    }
+    return snapshot("codex");
+}
+
+// ============================================================================
+// Codex Credits Cache & Consumer Projection
+// ============================================================================
+
+QString UsageStore::currentCodexAccountKey() const
+{
+    auto snap = snapshot("codex");
+    if (snap.identity.has_value() && snap.identity->accountEmail.has_value()) {
+        QString email = snap.identity->accountEmail.value().toLower().trimmed();
+        QByteArray hashBytes = QCryptographicHash::hash(email.toUtf8(), QCryptographicHash::Sha256);
+        return "codex:v1:email-hash:" + QString::fromLatin1(hashBytes.toHex());
+    }
+    if (snap.identity.has_value() && snap.identity->loginMethod.has_value()) {
+        QString method = snap.identity->loginMethod.value().toLower().trimmed();
+        QByteArray hashBytes = QCryptographicHash::hash(method.toUtf8(), QCryptographicHash::Sha256);
+        return "codex:v1:method-hash:" + QString::fromLatin1(hashBytes.toHex());
+    }
+    return "codex:v1:unresolved";
+}
+
+std::optional<CreditsSnapshot> UsageStore::cachedCodexCredits() const
+{
+    if (m_codexCreditsCache.accountKey == currentCodexAccountKey()) {
+        return m_codexCreditsCache.snapshot;
+    }
+    return std::nullopt;
+}
+
+QString UsageStore::codexCreditsError() const
+{
+    if (m_codexCreditsCache.accountKey == currentCodexAccountKey()) {
+        return m_codexCreditsCache.lastError;
+    }
+    return QString();
+}
+
+void UsageStore::refreshCodexCredits(const CodexAccountRefreshGuard& expectedGuard)
+{
+    if (!isProviderEnabled("codex")) return;
+
+    QString accountKey = currentCodexAccountKey();
+    if (accountKey.isEmpty()) return;
+
+    // Check cache freshness (5 minute cooldown)
+    if (m_codexCreditsCache.accountKey == accountKey &&
+        m_codexCreditsCache.updatedAt.isValid() &&
+        m_codexCreditsCache.updatedAt.secsTo(QDateTime::currentDateTime()) < 300) {
+        return;
+    }
+
+    m_codexCreditsRefreshing = true;
+
+    // Stage 4: test injection point
+    if (_test_codexCreditsLoaderOverride) {
+        auto overrideResult = _test_codexCreditsLoaderOverride();
+        CodexCreditsFetcher::FetchResult result;
+        if (overrideResult.has_value()) {
+            result.success = true;
+            result.credits = overrideResult;
+        } else {
+            result.success = false;
+            result.errorMessage = "test override returned no credits";
+        }
+        applyCodexCreditsFetchResult(result, expectedGuard);
+        m_codexCreditsRefreshing = false;
+        return;
+    }
+
+    // Build environment
+    QHash<QString, QString> env;
+    QProcessEnvironment systemEnv = QProcessEnvironment::systemEnvironment();
+    for (const auto& key : systemEnv.keys()) {
+        env.insert(key, systemEnv.value(key));
+    }
+
+    // If a managed account is active, point CODEX_HOME at its home path
+    if (m_codexAccountService) {
+        QString managedHome = m_codexAccountService->activeManagedHomePath();
+        if (!managedHome.isEmpty()) {
+            env.insert("CODEX_HOME", managedHome);
+        }
+    }
+
+    CodexCreditsFetcher fetcher(env);
+    auto result = fetcher.fetchCreditsSync(ProviderPipeline::STRATEGY_TIMEOUT_MS);
+    applyCodexCreditsFetchResult(result, expectedGuard);
+
+    m_codexCreditsRefreshing = false;
+}
+
+void UsageStore::applyCodexCreditsFetchResult(const CodexCreditsFetcher::FetchResult& result,
+                                               const CodexAccountRefreshGuard& expectedGuard)
+{
+    // Stage 2: decrement pending counter
+    if (m_pendingCreditsRefresh > 0) {
+        --m_pendingCreditsRefresh;
+    }
+
+    // Stage 1: guard check — discard result if account changed during fetch
+    if (!expectedGuard.isEmpty() && !shouldApplyCodexScopedNonUsageResult(expectedGuard)) {
+        qDebug() << "[UsageStore] Discarding stale credits result (account changed during fetch)";
+        // Still emit refreshingChanged if everything is done
+        if (m_pendingRefreshes <= 0 && m_pendingCreditsRefresh <= 0 && m_isRefreshing) {
+            m_isRefreshing = false;
+            emit refreshingChanged();
+        }
+        return;
+    }
+
+    QString accountKey = currentCodexAccountKey();
+    if (accountKey.isEmpty()) {
+        if (m_pendingRefreshes <= 0 && m_pendingCreditsRefresh <= 0 && m_isRefreshing) {
+            m_isRefreshing = false;
+            emit refreshingChanged();
+        }
+        return;
+    }
+
+    QDateTime now = QDateTime::currentDateTime();
+
+    if (result.success && result.credits.has_value()) {
+        m_codexCreditsCache.snapshot = result.credits;
+        m_codexCreditsCache.accountKey = accountKey;
+        m_codexCreditsCache.updatedAt = now;
+        m_codexCreditsCache.failureStreak = 0;
+        m_codexCreditsCache.lastError.clear();
+        emit codexCreditsChanged();
+
+        // Stage 4: plan history backfill if usage snapshot is stale
+        if (m_historyStore) {
+            auto snap = snapshot("codex");
+            if (snap.updatedAt.isValid()) {
+                m_historyStore->recordSample("codex", snap, accountKey);
+            }
+        }
+    } else {
+        QString errorMsg = result.errorMessage;
+        if (errorMsg.isEmpty()) {
+            errorMsg = "Codex credits are still loading; will retry shortly.";
+        }
+
+        m_codexCreditsCache.failureStreak++;
+        m_codexCreditsCache.lastError = errorMsg;
+        m_codexCreditsCache.accountKey = accountKey;
+        m_codexCreditsCache.updatedAt = now;
+
+        // Emit only if we have no stale cached value to show
+        if (!m_codexCreditsCache.snapshot.has_value()) {
+            emit codexCreditsChanged();
+        }
+    }
+
+    // Stage 2: signal refreshing completion if all work is done
+    if (m_pendingRefreshes <= 0 && m_pendingCreditsRefresh <= 0 && m_isRefreshing) {
+        m_isRefreshing = false;
+        emit refreshingChanged();
+    }
+}
+
+QVariantMap UsageStore::codexConsumerProjectionData() const
+{
+    QVariantMap m;
+    auto snap = snapshot("codex");
+
+    CodexConsumerProjection::Context ctx;
+    ctx.snapshot = snap;
+    ctx.rawUsageError = m_errors.value("codex");
+    ctx.now = QDateTime::currentDateTime();
+
+    if (m_codexCreditsCache.snapshot.has_value() &&
+        m_codexCreditsCache.accountKey == currentCodexAccountKey()) {
+        ctx.credits = const_cast<CreditsSnapshot*>(&m_codexCreditsCache.snapshot.value());
+        ctx.rawCreditsError = m_codexCreditsCache.lastError;
+    }
+
+    auto projection = CodexConsumerProjection::make(
+        CodexConsumerProjection::Surface::LiveCard, ctx);
+
+    m["dashboardVisibility"] = static_cast<int>(projection.dashboardVisibility);
+    m["menuBarFallback"] = static_cast<int>(projection.menuBarFallback);
+    m["hasExhaustedRateLane"] = CodexConsumerProjection::hasExhaustedRateLane(projection);
+
+    // Credits
+    if (projection.credits.has_value() && projection.credits->snapshot.has_value()) {
+        m["hasCredits"] = true;
+        m["creditsRemaining"] = projection.credits->snapshot->remaining;
+        m["creditsError"] = projection.credits->userFacingError;
+    } else {
+        m["hasCredits"] = false;
+    }
+
+    // Consumer Projection: supplemental metrics
+    QVariantList supplementalMetrics;
+    for (const auto& metric : projection.supplementalMetrics) {
+        supplementalMetrics.append(static_cast<int>(metric));
+    }
+    m["supplementalMetrics"] = supplementalMetrics;
+
+    // Consumer Projection: buy credits
+    m["canShowBuyCredits"] = projection.canShowBuyCredits;
+
+    // Consumer Projection: usage breakdown
+    m["hasUsageBreakdown"] = projection.hasUsageBreakdown;
+
+    // Consumer Projection: credits history
+    m["hasCreditsHistory"] = projection.hasCreditsHistory;
+
+    // Consumer Projection: plan utilization lanes
+    QVariantList planLanes;
+    for (const auto& lane : projection.planUtilizationLanes) {
+        QVariantMap laneMap;
+        laneMap["role"] = static_cast<int>(lane.role);
+        laneMap["usedPercent"] = lane.window.usedPercent;
+        laneMap["remainingPercent"] = lane.window.remainingPercent();
+        if (lane.window.resetsAt.has_value())
+            laneMap["resetsAt"] = lane.window.resetsAt->toMSecsSinceEpoch();
+        if (lane.window.windowMinutes.has_value())
+            laneMap["windowMinutes"] = *lane.window.windowMinutes;
+        planLanes.append(laneMap);
+    }
+    m["planUtilizationLanes"] = planLanes;
+
+    // Consumer Projection: user-facing errors
+    QVariantMap userErrors;
+    userErrors["usage"] = projection.userFacingErrors.usage;
+    userErrors["credits"] = projection.userFacingErrors.credits;
+    userErrors["dashboard"] = projection.userFacingErrors.dashboard;
+    m["userFacingErrors"] = userErrors;
+
+    return m;
+}
+
+QVariantList UsageStore::codexFetchAttempts() const
+{
+    QVariantList list;
+    auto it = m_lastFetchAttempts.find("codex");
+    if (it == m_lastFetchAttempts.end()) return list;
+    for (const auto& attempt : it.value()) {
+        list.append(attempt.toMap());
+    }
+    return list;
+}
+
+QString UsageStore::lastKnownSessionWindowSource() const
+{
+    return m_lastKnownSessionWindowSource;
+}
+
+void UsageStore::clearCodexOpenAIWebState()
+{
+    // Clear dashboard HTML cache
+    CodexDashboardCache::clear();
+
+    // Clear Codex-specific cached state
+    m_codexCreditsCache = {};
+    m_snapshots.remove("codex");
+    m_errors.remove("codex");
+    m_connectionTests.remove("codex");
+    m_dashboardData.remove("codex");
+    m_lastKnownSessionRemaining.remove("codex");
+    m_lastKnownSessionWindowSource.clear();
+    m_lastFetchAttempts.remove("codex");
+
+    emit snapshotChanged("codex");
+    emit snapshotRevisionChanged();
+    emit codexCreditsChanged();
+    emit codexFetchAttemptsChanged();
+}
+
+QVariantMap UsageStore::providerDashboardData(const QString& providerId) const
+{
+    return m_dashboardData.value(providerId);
 }

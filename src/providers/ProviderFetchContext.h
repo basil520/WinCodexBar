@@ -15,6 +15,8 @@ struct ProviderFetchContext {
     QHash<QString, QString> env;
     bool isAppRuntime = true;
     bool allowInteractiveAuth = false;
+    bool verbose = false;
+    bool webDebugDumpHTML = false;
     int networkTimeoutMs = 15000;
     QString accountID;
     std::optional<QString> manualCookieHeader;

@@ -738,6 +738,51 @@ Rectangle {
                         }
                     }
 
+                    // === Codex Credits ===
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 28
+                        visible: modelData === "codex" && snap.hasCredits === true
+                        color: "#1a2a1a"
+                        radius: 6
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            spacing: 8
+
+                            Text {
+                                text: "Credits"
+                                color: "#888"
+                                font.pixelSize: 11
+                                font.bold: true
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            Text {
+                                text: "$" + (snap.creditsRemaining || 0).toFixed(2) + " left"
+                                color: (snap.creditsRemaining || 0) > 10 ? "#4CAF50"
+                                     : (snap.creditsRemaining || 0) > 2 ? "#FFC107"
+                                     : "#F44336"
+                                font.pixelSize: 13
+                                font.bold: true
+                            }
+                        }
+                    }
+
+                    // === Codex Credits Error ===
+                    Text {
+                        Layout.fillWidth: true
+                        visible: modelData === "codex" && snap.creditsError !== undefined && snap.creditsError !== ""
+                        text: snap.creditsError || ""
+                        color: "#FF9800"
+                        font.pixelSize: 10
+                        elide: Text.ElideRight
+                        maximumLineCount: 1
+                    }
+
                     // === Provider cost bar ===
                     RowLayout {
                         Layout.fillWidth: true
@@ -874,6 +919,111 @@ Rectangle {
                             providerId: modelData
                             hasTertiarySeries: snap.hasTertiary === true
                             tertiarySeriesLabel: snap.opusLabel || qsTr("Opus")
+                        }
+
+                        // Codex Dashboard Details (expandable)
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            visible: modelData === "codex"
+                            spacing: 6
+
+                            property var dashboard: UsageStore.providerDashboardData("codex")
+                            property bool hasDashboard: dashboard && dashboard.creditEvents !== undefined
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 1
+                                color: "#2a2a4a"
+                                visible: parent.hasDashboard
+                            }
+
+                            // Credit Events
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                visible: parent.hasDashboard && parent.dashboard.creditEvents && parent.dashboard.creditEvents.length > 0
+                                spacing: 4
+                                Text {
+                                    text: qsTr("Credit Events")
+                                    color: "#aaa"
+                                    font.pixelSize: 10
+                                    font.bold: true
+                                }
+                                Repeater {
+                                    model: parent.parent.dashboard.creditEvents || []
+                                    delegate: RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 4
+                                        Text {
+                                            text: modelData.date ? new Date(modelData.date).toLocaleDateString(Qt.locale(), "yyyy-MM-dd") : ""
+                                            color: "#888"
+                                            font.pixelSize: 9
+                                            Layout.preferredWidth: 70
+                                        }
+                                        Text {
+                                            text: modelData.service || ""
+                                            color: "#888"
+                                            font.pixelSize: 9
+                                            Layout.fillWidth: true
+                                            elide: Text.ElideRight
+                                        }
+                                        Text {
+                                            text: "$" + (modelData.amount || 0).toFixed(2)
+                                            color: modelData.amount >= 0 ? "#4CAF50" : "#F44336"
+                                            font.pixelSize: 9
+                                            horizontalAlignment: Text.AlignRight
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Usage by Service
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                visible: parent.hasDashboard && parent.dashboard.usageByService && parent.dashboard.usageByService.length > 0
+                                spacing: 4
+                                Text {
+                                    text: qsTr("Usage by Service")
+                                    color: "#aaa"
+                                    font.pixelSize: 10
+                                    font.bold: true
+                                }
+                                Repeater {
+                                    model: parent.parent.dashboard.usageByService || []
+                                    delegate: RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 4
+                                        Text {
+                                            text: modelData.service || ""
+                                            color: "#888"
+                                            font.pixelSize: 9
+                                            Layout.fillWidth: true
+                                            elide: Text.ElideRight
+                                        }
+                                        Text {
+                                            text: fmtNum(modelData.tokens || 0) + " tk"
+                                            color: "#aaa"
+                                            font.pixelSize: 9
+                                        }
+                                        Text {
+                                            text: "$" + (modelData.costUSD || 0).toFixed(2)
+                                            color: "#aaa"
+                                            font.pixelSize: 9
+                                            horizontalAlignment: Text.AlignRight
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Purchase URL
+                            Text {
+                                Layout.fillWidth: true
+                                visible: parent.hasDashboard && parent.dashboard.purchaseURL
+                                text: "<a href=\"" + (parent.dashboard.purchaseURL || "") + "\">" + qsTr("Purchase credits") + "</a>"
+                                color: "#64B5F6"
+                                font.pixelSize: 10
+                                textFormat: Text.RichText
+                                onLinkActivated: Qt.openUrlExternally(link)
+                            }
                         }
 
                         RowLayout {
