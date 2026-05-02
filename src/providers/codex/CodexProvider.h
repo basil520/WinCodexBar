@@ -30,7 +30,7 @@ public:
 
     QVector<IFetchStrategy*> createStrategies(const ProviderFetchContext& ctx) override;
 
-    QString dashboardURL() const override { return "https://chatgpt.com/codex"; }
+    QString dashboardURL() const override { return "https://chatgpt.com/codex/settings/usage"; }
     QString statusPageURL() const override { return "https://status.openai.com"; }
     QString brandColor() const override { return "#49A3B0"; }
 
