@@ -8,6 +8,7 @@
 #include <QTimer>
 #include <QVariantMap>
 #include <QAtomicInt>
+#include <QThreadPool>
 #include <optional>
 #include "../models/UsageSnapshot.h"
 #include "../models/CreditsSnapshot.h"
@@ -87,6 +88,9 @@ public:
     Q_INVOKABLE bool reauthenticateCodexAccount(const QString& accountID);
     Q_INVOKABLE bool promoteCodexAccount(const QString& accountID);
     Q_INVOKABLE bool isCodexAuthenticating() const;
+
+    QThreadPool* threadPool() const { return m_threadPool; }
+    void shutdown();
     Q_INVOKABLE bool isCodexRemoving() const;
     Q_INVOKABLE QString codexAuthenticatingAccountID() const;
     Q_INVOKABLE QString codexRemovingAccountID() const;
@@ -108,6 +112,9 @@ public:
     ProviderFetchContext buildFetchContextForProvider(const QString& providerId) const;
 
     void setSettingsStore(SettingsStore* s);
+
+    // Preload all provider credentials into cache (runs on background thread)
+    void preloadCredentials();
 
 signals:
     void snapshotChanged(const QString& providerId);
@@ -171,9 +178,23 @@ private:
     int m_pendingRefreshes = 0;
     int m_snapshotRevision = 0;
     int m_statusRevision = 0;
+    bool m_batchRefreshInProgress = false;
 
     // Codex multi-account
     class ManagedCodexAccountService* m_codexAccountService = nullptr;
+
+    // Credential cache to avoid blocking main thread with WinCred API calls
+    struct CredentialEntry {
+        QByteArray data;
+        QDateTime cachedAt;
+    };
+    mutable QMutex m_credentialCacheMutex;
+    mutable QHash<QString, CredentialEntry> m_credentialCache;
+    mutable QHash<QString, bool> m_credentialMissing;
+    static constexpr int CREDENTIAL_CACHE_TTL_MS = 300000; // 5 minutes
+
+    // snapshotData() result cache — invalidated on snapshotChanged / snapshotRevisionChanged
+    mutable QHash<QString, QVariantMap> m_snapshotDataCache;
 
     // Codex credits cache
     struct CodexCreditsCache {
@@ -222,6 +243,8 @@ private:
     UsageSnapshot waitForCodexSnapshot(const QDateTime& minimumUpdatedAt, int timeoutMs = 6000) const;
 
     void clearCodexOpenAIWebState();
+    void doRefresh(const QStringList& ids);
+    QThreadPool* m_threadPool = nullptr;
 
     bool m_codexCreditsRefreshing = false;
     int m_pendingCreditsRefresh = 0;

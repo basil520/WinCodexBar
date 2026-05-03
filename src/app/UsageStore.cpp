@@ -25,6 +25,22 @@
 #include <QUrlQuery>
 #include <QtConcurrent>
 #include <QFutureWatcher>
+#include <QElapsedTimer>
+
+// Performance probe: logs when a scoped block exceeds thresholdMicros.
+struct PerfProbe {
+    QElapsedTimer timer;
+    const char* name;
+    qint64 thresholdMicros;
+    PerfProbe(const char* n, qint64 t) : name(n), thresholdMicros(t) { timer.start(); }
+    ~PerfProbe() {
+        qint64 elapsed = timer.nsecsElapsed() / 1000;
+        if (elapsed >= thresholdMicros) {
+            qDebug() << "[PERF]" << name << "took" << elapsed << "us";
+        }
+    }
+};
+#define PERF_PROBE(name, thresholdMicros) PerfProbe _perfProbe(name, thresholdMicros);
 
 namespace {
 
@@ -60,7 +76,11 @@ UsageStore::UsageStore(QObject* parent)
     : QObject(parent)
     , m_pipeline(new ProviderPipeline(this))
     , m_historyStore(new PlanUtilizationHistoryStore(this))
+    , m_threadPool(new QThreadPool(this))
 {
+    m_threadPool->setMaxThreadCount(qMax(4, QThread::idealThreadCount()));
+    m_threadPool->setExpiryTimeout(30000);
+
     QObject::connect(&m_refreshTimer, &QTimer::timeout, this, &UsageStore::refresh);
     QObject::connect(&m_statusTimer, &QTimer::timeout, this, &UsageStore::refreshProviderStatuses);
     QObject::connect(m_pipeline, &ProviderPipeline::pipelineComplete,
@@ -118,6 +138,7 @@ void UsageStore::setSettingsStore(SettingsStore* s) {
                 this, &UsageStore::configureStatusPolling);
         auto notifyDisplaySettingsChanged = [this]() {
             m_snapshotRevision++;
+            m_snapshotDataCache.clear();
             emit snapshotRevisionChanged();
             const auto ids = ProviderRegistry::instance().providerIDs();
             for (const auto& id : ids) {
@@ -169,7 +190,33 @@ QStringList UsageStore::providerIDs() const {
     return m_providerIDs;
 }
 
+void UsageStore::preloadCredentials() {
+    const auto ids = ProviderRegistry::instance().providerIDs();
+    for (const auto& id : ids) {
+        auto* provider = ProviderRegistry::instance().provider(id);
+        if (!provider) continue;
+        for (const auto& desc : provider->settingsDescriptors()) {
+            if (!desc.sensitive || desc.credentialTarget.isEmpty()) continue;
+            {
+                QMutexLocker locker(&m_credentialCacheMutex);
+                if (m_credentialCache.contains(desc.credentialTarget)) continue;
+                if (m_credentialMissing.contains(desc.credentialTarget)) continue;
+            }
+            auto stored = ProviderCredentialStore::read(desc.credentialTarget);
+            {
+                QMutexLocker locker(&m_credentialCacheMutex);
+                if (stored.has_value()) {
+                    m_credentialCache[desc.credentialTarget] = {stored.value(), QDateTime::currentDateTime()};
+                } else {
+                    m_credentialMissing[desc.credentialTarget] = true;
+                }
+            }
+        }
+    }
+}
+
 ProviderFetchContext UsageStore::buildFetchContextForProvider(const QString& providerId) const {
+    PERF_PROBE("buildFetchContextForProvider", 2000);
     ProviderFetchContext ctx;
     ctx.providerId = providerId;
     ctx.sourceMode = ProviderSourceMode::Auto;
@@ -202,8 +249,34 @@ ProviderFetchContext UsageStore::buildFetchContextForProvider(const QString& pro
                     secret = ctx.env.value(descriptor.envVar).trimmed();
                 }
                 if (secret.isEmpty() && !descriptor.credentialTarget.isEmpty()) {
-                    auto stored = ProviderCredentialStore::read(descriptor.credentialTarget);
-                    if (stored.has_value()) secret = QString::fromUtf8(stored.value()).trimmed();
+                    // Use cached credential to avoid blocking main thread with WinCred API
+                    bool cacheHit = false;
+                    bool cacheExpired = true;
+                    bool isMissing = false;
+                    {
+                        QMutexLocker locker(&m_credentialCacheMutex);
+                        auto cacheIt = m_credentialCache.find(descriptor.credentialTarget);
+                        if (cacheIt != m_credentialCache.end()) {
+                            cacheHit = true;
+                            cacheExpired = cacheIt.value().cachedAt.msecsTo(QDateTime::currentDateTime()) >= CREDENTIAL_CACHE_TTL_MS;
+                            if (!cacheExpired) {
+                                secret = QString::fromUtf8(cacheIt.value().data).trimmed();
+                            }
+                        }
+                        isMissing = m_credentialMissing.contains(descriptor.credentialTarget);
+                    }
+                    if (!cacheHit && !isMissing) {
+                        auto stored = ProviderCredentialStore::read(descriptor.credentialTarget);
+                        {
+                            QMutexLocker locker(&m_credentialCacheMutex);
+                            if (stored.has_value()) {
+                                secret = QString::fromUtf8(stored.value()).trimmed();
+                                m_credentialCache[descriptor.credentialTarget] = {stored.value(), QDateTime::currentDateTime()};
+                            } else {
+                                m_credentialMissing[descriptor.credentialTarget] = true;
+                            }
+                        }
+                    }
                 }
                 if (secret.isEmpty()) {
                     secret = addSetting(descriptor.key, descriptor.defaultValue).toString().trimmed();
@@ -276,6 +349,12 @@ void UsageStore::updateProviderIDs() {
 }
 
 QVariantMap UsageStore::snapshotData(const QString& id) const {
+    PERF_PROBE("snapshotData", 1000);
+    auto cacheIt = m_snapshotDataCache.find(id);
+    if (cacheIt != m_snapshotDataCache.end()) {
+        return cacheIt.value();
+    }
+
     auto snap = snapshot(id);
     auto* prov = ProviderRegistry::instance().provider(id);
     QVariantMap m;
@@ -513,6 +592,7 @@ QVariantMap UsageStore::snapshotData(const QString& id) const {
         m["hasExhaustedRateLane"] = CodexConsumerProjection::hasExhaustedRateLane(projection);
     }
 
+    m_snapshotDataCache[id] = m;
     return m;
 }
 
@@ -529,7 +609,8 @@ void UsageStore::refreshCostUsage() {
     m_costUsageRefreshing = true;
     emit costUsageRefreshingChanged();
 
-    QtConcurrent::run([this]() {
+    QtConcurrent::run(m_threadPool, [this]() {
+        PERF_PROBE("refreshCostUsage_worker", 5000);
         CostUsageScanner scanner;
 
         QDate today = QDate::currentDate();
@@ -706,6 +787,7 @@ void UsageStore::refreshCostUsage() {
                   });
 
         QMetaObject::invokeMethod(this, [this, combined, perProvider, allProviders]() {
+            PERF_PROBE("refreshCostUsage_callback", 2000);
             m_costUsage = combined;
             m_perProviderCostUsage = perProvider;
             m_allProviderCostUsage = allProviders;
@@ -717,6 +799,7 @@ void UsageStore::refreshCostUsage() {
 }
 
 QVariantMap UsageStore::costUsageData() const {
+    PERF_PROBE("costUsageData", 1000);
     QVariantMap m;
     m["sessionTokens"] = m_costUsage.sessionTokens;
     m["sessionCostUSD"] = m_costUsage.sessionCostUSD;
@@ -784,6 +867,7 @@ QVariantList UsageStore::providerCostUsageList() const {
 }
 
 QVariantMap UsageStore::providerCostUsageData(const QString& providerId) const {
+    PERF_PROBE("providerCostUsageData", 1000);
     auto it = m_perProviderCostUsage.constFind(providerId);
     if (it == m_perProviderCostUsage.constEnd()) return QVariantMap();
 
@@ -840,7 +924,18 @@ QVariantMap UsageStore::providerCostUsageData(const QString& providerId) const {
 
 void UsageStore::refresh() {
     refreshCostUsage();
+    auto ids = ProviderRegistry::instance().enabledProviderIDs();
+    doRefresh(ids);
+}
 
+void UsageStore::refreshAll() {
+    refreshCostUsage();
+    auto ids = ProviderRegistry::instance().providerIDs();
+    doRefresh(ids);
+}
+
+void UsageStore::doRefresh(const QStringList& ids) {
+    PERF_PROBE("doRefresh", 1000);
     auto currentGuard = currentCodexAccountRefreshGuard();
     if (currentGuard != m_lastCodexRefreshGuard) {
         clearCodexOpenAIWebState();
@@ -849,11 +944,12 @@ void UsageStore::refresh() {
 
     if (m_isRefreshing) return;
     m_isRefreshing = true;
+    m_batchRefreshInProgress = ids.size() > 1;
     emit refreshingChanged();
 
-    auto ids = ProviderRegistry::instance().enabledProviderIDs();
     if (ids.isEmpty()) {
         m_isRefreshing = false;
+        m_batchRefreshInProgress = false;
         emit refreshingChanged();
         return;
     }
@@ -861,7 +957,7 @@ void UsageStore::refresh() {
     QDateTime refreshStartedAt = QDateTime::currentDateTime();
 
     // Parallel credits refresh for Codex (mirrors original CodexBar behavior)
-    if (isProviderEnabled("codex")) {
+    if (ids.contains("codex") && isProviderEnabled("codex")) {
         auto expectedGuard = currentCodexAccountRefreshGuard();
         m_lastCodexRefreshGuard = expectedGuard;
 
@@ -869,7 +965,7 @@ void UsageStore::refresh() {
         if (expectedGuard.identity.isEmpty()) {
             ++m_pendingCreditsRefresh;
             // Fire-and-forget delayed credits refresh after usage establishes identity
-            QtConcurrent::run([this, refreshStartedAt, expectedGuard]() mutable {
+            QtConcurrent::run(m_threadPool, [this, refreshStartedAt, expectedGuard]() mutable {
                 auto snap = waitForCodexSnapshot(refreshStartedAt, 6000);
                 if (!snap.updatedAt.isValid()) {
                     // Usage refresh failed or timed out; still try credits with current guard
@@ -912,7 +1008,7 @@ void UsageStore::refresh() {
             }
 
             ++m_pendingCreditsRefresh;
-            QtConcurrent::run([this, creditsEnv, expectedGuard]() {
+            QtConcurrent::run(m_threadPool, [this, creditsEnv, expectedGuard]() {
                 CodexCreditsFetcher fetcher(creditsEnv);
                 auto result = fetcher.fetchCreditsSync(ProviderPipeline::STRATEGY_TIMEOUT_MS);
                 QMetaObject::invokeMethod(this, [this, result, expectedGuard]() {
@@ -922,88 +1018,6 @@ void UsageStore::refresh() {
         }
     }
 
-    m_pendingRefreshes = ids.size();
-    for (const auto& id : ids) {
-        refreshProvider(id);
-    }
-}
-
-void UsageStore::refreshAll() {
-    refreshCostUsage();
-
-    auto currentGuard = currentCodexAccountRefreshGuard();
-    if (currentGuard != m_lastCodexRefreshGuard) {
-        clearCodexOpenAIWebState();
-        m_lastCodexRefreshGuard = currentGuard;
-    }
-
-    if (m_isRefreshing) return;
-    m_isRefreshing = true;
-    emit refreshingChanged();
-
-    auto ids = ProviderRegistry::instance().providerIDs();
-    if (ids.isEmpty()) {
-        m_isRefreshing = false;
-        emit refreshingChanged();
-        return;
-    }
-
-    QDateTime refreshStartedAt = QDateTime::currentDateTime();
-
-    // Parallel credits refresh for Codex
-    if (ProviderRegistry::instance().isProviderEnabled("codex")) {
-        auto expectedGuard = currentCodexAccountRefreshGuard();
-        m_lastCodexRefreshGuard = expectedGuard;
-
-        if (expectedGuard.identity.isEmpty()) {
-            ++m_pendingCreditsRefresh;
-            QtConcurrent::run([this, refreshStartedAt, expectedGuard]() mutable {
-                auto snap = waitForCodexSnapshot(refreshStartedAt, 6000);
-                auto updatedGuard = currentCodexAccountRefreshGuard();
-                if (!updatedGuard.isEmpty()) {
-                    expectedGuard = updatedGuard;
-                }
-                QHash<QString, QString> creditsEnv;
-                QProcessEnvironment systemEnv = QProcessEnvironment::systemEnvironment();
-                for (const auto& key : systemEnv.keys()) {
-                    creditsEnv.insert(key, systemEnv.value(key));
-                }
-                if (m_codexAccountService) {
-                    QString managedHome = m_codexAccountService->activeManagedHomePath();
-                    if (!managedHome.isEmpty()) {
-                        creditsEnv.insert("CODEX_HOME", managedHome);
-                    }
-                }
-                CodexCreditsFetcher fetcher(creditsEnv);
-                auto result = fetcher.fetchCreditsSync(ProviderPipeline::STRATEGY_TIMEOUT_MS);
-                QMetaObject::invokeMethod(this, [this, result, expectedGuard]() {
-                    applyCodexCreditsFetchResult(result, expectedGuard);
-                }, Qt::QueuedConnection);
-            });
-        } else {
-            QHash<QString, QString> creditsEnv;
-            QProcessEnvironment systemEnv = QProcessEnvironment::systemEnvironment();
-            for (const auto& key : systemEnv.keys()) {
-                creditsEnv.insert(key, systemEnv.value(key));
-            }
-            if (m_codexAccountService) {
-                QString managedHome = m_codexAccountService->activeManagedHomePath();
-                if (!managedHome.isEmpty()) {
-                    creditsEnv.insert("CODEX_HOME", managedHome);
-                }
-            }
-            ++m_pendingCreditsRefresh;
-            QtConcurrent::run([this, creditsEnv, expectedGuard]() {
-                CodexCreditsFetcher fetcher(creditsEnv);
-                auto result = fetcher.fetchCreditsSync(ProviderPipeline::STRATEGY_TIMEOUT_MS);
-                QMetaObject::invokeMethod(this, [this, result, expectedGuard]() {
-                    applyCodexCreditsFetchResult(result, expectedGuard);
-                }, Qt::QueuedConnection);
-            });
-        }
-    }
-
-    m_pendingRefreshes = ids.size();
     for (const auto& id : ids) {
         refreshProvider(id);
     }
@@ -1014,6 +1028,12 @@ void UsageStore::clearCache() {
     m_snapshots.clear();
     m_errors.clear();
     m_connectionTests.clear();
+    {
+        QMutexLocker locker(&m_credentialCacheMutex);
+        m_credentialCache.clear();
+        m_credentialMissing.clear();
+    }
+    m_snapshotDataCache.clear();
     m_snapshotRevision++;
     emit snapshotRevisionChanged();
     for (const auto& id : ids) {
@@ -1023,33 +1043,57 @@ void UsageStore::clearCache() {
 }
 
 void UsageStore::refreshProvider(const QString& providerId) {
+    // Ensure count is sane when called individually (outside doRefresh).
+    if (m_pendingRefreshes <= 0) {
+        m_batchRefreshInProgress = false;
+        if (!m_isRefreshing) {
+            m_isRefreshing = true;
+            emit refreshingChanged();
+        }
+    }
+    m_pendingRefreshes++;
+
     auto* provider = ProviderRegistry::instance().provider(providerId);
     if (!provider) {
         m_pendingRefreshes--;
         if (m_pendingRefreshes <= 0) {
+            m_batchRefreshInProgress = false;
             m_isRefreshing = false;
+            emit snapshotRevisionChanged();
             emit refreshingChanged();
         }
         return;
     }
 
-    ProviderFetchContext ctx = buildFetchContextForProvider(providerId);
-    if (!isSourceModeAllowed(providerId, ctx.sourceMode)) {
-        m_errors[providerId] = QString("unsupported source mode: %1").arg(sourceModeToString(ctx.sourceMode));
-        emit errorOccurred(providerId, providerError(providerId));
-        m_pendingRefreshes--;
-        if (m_pendingRefreshes <= 0) {
-            m_isRefreshing = false;
-            emit refreshingChanged();
-        }
-        return;
-    }
+    // buildFetchContextForProvider is moved into the worker thread to avoid
+    // blocking the main thread with WinCred API calls on cache miss.
+    QtConcurrent::run(m_threadPool, [this, providerId, provider]() {
+        ProviderFetchContext ctx = buildFetchContextForProvider(providerId);
 
-    QtConcurrent::run([this, providerId, provider, ctx]() {
+        if (!isSourceModeAllowed(providerId, ctx.sourceMode)) {
+            ProviderFetchResult errResult;
+            errResult.success = false;
+            errResult.errorMessage = QString("unsupported source mode: %1")
+                .arg(sourceModeToString(ctx.sourceMode));
+            QMetaObject::invokeMethod(this, [this, providerId, errResult]() {
+                m_errors[providerId] = errResult.errorMessage;
+                emit errorOccurred(providerId, providerError(providerId));
+                m_pendingRefreshes--;
+                if (m_pendingRefreshes <= 0) {
+                    m_batchRefreshInProgress = false;
+                    m_isRefreshing = false;
+                    emit snapshotRevisionChanged();
+                    emit refreshingChanged();
+                }
+            }, Qt::QueuedConnection);
+            return;
+        }
+
         ProviderPipeline pipeline;
         ProviderFetchResult result = pipeline.executeProvider(provider, ctx);
 
         QMetaObject::invokeMethod(this, [this, providerId, result]() {
+            PERF_PROBE("refreshProvider_callback", 2000);
             m_lastFetchAttempts[providerId] = result.attempts;
             if (providerId == "codex") {
                 emit codexFetchAttemptsChanged();
@@ -1096,22 +1140,57 @@ void UsageStore::refreshProvider(const QString& providerId) {
                     }
                 }
 
-                // Codex-specific: refresh credits after successful usage fetch
+                // Codex-specific: refresh credits after successful usage fetch.
+                // This MUST be async — fetchCreditsSync blocks the main thread for 600-1400ms.
                 if (providerId == "codex") {
                     auto guard = currentCodexAccountRefreshGuard();
-                    refreshCodexCredits(guard);
+                    // If doRefresh already scheduled an async credits fetch, avoid duplicate work.
+                    if (m_pendingCreditsRefresh == 0) {
+                        QString accountKey = currentCodexAccountKey();
+                        bool cacheFresh = !accountKey.isEmpty() &&
+                            m_codexCreditsCache.accountKey == accountKey &&
+                            m_codexCreditsCache.updatedAt.isValid() &&
+                            m_codexCreditsCache.updatedAt.secsTo(QDateTime::currentDateTime()) < 300;
+                        if (!cacheFresh) {
+                            QHash<QString, QString> creditsEnv;
+                            QProcessEnvironment systemEnv = QProcessEnvironment::systemEnvironment();
+                            for (const auto& key : systemEnv.keys()) {
+                                creditsEnv.insert(key, systemEnv.value(key));
+                            }
+                            if (m_codexAccountService) {
+                                QString managedHome = m_codexAccountService->activeManagedHomePath();
+                                if (!managedHome.isEmpty()) {
+                                    creditsEnv.insert("CODEX_HOME", managedHome);
+                                }
+                            }
+                            ++m_pendingCreditsRefresh;
+                            QtConcurrent::run(m_threadPool, [this, creditsEnv, guard]() {
+                                CodexCreditsFetcher fetcher(creditsEnv);
+                                auto result = fetcher.fetchCreditsSync(ProviderPipeline::STRATEGY_TIMEOUT_MS);
+                                QMetaObject::invokeMethod(this, [this, result, guard]() {
+                                    applyCodexCreditsFetchResult(result, guard);
+                                }, Qt::QueuedConnection);
+                            });
+                        }
+                    }
                 }
             } else {
                 m_errors[providerId] = result.errorMessage;
                 emit errorOccurred(providerId, providerError(providerId));
             }
-            m_snapshotRevision++;
-            emit snapshotRevisionChanged();
+
+            // Granular cache eviction: only remove the entry for this provider
+            // instead of clearing the entire cache.
+            m_snapshotDataCache.remove(providerId);
             emit snapshotChanged(providerId);
 
             m_pendingRefreshes--;
             if (m_pendingRefreshes <= 0 && m_pendingCreditsRefresh <= 0) {
+                m_batchRefreshInProgress = false;
                 m_isRefreshing = false;
+                m_snapshotRevision++;
+                m_snapshotDataCache.clear();
+                emit snapshotRevisionChanged();
                 emit refreshingChanged();
             }
         }, Qt::QueuedConnection);
@@ -1144,6 +1223,7 @@ QVariantList UsageStore::utilizationChartData(const QString& providerId, const Q
 }
 
 QVariantList UsageStore::providerList() const {
+    PERF_PROBE("providerList", 5000);
     QVariantList list;
     auto ids = ProviderRegistry::instance().providerIDs();
     
@@ -1232,6 +1312,7 @@ void UsageStore::moveProvider(int fromIndex, int toIndex) {
 }
 
 QVariantMap UsageStore::providerDescriptorData(const QString& id) const {
+    PERF_PROBE("providerDescriptorData", 1000);
     QVariantMap data;
     auto desc = ProviderRegistry::instance().descriptor(id);
     if (!desc.has_value()) return data;
@@ -1257,6 +1338,7 @@ QVariantMap UsageStore::providerDescriptorData(const QString& id) const {
 }
 
 QVariantList UsageStore::providerSettingsFields(const QString& id) const {
+    PERF_PROBE("providerSettingsFields", 1000);
     QVariantList list;
     auto* provider = ProviderRegistry::instance().provider(id);
     if (!provider) return list;
@@ -1315,6 +1397,7 @@ std::optional<ProviderSettingsDescriptor> UsageStore::settingDescriptor(const QS
 }
 
 QVariantMap UsageStore::providerSecretStatus(const QString& providerId, const QString& key) const {
+    PERF_PROBE("providerSecretStatus", 500);
     QVariantMap status;
     status["configured"] = false;
     status["source"] = "none";
@@ -1333,8 +1416,21 @@ QVariantMap UsageStore::providerSecretStatus(const QString& providerId, const QS
         return status;
     }
 
-    if (!descriptor->credentialTarget.isEmpty()
-        && ProviderCredentialStore::exists(descriptor->credentialTarget)) {
+    // Use cached credential state to avoid blocking main thread with WinCred API.
+    bool credentialExists = false;
+    if (!descriptor->credentialTarget.isEmpty()) {
+        QMutexLocker locker(&m_credentialCacheMutex);
+        if (m_credentialCache.contains(descriptor->credentialTarget)) {
+            credentialExists = true;
+        } else if (!m_credentialMissing.contains(descriptor->credentialTarget)) {
+            credentialExists = ProviderCredentialStore::exists(descriptor->credentialTarget);
+            if (!credentialExists) {
+                m_credentialMissing[descriptor->credentialTarget] = true;
+            }
+        }
+    }
+
+    if (credentialExists) {
         status["configured"] = true;
         status["source"] = "credential";
     } else if (descriptor->credentialTarget.isEmpty()
@@ -1361,6 +1457,12 @@ bool UsageStore::setProviderSecret(const QString& providerId,
 
     if (!descriptor->credentialTarget.isEmpty()) {
         bool ok = ProviderCredentialStore::write(descriptor->credentialTarget, {}, trimmed.toUtf8());
+        // Update cache after write
+        {
+            QMutexLocker locker(&m_credentialCacheMutex);
+            m_credentialCache[descriptor->credentialTarget] = {trimmed.toUtf8(), QDateTime::currentDateTime()};
+            m_credentialMissing.remove(descriptor->credentialTarget);
+        }
         emit providerConnectionTestChanged(providerId);
         return ok;
     } else {
@@ -1381,6 +1483,12 @@ bool UsageStore::clearProviderSecret(const QString& providerId, const QString& k
 
     if (!descriptor->credentialTarget.isEmpty()) {
         bool ok = ProviderCredentialStore::remove(descriptor->credentialTarget);
+        // Clear cache after removal
+        {
+            QMutexLocker locker(&m_credentialCacheMutex);
+            m_credentialCache.remove(descriptor->credentialTarget);
+            m_credentialMissing[descriptor->credentialTarget] = true;
+        }
         emit providerConnectionTestChanged(providerId);
         return ok;
     } else {
@@ -1445,10 +1553,11 @@ void UsageStore::testProviderConnection(const QString& providerId) {
         {"finishedAt", 0},
         {"durationMs", 0}
     });
-    QtConcurrent::run([this, providerId, provider, ctx, startedAt]() {
+    QtConcurrent::run(m_threadPool, [this, providerId, provider, ctx, startedAt]() {
         ProviderPipeline pipeline;
         ProviderFetchResult result = pipeline.executeProvider(provider, ctx);
         QMetaObject::invokeMethod(this, [this, providerId, result, startedAt]() {
+            PERF_PROBE("testProviderConnection_callback", 2000);
             m_lastFetchAttempts[providerId] = result.attempts;
             if (providerId == "codex") {
                 emit codexFetchAttemptsChanged();
@@ -1464,6 +1573,7 @@ void UsageStore::testProviderConnection(const QString& providerId) {
                 m_snapshots[providerId] = result.usage;
                 m_errors.remove(providerId);
                 m_snapshotRevision++;
+                m_snapshotDataCache.clear();
                 emit snapshotRevisionChanged();
                 emit snapshotChanged(providerId);
                 setProviderConnectionTest(providerId, {
@@ -1509,7 +1619,7 @@ void UsageStore::startProviderLogin(const QString& providerId) {
     m_loginCancelFlags[providerId] = cancelFlag;
     setProviderLoginState(providerId, {{"state", "starting"}, {"message", "Requesting device code..."}});
 
-    QtConcurrent::run([this, providerId, cancelFlag]() {
+    QtConcurrent::run(m_threadPool, [this, providerId, cancelFlag]() {
         QUrlQuery deviceBody;
         deviceBody.addQueryItem("client_id", "Iv1.b507a08c87ecfe98");
         deviceBody.addQueryItem("scope", "read:user");
@@ -1656,7 +1766,7 @@ void UsageStore::refreshProviderStatuses() {
             continue;
         }
 
-        QtConcurrent::run([this, id, endpoint]() {
+        QtConcurrent::run(m_threadPool, [this, id, endpoint]() {
             QJsonObject json = NetworkManager::instance().getJsonSync(QUrl(endpoint), {}, 8000);
             QString state = "unknown";
             QString description;
@@ -1887,6 +1997,7 @@ UsageSnapshot UsageStore::waitForCodexSnapshot(const QDateTime& minimumUpdatedAt
     QElapsedTimer timer;
     timer.start();
     while (timer.elapsed() < timeoutMs) {
+        if (NetworkManager::isShuttingDown()) break;
         auto snap = snapshot("codex");
         if (snap.updatedAt.isValid() && snap.updatedAt >= minimumUpdatedAt) {
             return snap;
@@ -2057,6 +2168,7 @@ void UsageStore::applyCodexCreditsFetchResult(const CodexCreditsFetcher::FetchRe
 
 QVariantMap UsageStore::codexConsumerProjectionData() const
 {
+    PERF_PROBE("codexConsumerProjectionData", 2000);
     QVariantMap m;
     auto snap = snapshot("codex");
 
@@ -2160,9 +2272,23 @@ void UsageStore::clearCodexOpenAIWebState()
     m_lastFetchAttempts.remove("codex");
 
     emit snapshotChanged("codex");
+    m_snapshotDataCache.remove("codex");
     emit snapshotRevisionChanged();
     emit codexCreditsChanged();
     emit codexFetchAttemptsChanged();
+}
+
+void UsageStore::shutdown()
+{
+    stopAutoRefresh();
+    if (m_threadPool) {
+        m_threadPool->clear();
+    }
+    if (m_historyStore) {
+        m_historyStore->stopSaveTimer();
+    }
+    NetworkManager::setShuttingDown(true);
+    CostUsageScanner::setShuttingDown(true);
 }
 
 QVariantMap UsageStore::providerDashboardData(const QString& providerId) const

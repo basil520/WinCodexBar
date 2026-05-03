@@ -4,12 +4,18 @@
 #include <QTimer>
 #include <QUrlQuery>
 #include <memory>
+#include <atomic>
 
-static bool g_shuttingDown = false;
+static std::atomic<bool> g_shuttingDown{false};
 
 void NetworkManager::setShuttingDown(bool shuttingDown)
 {
     g_shuttingDown = shuttingDown;
+}
+
+bool NetworkManager::isShuttingDown()
+{
+    return g_shuttingDown;
 }
 
 namespace {
@@ -35,18 +41,29 @@ QByteArray waitForReply(QNetworkReply* reply, int timeoutMs)
     }
 
     QEventLoop loop;
-    QTimer timer;
-    timer.setSingleShot(true);
+    QTimer timeoutTimer;
+    QTimer pollTimer;
+    timeoutTimer.setSingleShot(true);
+    pollTimer.setInterval(50);
+
     QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    QObject::connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
-    // Use shorter timeout when shutting down to allow quick exit
+    QObject::connect(&timeoutTimer, &QTimer::timeout, &loop, &QEventLoop::quit);
+    QObject::connect(&pollTimer, &QTimer::timeout, [&]() {
+        if (g_shuttingDown) {
+            reply->abort();
+            loop.quit();
+        }
+    });
+
     int actualTimeout = g_shuttingDown ? qMin(1000, timeoutMs) : timeoutMs;
-    timer.start(actualTimeout);
+    timeoutTimer.start(actualTimeout);
+    pollTimer.start();
     loop.exec();
+    pollTimer.stop();
 
     QByteArray data;
-    if (timer.isActive()) {
-        timer.stop();
+    if (timeoutTimer.isActive()) {
+        timeoutTimer.stop();
         if (reply->error() == QNetworkReply::NoError) {
             data = reply->readAll();
         }

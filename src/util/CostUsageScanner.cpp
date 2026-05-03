@@ -12,9 +12,11 @@
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QVariant>
+#include <QUuid>
 #include <algorithm>
+#include <atomic>
 
-static bool g_shuttingDown = false;
+static std::atomic<bool> g_shuttingDown{false};
 
 void CostUsageScanner::setShuttingDown(bool shuttingDown)
 {
@@ -322,6 +324,7 @@ CostUsageSnapshot CostUsageScanner::scanClaude(const QString& configDir, const Q
         QDir::Filters filters = QDir::Files | QDir::NoDotAndDotDot | QDir::Readable;
         QDirIterator it(root, {"*.jsonl"}, filters, QDirIterator::Subdirectories);
         while (it.hasNext()) {
+            if (g_shuttingDown) break;
             jsonlFiles.append(it.next());
         }
 
@@ -338,8 +341,9 @@ CostUsageSnapshot CostUsageScanner::scanClaude(const QString& configDir, const Q
             QHash<QString, ClaudeRow> keyedRows;
             QVector<ClaudeRow> unkeyedRows;
 
-            while (!file.atEnd()) {
-                QByteArray line = file.readLine().trimmed();
+        while (!file.atEnd()) {
+            if (g_shuttingDown) break;
+            QByteArray line = file.readLine().trimmed();
                 if (line.isEmpty()) continue;
                 if (!line.contains("\"type\":\"assistant\"") && !line.contains("\"type\": \"assistant\"")) continue;
                 if (!line.contains("\"usage\"")) continue;
@@ -655,14 +659,17 @@ CostUsageScanner::PiScanResult CostUsageScanner::scanPi(const QDate& since, cons
     QStringList jsonlFiles;
     QDir::Filters filters = QDir::Files | QDir::NoDotAndDotDot | QDir::Readable;
     QDirIterator it(piRoot, {"*.jsonl"}, filters, QDirIterator::Subdirectories);
-    while (it.hasNext())
+    while (it.hasNext()) {
+        if (g_shuttingDown) break;
         jsonlFiles.append(it.next());
+    }
 
     // provider-key → day → model → breakdown
     // provider-key is "codex" or "claude"
     QHash<QString, QHash<QString, QHash<QString, CostUsageModelBreakdown>>> providerDayModels;
 
     for (auto& path : jsonlFiles) {
+        if (g_shuttingDown) break;
         QFile file(path);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
 
@@ -859,70 +866,9 @@ QHash<QString, CostUsageSnapshot> CostUsageScanner::scanOpenCodeDB(const QDate& 
         return result;
     }
 
-    const QString connName = "opencode_db_scan";
+    const QString connName = "opencode_db_scan_" + QUuid::createUuid().toString(QUuid::WithoutBraces);
     if (QSqlDatabase::contains(connName)) {
         QSqlDatabase::removeDatabase(connName);
-    }
-
-    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", connName);
-    db.setDatabaseName(dbPath);
-    if (!db.open()) {
-        QSqlDatabase::removeDatabase(connName);
-        return result;
-    }
-
-    // Query correlates assistant messages (with tokens) to the most recent user message (with model info)
-    // within the same session. Groups by provider, date, and model.
-    // Filters out baiduqianfancodingplan (discarded per user decision).
-    QString sql = R"(
-        WITH user_models AS (
-            SELECT
-                session_id,
-                time_created,
-                json_extract(data, '$.model.providerID') AS provider,
-                json_extract(data, '$.model.modelID') AS model
-            FROM message
-            WHERE json_extract(data, '$.role') = 'user'
-              AND json_extract(data, '$.model') IS NOT NULL
-        ),
-        assistant_tokens AS (
-            SELECT
-                session_id,
-                time_created,
-                json_extract(data, '$.tokens.input') AS input_tokens,
-                json_extract(data, '$.tokens.output') AS output_tokens,
-                json_extract(data, '$.tokens.cache.read') AS cache_read
-            FROM message
-            WHERE json_extract(data, '$.role') = 'assistant'
-              AND json_extract(data, '$.tokens') IS NOT NULL
-        )
-        SELECT
-            um.provider AS provider_id,
-            DATE(a.time_created / 1000, 'unixepoch') AS day,
-            um.provider || '/' || um.model AS model_name,
-            COUNT(*) AS message_count,
-            SUM(a.input_tokens) AS input_tokens,
-            SUM(a.output_tokens) AS output_tokens,
-            SUM(a.cache_read) AS cache_read
-        FROM assistant_tokens a
-        LEFT JOIN user_models um
-            ON a.session_id = um.session_id
-            AND um.time_created = (
-                SELECT MAX(time_created)
-                FROM user_models
-                WHERE session_id = a.session_id
-                  AND time_created <= a.time_created
-            )
-        WHERE um.provider IS NOT NULL
-          AND um.provider != 'baiduqianfancodingplan'
-        GROUP BY um.provider, day, um.model
-        ORDER BY um.provider, day, input_tokens DESC
-    )";
-
-    if (g_shuttingDown) {
-        db.close();
-        QSqlDatabase::removeDatabase(connName);
-        return result;
     }
 
     // Group by provider
@@ -931,34 +877,112 @@ QHash<QString, CostUsageSnapshot> CostUsageScanner::scanOpenCodeDB(const QDate& 
     };
     QHash<QString, ProviderData> providerData;
 
+    // Scope the QSqlDatabase lifetime so removeDatabase never warns about "still in use".
     {
-        QSqlQuery query(db);
-        query.prepare(sql);
-        if (!query.exec() || g_shuttingDown) {
-            // Query object will be destroyed when leaving this scope
-            db.close();
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", connName);
+        db.setDatabaseName(dbPath);
+        db.setConnectOptions("QSQLITE_OPEN_READONLY"); // avoid write-lock waits
+        if (!db.open()) {
+            // db destroyed at end of scope
             QSqlDatabase::removeDatabase(connName);
             return result;
         }
 
-        while (query.next()) {
-            if (g_shuttingDown) break;
-            QString providerId = query.value("provider_id").toString();
-            QString day = query.value("day").toString();
-            QString model = query.value("model_name").toString();
-            int inputTokens = query.value("input_tokens").toInt();
-            int outputTokens = query.value("output_tokens").toInt();
-            int cacheRead = query.value("cache_read").toInt();
-
-            auto& mb = providerData[providerId].dayModels[day][model];
-            mb.modelName = model;
-            mb.inputTokens += qMax(0, inputTokens);
-            mb.outputTokens += qMax(0, outputTokens);
-            mb.cacheReadTokens += qMax(0, cacheRead);
+        // Speed up read-only queries
+        {
+            QSqlQuery pragma(db);
+            pragma.exec("PRAGMA journal_mode = WAL");
+            pragma.exec("PRAGMA synchronous = NORMAL");
+            pragma.exec("PRAGMA temp_store = MEMORY");
+            pragma.exec("PRAGMA mmap_size = 268435456");
         }
-    } // QSqlQuery destroyed here before db.close()
 
-    db.close();
+        if (g_shuttingDown) {
+            db.close();
+            // db destroyed at end of scope
+            QSqlDatabase::removeDatabase(connName);
+            return result;
+        }
+
+        // Query correlates assistant messages (with tokens) to the most recent user message (with model info)
+        // within the same session. Groups by provider, date, and model.
+        // Filters out baiduqianfancodingplan (discarded per user decision).
+        QString sql = R"(
+            WITH user_models AS (
+                SELECT
+                    session_id,
+                    time_created,
+                    json_extract(data, '$.model.providerID') AS provider,
+                    json_extract(data, '$.model.modelID') AS model
+                FROM message
+                WHERE json_extract(data, '$.role') = 'user'
+                  AND json_extract(data, '$.model') IS NOT NULL
+            ),
+            assistant_tokens AS (
+                SELECT
+                    session_id,
+                    time_created,
+                    json_extract(data, '$.tokens.input') AS input_tokens,
+                    json_extract(data, '$.tokens.output') AS output_tokens,
+                    json_extract(data, '$.tokens.cache.read') AS cache_read
+                FROM message
+                WHERE json_extract(data, '$.role') = 'assistant'
+                  AND json_extract(data, '$.tokens') IS NOT NULL
+            )
+            SELECT
+                um.provider AS provider_id,
+                DATE(a.time_created / 1000, 'unixepoch') AS day,
+                um.provider || '/' || um.model AS model_name,
+                COUNT(*) AS message_count,
+                SUM(a.input_tokens) AS input_tokens,
+                SUM(a.output_tokens) AS output_tokens,
+                SUM(a.cache_read) AS cache_read
+            FROM assistant_tokens a
+            LEFT JOIN user_models um
+                ON a.session_id = um.session_id
+                AND um.time_created = (
+                    SELECT MAX(time_created)
+                    FROM user_models
+                    WHERE session_id = a.session_id
+                      AND time_created <= a.time_created
+                )
+            WHERE um.provider IS NOT NULL
+              AND um.provider != 'baiduqianfancodingplan'
+            GROUP BY um.provider, day, um.model
+            ORDER BY um.provider, day, input_tokens DESC
+        )";
+
+        {
+            QSqlQuery query(db);
+            query.setForwardOnly(true); // reduces memory overhead for large result sets
+            query.prepare(sql);
+            if (!query.exec() || g_shuttingDown) {
+                // query destroyed at end of scope, then db destroyed, then removeDatabase is safe
+                db.close();
+                QSqlDatabase::removeDatabase(connName);
+                return result;
+            }
+
+            while (query.next()) {
+                if (g_shuttingDown) break;
+                QString providerId = query.value("provider_id").toString();
+                QString day = query.value("day").toString();
+                QString model = query.value("model_name").toString();
+                int inputTokens = query.value("input_tokens").toInt();
+                int outputTokens = query.value("output_tokens").toInt();
+                int cacheRead = query.value("cache_read").toInt();
+
+                auto& mb = providerData[providerId].dayModels[day][model];
+                mb.modelName = model;
+                mb.inputTokens += qMax(0, inputTokens);
+                mb.outputTokens += qMax(0, outputTokens);
+                mb.cacheReadTokens += qMax(0, cacheRead);
+            }
+        } // QSqlQuery destroyed here
+
+        db.close();
+    } // QSqlDatabase destroyed here — now safe to removeDatabase
+
     QSqlDatabase::removeDatabase(connName);
 
     // Map raw provider IDs from opencode.db to standard CodexBar provider IDs

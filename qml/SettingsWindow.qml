@@ -8,7 +8,6 @@ import "panes"
 Rectangle {
     id: settingsWindow
     width: 900
-    height: 640
     color: AppTheme.bgPrimary
 
     property int rev: LanguageManager.translationRevision

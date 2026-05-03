@@ -7,7 +7,7 @@ import CodexBar 1.0
 Rectangle {
     id: root
     width: 300
-    height: 520
+    height: 600
     color: "#1a1a2e"
     radius: 12
     clip: true

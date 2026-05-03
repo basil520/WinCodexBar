@@ -20,6 +20,7 @@ public:
     ~StatusItemController() override;
 
     bool initialize();
+    void destroyTrayIcon();
     void applyIcon(const QString& providerId);
     void applyMergedIcon();
     QRect trayIconRect() const;
@@ -28,6 +29,7 @@ signals:
     void trayPanelRequested();
     void settingsRequested();
     void aboutRequested();
+    void quitRequested();
 
 public slots:
     void showTrayPanel();
@@ -43,7 +45,6 @@ private slots:
 private:
     bool createTrayIcon();
     bool createMessageWindow();
-    void destroyTrayIcon();
     void retranslateMenu();
     static LRESULT CALLBACK messageWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 

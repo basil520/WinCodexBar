@@ -9,6 +9,9 @@
 #include <QQuickView>
 #include <QScreen>
 #include <QSettings>
+#include <QDateTime>
+#include <QDir>
+#include <QElapsedTimer>
 #include <QTimer>
 #include <QUrl>
 #include <QVariantMap>
@@ -218,7 +221,7 @@ public:
     }
 
     Q_INVOKABLE void quitApp() {
-        QCoreApplication::quit();
+        emit forceQuitRequested();
     }
 
     Q_INVOKABLE void openExternalUrl(const QString& url) {
@@ -247,6 +250,7 @@ signals:
     void settingsVisibleChanged();
     void settingsMaximizedChanged();
     void usageVisibleChanged();
+    void forceQuitRequested();
 };
 
 static QVariantMap makeAppTheme() {
@@ -410,14 +414,14 @@ int main(int argc, char* argv[]) {
     if (settings->refreshFrequency() > 0) {
         usageStore->startAutoRefresh(settings->refreshFrequency());
     }
-    QObject::connect(&app, &QCoreApplication::aboutToQuit, [&]() {
-        usageStore->stopAutoRefresh();
-        // Signal all network requests and file scanners to abort immediately
-        NetworkManager::setShuttingDown(true);
-        CostUsageScanner::setShuttingDown(true);
-        // Cancel all pending tasks in the thread pool
-        QThreadPool::globalInstance()->clear();
+
+    // Preload credentials on background thread to avoid blocking main thread on first refresh
+    QTimer::singleShot(500, usageStore, [usageStore]() {
+        QtConcurrent::run(usageStore->threadPool(), [usageStore]() {
+            usageStore->preloadCredentials();
+        });
     });
+
     QTimer::singleShot(1500, usageStore, [usageStore]() {
         usageStore->setCostUsageEnabled(true);
         usageStore->refreshProviderStatuses();
@@ -520,11 +524,24 @@ int main(int argc, char* argv[]) {
     };
     updateSettingsTitle();
     QObject::connect(&langMgr, &LanguageManager::retranslate, &settingsView, updateSettingsTitle);
-    settingsView.resize(900, 640);
     settingsView.setMinimumSize(QSize(820, 560));
     settingsView.setResizeMode(QQuickView::SizeRootObjectToView);
     settingsView.setFlags(Qt::Window | Qt::FramelessWindowHint);
     settingsView.setColor(QColor("#1a1a2e"));
+
+    // Set height to fit screen and center position
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (screen) {
+        QRect avail = screen->availableGeometry();
+        int maxH = avail.height() - 60;
+        int h = qMin(960, maxH);
+        int w = 900;
+        settingsView.setPosition((avail.width() - w) / 2 + avail.x(),
+                                  (avail.height() - h) / 2 + avail.y());
+        settingsView.resize(w, h);
+    } else {
+        settingsView.resize(900, 800);
+    }
 
     QObject::connect(&settingsView, &QQuickView::statusChanged, &settingsView, [&](QQuickView::Status status) {
         if (status != QQuickView::Error) return;
@@ -613,26 +630,56 @@ int main(int argc, char* argv[]) {
         trayCtrl.showBalloon(title, body);
     });
 
+    // Fast quit path: immediately hide all UI, destroy tray icon, and force exit.
+    // Do NOT go through QCoreApplication::quit() → app.exec() return, because Qt's
+    // event-loop shutdown can be blocked by background threads for 20+ seconds.
+    auto forceQuit = [&trayView, &settingsView, &usageView, &trayCtrl, usageStore]() {
+        // Set shuttingDown flags so background threads can check and exit early
+        usageStore->shutdown();
+        trayView.hide();
+        settingsView.hide();
+        usageView.hide();
+        trayCtrl.destroyTrayIcon();
+#ifdef Q_OS_WIN
+        ExitProcess(0);
+#else
+        _exit(0);
+#endif
+    };
+    QObject::connect(&trayCtrl, &StatusItemController::quitRequested, &app, forceQuit);
+    QObject::connect(appController, &AppController::forceQuitRequested, &app, forceQuit);
+
     int exitCode = app.exec();
 
-    // After event loop exits, ensure all background threads are finished
-    QThreadPool::globalInstance()->setExpiryTimeout(0);
-    QThreadPool::globalInstance()->clear();
-    // Give threads a short time to finish (they should already be shutting down)
-    if (!QThreadPool::globalInstance()->waitForDone(1500)) {
-        qWarning() << "[App] Background threads still running after 1.5s, active count:"
-                   << QThreadPool::globalInstance()->activeThreadCount()
-                   << "- forcing process exit";
-        // Force exit to prevent ghost process with no tray icon
-        // Use _exit to bypass Qt cleanup that may hang on active threads
-#ifdef Q_OS_WIN
-        ExitProcess(static_cast<UINT>(exitCode));
-#else
-        _exit(exitCode);
+#ifdef QT_DEBUG
+    // Exit timing diagnostics (debug builds only)
+    QString diagPath = QDir::tempPath() + "/WinCodexBar_ExitDiag.log";
+    auto diagLog = [&](const QString& msg) {
+        QFile f(diagPath);
+        if (f.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
+            f.write(QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toUtf8());
+            f.write(" ");
+            f.write(msg.toUtf8());
+            f.write("\n");
+        }
+    };
+    diagLog("[ExitDiag] app.exec() returned (non-fast-quit path)");
 #endif
+
+    // Non-fast-quit fallback: brief wait then force exit.
+    // In normal operation, forceQuit lambda handles exit via ExitProcess(0).
+    // This path is only reached if app.exec() returns naturally (e.g. last window closed).
+    if (usageStore) {
+        usageStore->shutdown();
     }
-    
-    return exitCode;
+    QThreadPool::globalInstance()->waitForDone(50);
+
+#ifdef Q_OS_WIN
+    ExitProcess(static_cast<UINT>(exitCode));
+#else
+    _exit(exitCode);
+#endif
+    return exitCode; // unreachable
 }
 
 #include "main.moc"

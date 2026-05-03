@@ -7,6 +7,7 @@
 #include <QMutexLocker>
 #include <QStringList>
 #include <QThread>
+#include <chrono>
 
 namespace {
 
@@ -234,10 +235,29 @@ void ConPTYSession::terminate()
     }
 
     if (m_readerThread.joinable()) {
-        m_readerThread.join();
+        auto joinStart = std::chrono::steady_clock::now();
+        bool joined = false;
+        while (m_readerThread.joinable()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            auto elapsed = std::chrono::steady_clock::now() - joinStart;
+            if (elapsed > std::chrono::milliseconds(500)) {
+                if (m_hOutput && m_hOutput != INVALID_HANDLE_VALUE) {
+                    CloseHandle(m_hOutput);
+                    m_hOutput = nullptr;
+                }
+                m_readerThread.detach();
+                joined = true;
+                break;
+            }
+        }
+        if (!joined && m_readerThread.joinable()) {
+            m_readerThread.join();
+        }
     }
 
-    closeHandle(m_hOutput);
+    if (m_hOutput) {
+        closeHandle(m_hOutput);
+    }
     closeHandle(m_hThread);
     closeHandle(m_hProcess);
     if (m_hExitEvent) {

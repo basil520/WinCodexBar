@@ -8,7 +8,24 @@
 #include <QJsonArray>
 #include <QStandardPaths>
 #include <QDateTime>
+#include <QtConcurrent>
 #include <algorithm>
+#include <QElapsedTimer>
+
+// Performance probe: logs when a scoped block exceeds thresholdMicros.
+struct PerfProbe {
+    QElapsedTimer timer;
+    const char* name;
+    qint64 thresholdMicros;
+    PerfProbe(const char* n, qint64 t) : name(n), thresholdMicros(t) { timer.start(); }
+    ~PerfProbe() {
+        qint64 elapsed = timer.nsecsElapsed() / 1000;
+        if (elapsed >= thresholdMicros) {
+            qDebug() << "[PERF]" << name << "took" << elapsed << "us";
+        }
+    }
+};
+#define PERF_PROBE(name, thresholdMicros) PerfProbe _perfProbe(name, thresholdMicros);
 
 PlanUtilizationHistoryStore::PlanUtilizationHistoryStore(QObject* parent)
     : QObject(parent)
@@ -17,7 +34,18 @@ PlanUtilizationHistoryStore::PlanUtilizationHistoryStore(QObject* parent)
     m_saveCoalesceTimer.setInterval(2000);
     connect(&m_saveCoalesceTimer, &QTimer::timeout, this, [this]() {
         for (auto it = m_pendingSave.constBegin(); it != m_pendingSave.constEnd(); ++it) {
-            if (it.value()) saveToDisk(it.key());
+            if (!it.value()) continue;
+            // Serialize on main thread (reads m_buckets), write on background thread
+            auto doc = serializeProvider(it.key());
+            QString path = filePath(it.key());
+            QtConcurrent::run([doc, path]() {
+                QDir().mkpath(QFileInfo(path).absolutePath());
+                QSaveFile file(path);
+                if (file.open(QIODevice::WriteOnly)) {
+                    file.write(doc.toJson(QJsonDocument::Compact));
+                    file.commit();
+                }
+            });
         }
         m_pendingSave.clear();
     });
@@ -30,6 +58,7 @@ QString PlanUtilizationHistoryStore::filePath(const QString& providerId) const {
 }
 
 void PlanUtilizationHistoryStore::loadFromDisk(const QString& providerId) {
+    PERF_PROBE("loadFromDisk", 1000);
     if (m_buckets.contains(providerId)) return;
 
     QFile file(filePath(providerId));
@@ -79,9 +108,9 @@ void PlanUtilizationHistoryStore::loadFromDisk(const QString& providerId) {
     m_buckets[providerId] = buckets;
 }
 
-void PlanUtilizationHistoryStore::saveToDisk(const QString& providerId) {
+QJsonDocument PlanUtilizationHistoryStore::serializeProvider(const QString& providerId) const {
     auto it = m_buckets.constFind(providerId);
-    if (it == m_buckets.constEnd()) return;
+    if (it == m_buckets.constEnd()) return QJsonDocument();
 
     const auto& buckets = it.value();
 
@@ -120,15 +149,27 @@ void PlanUtilizationHistoryStore::saveToDisk(const QString& providerId) {
     }
     root["accounts"] = accountsObj;
 
+    return QJsonDocument(root);
+}
+
+void PlanUtilizationHistoryStore::saveToDisk(const QString& providerId) {
+    auto doc = serializeProvider(providerId);
+    if (doc.isEmpty()) return;
+
     QSaveFile file(filePath(providerId));
     if (!file.open(QIODevice::WriteOnly)) return;
-    file.write(QJsonDocument(root).toJson(QJsonDocument::Compact));
+    file.write(doc.toJson(QJsonDocument::Compact));
     file.commit();
 }
 
 void PlanUtilizationHistoryStore::enqueueSave(const QString& providerId) {
     m_pendingSave[providerId] = true;
     if (!m_saveCoalesceTimer.isActive()) m_saveCoalesceTimer.start();
+}
+
+void PlanUtilizationHistoryStore::stopSaveTimer() {
+    m_saveCoalesceTimer.stop();
+    m_pendingSave.clear();
 }
 
 PlanUtilizationHistoryBuckets PlanUtilizationHistoryStore::buckets(const QString& providerId) const {
@@ -138,6 +179,7 @@ PlanUtilizationHistoryBuckets PlanUtilizationHistoryStore::buckets(const QString
 }
 
 void PlanUtilizationHistoryStore::recordSample(const QString& providerId, const UsageSnapshot& snapshot, const QString& accountKey) {
+    PERF_PROBE("recordSample", 2000);
     loadFromDisk(providerId);
     auto& buckets = m_buckets[providerId];
 
@@ -200,6 +242,7 @@ void PlanUtilizationHistoryStore::recordSample(const QString& providerId, const 
 }
 
 QVariantList PlanUtilizationHistoryStore::chartData(const QString& providerId, const QString& seriesName, const QString& accountKey) const {
+    PERF_PROBE("chartData", 1000);
     auto it = m_buckets.constFind(providerId);
     if (it == m_buckets.constEnd()) return {};
 

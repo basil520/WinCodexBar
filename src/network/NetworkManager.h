@@ -46,6 +46,7 @@ public:
     void setDefaultTimeout(int ms) { m_defaultTimeout = ms; }
 
     static void setShuttingDown(bool shuttingDown);
+    static bool isShuttingDown();
 
 private:
     NetworkManager();

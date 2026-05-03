@@ -1,5 +1,6 @@
 #include "ProviderPipeline.h"
 #include "IProvider.h"
+#include "../network/NetworkManager.h"
 
 #include <QElapsedTimer>
 #include <QtAlgorithms>
@@ -68,6 +69,14 @@ ProviderFetchResult ProviderPipeline::execute(
             lastResult.success = false;
             lastResult.errorMessage = QString("Pipeline timeout after %1ms")
                 .arg(QString::number(PIPELINE_TIMEOUT_MS));
+            lastResult.attempts = attempts;
+            emit pipelineComplete(lastResult);
+            return lastResult;
+        }
+
+        if (NetworkManager::isShuttingDown()) {
+            lastResult.success = false;
+            lastResult.errorMessage = "Application shutting down";
             lastResult.attempts = attempts;
             emit pipelineComplete(lastResult);
             return lastResult;

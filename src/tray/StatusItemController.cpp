@@ -90,7 +90,7 @@ bool StatusItemController::createTrayIcon() {
 
     m_contextMenu->addSeparator();
     m_quitAction = m_contextMenu->addAction(QString());
-    QObject::connect(m_quitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
+    QObject::connect(m_quitAction, &QAction::triggered, this, &StatusItemController::quitRequested);
 
     retranslateMenu();
     rebuildProviderMenu();
