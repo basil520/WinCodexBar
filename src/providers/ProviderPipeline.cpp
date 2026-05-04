@@ -129,6 +129,13 @@ ProviderFetchResult ProviderPipeline::executeProvider(
         return result;
     }
 
+    // Inject account credentials into strategies
+    for (auto* strategy : strategies) {
+        if (strategy) {
+            strategy->setAccountCredentials(ctx.accountCredentials);
+        }
+    }
+
     struct StrategyCleanup {
         QVector<IFetchStrategy*>& strategies;
         ~StrategyCleanup() { qDeleteAll(strategies); }

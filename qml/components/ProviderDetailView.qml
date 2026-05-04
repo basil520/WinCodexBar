@@ -88,6 +88,11 @@ ScrollView {
                 || usageSnapshot.tertiary !== undefined)
     }
 
+    property bool isDetailProvider: root.providerId === "deepseek"
+        || root.providerId === "warp"
+        || root.providerId === "kilo"
+        || root.providerId === "abacus"
+
     function durationLabel(ms) {
         var value = Number(ms || 0)
         if (value <= 0) return ""
@@ -232,21 +237,35 @@ ScrollView {
                     SectionTitle { text: qsTr("Usage") }
 
                     UsageMetricRow {
-                        label: root.descriptor ? root.descriptor.sessionLabel : qsTr("Session")
+                        label: root.isDetailProvider ? qsTr("Balance") : (root.descriptor ? root.descriptor.sessionLabel : qsTr("Session"))
                         metric: root.usageSnapshot ? root.usageSnapshot.primary : null
                         tintColor: root.brandColor
                     }
 
                     UsageMetricRow {
+                        visible: !root.isDetailProvider
                         label: root.descriptor ? root.descriptor.weeklyLabel : qsTr("Weekly")
                         metric: root.usageSnapshot ? root.usageSnapshot.secondary : null
                         tintColor: root.brandColor
                     }
 
                     UsageMetricRow {
+                        visible: !root.isDetailProvider
                         label: root.descriptor ? root.descriptor.opusLabel || qsTr("Monthly") : qsTr("Monthly")
                         metric: root.usageSnapshot ? root.usageSnapshot.tertiary : null
                         tintColor: root.brandColor
+                    }
+
+                    // Detail text line for detail-only providers (balance/credit info)
+                    Label {
+                        visible: root.isDetailProvider
+                            && root.usageSnapshot
+                            && root.usageSnapshot.detail !== undefined
+                        Layout.fillWidth: true
+                        text: root.usageSnapshot ? root.usageSnapshot.detail : ""
+                        color: AppTheme.textSecondary
+                        font.pixelSize: AppTheme.fontSizeSm
+                        wrapMode: Text.WordWrap
                     }
                 }
             }

@@ -36,4 +36,8 @@ public:
     virtual QString subscriptionDashboardURL() const { return {}; }
     virtual QVector<QString> supportedSourceModes() const { return {"auto"}; }
     virtual QString brandColor() const { return "#6b6bff"; }
+
+    // Token Account support
+    virtual bool supportsMultipleAccounts() const { return false; }
+    virtual QVector<QString> requiredCredentialTypes() const { return {}; }
 };

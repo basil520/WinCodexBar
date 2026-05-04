@@ -111,6 +111,8 @@ add_executable(tst_CostUsageScanner
     tst_CostUsageScanner.cpp
     ../src/util/CostUsageScanner.cpp
     ../src/util/CostUsageScanner.h
+    ../src/util/CostUsageCache.cpp
+    ../src/util/CostUsageCache.h
 )
 target_include_directories(tst_CostUsageScanner PRIVATE ${COMMON_INCLUDE})
 target_compile_definitions(tst_CostUsageScanner PRIVATE
@@ -276,3 +278,31 @@ target_include_directories(tst_AbacusProvider PRIVATE ${COMMON_INCLUDE})
 target_compile_definitions(tst_AbacusProvider PRIVATE ${COMMON_DEFINES})
 target_link_libraries(tst_AbacusProvider PRIVATE codexbar_core Qt6::Core Qt6::Test)
 add_wincodexbar_test(tst_AbacusProvider tst_AbacusProvider)
+
+# CostUsageCache unit tests
+add_executable(tst_CostUsageCache tst_CostUsageCache.cpp)
+target_include_directories(tst_CostUsageCache PRIVATE ${COMMON_INCLUDE})
+target_compile_definitions(tst_CostUsageCache PRIVATE ${COMMON_DEFINES})
+target_link_libraries(tst_CostUsageCache PRIVATE codexbar_core Qt6::Core Qt6::Test)
+add_wincodexbar_test(tst_CostUsageCache tst_CostUsageCache)
+
+# TokenAccountStore unit tests
+add_executable(tst_TokenAccountStore tst_TokenAccountStore.cpp)
+target_include_directories(tst_TokenAccountStore PRIVATE ${COMMON_INCLUDE})
+target_compile_definitions(tst_TokenAccountStore PRIVATE ${COMMON_DEFINES})
+target_link_libraries(tst_TokenAccountStore PRIVATE codexbar_core Qt6::Core Qt6::Test)
+add_wincodexbar_test(tst_TokenAccountStore tst_TokenAccountStore)
+
+# ProviderRuntime unit tests
+add_executable(tst_ProviderRuntime tst_ProviderRuntime.cpp)
+target_include_directories(tst_ProviderRuntime PRIVATE ${COMMON_INCLUDE})
+target_compile_definitions(tst_ProviderRuntime PRIVATE ${COMMON_DEFINES})
+target_link_libraries(tst_ProviderRuntime PRIVATE codexbar_core Qt6::Core Qt6::Test)
+add_wincodexbar_test(tst_ProviderRuntime tst_ProviderRuntime)
+
+# CLI unit tests
+add_executable(tst_CLI tst_CLI.cpp)
+target_include_directories(tst_CLI PRIVATE ${COMMON_INCLUDE})
+target_compile_definitions(tst_CLI PRIVATE ${COMMON_DEFINES})
+target_link_libraries(tst_CLI PRIVATE codexbar_core Qt6::Core Qt6::Test)
+add_wincodexbar_test(tst_CLI tst_CLI)

@@ -9,11 +9,15 @@
 #include "../app/SettingsStore.h"
 #include "../network/NetworkManager.h"
 #include "../util/CostUsageScanner.h"
+#include "../util/CostUsageCache.h"
 #include "../util/UsagePaceText.h"
 #include "../models/UsagePace.h"
 #include "../providers/codex/ManagedCodexAccountService.h"
 #include "../providers/codex/CodexCreditsFetcher.h"
 #include "../providers/codex/CodexDashboardCache.h"
+#include "../account/TokenAccountStore.h"
+#include "../runtime/ProviderRuntimeManager.h"
+#include "../runtime/IProviderRuntime.h"
 
 #include <QDateTime>
 #include <QJsonObject>
@@ -340,6 +344,25 @@ ProviderFetchContext UsageStore::buildFetchContextForProvider(const QString& pro
         ctx.env["ZAI_API_REGION"] = apiRegion;
     }
 
+    // Token Account resolution
+    TokenAccountStore* accountStore = TokenAccountStore::instance();
+    QString resolvedAccountId = ctx.accountID;
+    if (resolvedAccountId.isEmpty()) {
+        resolvedAccountId = accountStore->defaultAccountId(providerId);
+    }
+    if (!resolvedAccountId.isEmpty()) {
+        auto accOpt = accountStore->account(resolvedAccountId);
+        if (accOpt.has_value()) {
+            const TokenAccount& acc = accOpt.value();
+            ctx.accountID = acc.accountId;
+            ctx.accountCredentials = acc.credentials;
+            // Per-account source mode override (if not Auto)
+            if (acc.sourceMode != ProviderSourceMode::Auto) {
+                ctx.sourceMode = acc.sourceMode;
+            }
+        }
+    }
+
     return ctx;
 }
 
@@ -369,7 +392,7 @@ QVariantMap UsageStore::snapshotData(const QString& id) const {
         return rw.resetDescription.value_or(QString());
     };
 
-    auto addWindowFields = [&](const QString& prefix, const RateWindow& rw) {
+    auto addWindowFields = [&](const QString& prefix, const RateWindow& rw, bool isDetailProvider) {
         const double remaining = rw.remainingPercent();
         m[prefix + "Used"] = rw.usedPercent;
         m[prefix + "Remaining"] = remaining;
@@ -377,9 +400,19 @@ QVariantMap UsageStore::snapshotData(const QString& id) const {
         m[prefix + "DisplayIsUsed"] = showUsedPercent;
         if (rw.resetsAt.has_value())
             m[prefix + "ResetsAt"] = rw.resetsAt->toMSecsSinceEpoch();
-        const QString resetText = resetDisplay(rw);
-        if (!resetText.isEmpty())
-            m[prefix + "ResetDesc"] = resetText;
+
+        // For detail-only providers (deepseek/warp/kilo/abacus),
+        // resetDescription contains balance/credit detail, not a reset time.
+        // Extract it to a separate detail field and avoid "Resets" rendering.
+        if (isDetailProvider && rw.resetDescription.has_value()) {
+            QString detail = rw.resetDescription.value().trimmed();
+            if (!detail.isEmpty())
+                m[prefix + "Detail"] = detail;
+        } else {
+            const QString resetText = resetDisplay(rw);
+            if (!resetText.isEmpty())
+                m[prefix + "ResetDesc"] = resetText;
+        }
     };
 
     m["sessionLabel"] = Localization::providerLabel(prov ? prov->sessionLabel() : "Session");
@@ -388,8 +421,10 @@ QVariantMap UsageStore::snapshotData(const QString& id) const {
     m["supportsCredits"] = prov ? prov->supportsCredits() : false;
     m["displayName"] = providerDisplayName(id);
 
+    const bool isDetailProvider = (id == "deepseek" || id == "warp" || id == "kilo" || id == "abacus");
+
     if (snap.primary.has_value()) {
-        addWindowFields("primary", *snap.primary);
+        addWindowFields("primary", *snap.primary, isDetailProvider);
     } else {
         m["primaryUsed"] = 0.0;
         m["primaryRemaining"] = 100.0;
@@ -397,7 +432,7 @@ QVariantMap UsageStore::snapshotData(const QString& id) const {
         m["primaryDisplayIsUsed"] = showUsedPercent;
     }
     if (snap.secondary.has_value()) {
-        addWindowFields("secondary", *snap.secondary);
+        addWindowFields("secondary", *snap.secondary, false);
         m["hasSecondary"] = true;
     } else {
         m["secondaryUsed"] = 0.0;
@@ -407,7 +442,7 @@ QVariantMap UsageStore::snapshotData(const QString& id) const {
         m["hasSecondary"] = false;
     }
     if (snap.tertiary.has_value()) {
-        addWindowFields("tertiary", *snap.tertiary);
+        addWindowFields("tertiary", *snap.tertiary, false);
         m["hasTertiary"] = true;
     } else {
         m["hasTertiary"] = false;
@@ -547,11 +582,11 @@ QVariantMap UsageStore::snapshotData(const QString& id) const {
         // Override primary/secondary with projected lanes
         auto sessionWindow = CodexConsumerProjection::rateWindow(projection, CodexConsumerProjection::RateLane::Session);
         if (sessionWindow.has_value()) {
-            addWindowFields("primary", *sessionWindow);
+            addWindowFields("primary", *sessionWindow, false);
         }
         auto weeklyWindow = CodexConsumerProjection::rateWindow(projection, CodexConsumerProjection::RateLane::Weekly);
         if (weeklyWindow.has_value()) {
-            addWindowFields("secondary", *weeklyWindow);
+            addWindowFields("secondary", *weeklyWindow, false);
             m["hasSecondary"] = true;
         }
 
@@ -611,7 +646,11 @@ void UsageStore::refreshCostUsage() {
 
     QtConcurrent::run(m_threadPool, [this]() {
         PERF_PROBE("refreshCostUsage_worker", 5000);
-        CostUsageScanner scanner;
+
+        CostUsageCache& cache = CostUsageCache::instance();
+        cache.load();
+
+        CostUsageScanner scanner(&cache);
 
         QDate today = QDate::currentDate();
         QDate since = today.addDays(-29);
@@ -619,6 +658,8 @@ void UsageStore::refreshCostUsage() {
         CostUsageSnapshot claude = scanner.scanClaude({}, since, today);
         CostUsageSnapshot codex = scanner.scanCodex({}, since, today);
         auto piResult = scanner.scanPi(since, today);
+
+        cache.save();
 
         // Per-provider storage
         QHash<QString, CostUsageSnapshot> perProvider;
@@ -1089,8 +1130,23 @@ void UsageStore::refreshProvider(const QString& providerId) {
             return;
         }
 
-        ProviderPipeline pipeline;
-        ProviderFetchResult result = pipeline.executeProvider(provider, ctx);
+        ProviderFetchResult result;
+        // Use ProviderRuntime if available (GenericRuntime is a thin wrapper around Pipeline)
+        bool usedRuntime = false;
+        if (ProviderRuntimeManager* rtMgr = ProviderRuntimeManager::instance()) {
+            if (IProviderRuntime* runtime = rtMgr->runtimeFor(providerId)) {
+                if (runtime->state() == RuntimeState::Running) {
+                    result = runtime->fetch(ctx);
+                    usedRuntime = true;
+                }
+            }
+        }
+
+        if (!usedRuntime) {
+            // Fall back to direct pipeline execution for backward compatibility
+            ProviderPipeline pipeline;
+            result = pipeline.executeProvider(provider, ctx);
+        }
 
         QMetaObject::invokeMethod(this, [this, providerId, result]() {
             PERF_PROBE("refreshProvider_callback", 2000);
@@ -1725,6 +1781,8 @@ QVariantMap UsageStore::providerUsageSnapshot(const QString& providerId) const {
     if (it == m_snapshots.end()) return result;
 
     const bool showUsedPercent = m_settingsStore ? m_settingsStore->usageBarsShowUsed() : false;
+    const bool isDetailProvider = (providerId == "deepseek" || providerId == "warp" || providerId == "kilo" || providerId == "abacus");
+
     auto metricMap = [&](const RateWindow& rw) {
         QVariantMap metric;
         const double remaining = rw.remainingPercent();
@@ -1737,10 +1795,14 @@ QVariantMap UsageStore::providerUsageSnapshot(const QString& providerId) const {
         }
         return metric;
     };
-    
+
     const auto& snap = it.value();
     if (snap.primary.has_value()) {
         result["primary"] = metricMap(*snap.primary);
+        if (isDetailProvider && snap.primary->resetDescription.has_value()) {
+            QString detail = snap.primary->resetDescription.value().trimmed();
+            if (!detail.isEmpty()) result["detail"] = detail;
+        }
     }
     if (snap.secondary.has_value()) {
         result["secondary"] = metricMap(*snap.secondary);
@@ -2294,4 +2356,70 @@ void UsageStore::shutdown()
 QVariantMap UsageStore::providerDashboardData(const QString& providerId) const
 {
     return m_dashboardData.value(providerId);
+}
+
+// Token Account management implementations
+
+QVariantList UsageStore::tokenAccountsForProvider(const QString& providerId) const
+{
+    QVariantList result;
+    auto accounts = TokenAccountStore::instance()->accountsForProvider(providerId);
+    for (const auto& acc : accounts) {
+        result.append(acc.toVariantMap());
+    }
+    return result;
+}
+
+QString UsageStore::addTokenAccount(const QString& providerId, const QString& displayName, int sourceMode)
+{
+    TokenAccount account;
+    account.providerId = providerId;
+    account.displayName = displayName.isEmpty() ? providerId : displayName;
+    account.sourceMode = static_cast<ProviderSourceMode>(sourceMode);
+    account.visibility = AccountVisibility::Visible;
+    account.createdAt = QDateTime::currentDateTimeUtc();
+    account.lastUsedAt = account.createdAt;
+
+    QString accountId = TokenAccountStore::instance()->addAccount(account);
+
+    // If this is the first account for this provider, set it as default
+    if (TokenAccountStore::instance()->accountCountForProvider(providerId) == 1) {
+        TokenAccountStore::instance()->setDefaultAccountId(providerId, accountId);
+    }
+
+    return accountId;
+}
+
+bool UsageStore::removeTokenAccount(const QString& accountId)
+{
+    return TokenAccountStore::instance()->removeAccount(accountId);
+}
+
+bool UsageStore::setTokenAccountVisibility(const QString& accountId, int visibility)
+{
+    auto accOpt = TokenAccountStore::instance()->account(accountId);
+    if (!accOpt.has_value()) return false;
+    TokenAccount acc = accOpt.value();
+    acc.visibility = static_cast<AccountVisibility>(visibility);
+    return TokenAccountStore::instance()->updateAccount(accountId, acc);
+}
+
+bool UsageStore::setTokenAccountSourceMode(const QString& accountId, int sourceMode)
+{
+    auto accOpt = TokenAccountStore::instance()->account(accountId);
+    if (!accOpt.has_value()) return false;
+    TokenAccount acc = accOpt.value();
+    acc.sourceMode = static_cast<ProviderSourceMode>(sourceMode);
+    return TokenAccountStore::instance()->updateAccount(accountId, acc);
+}
+
+bool UsageStore::setDefaultTokenAccount(const QString& providerId, const QString& accountId)
+{
+    TokenAccountStore::instance()->setDefaultAccountId(providerId, accountId);
+    return true;
+}
+
+QString UsageStore::defaultTokenAccount(const QString& providerId) const
+{
+    return TokenAccountStore::instance()->defaultAccountId(providerId);
 }

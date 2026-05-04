@@ -1,4 +1,5 @@
 #include "CostUsageScanner.h"
+#include "CostUsageCache.h"
 
 #include <QDir>
 #include <QDirIterator>
@@ -23,7 +24,9 @@ void CostUsageScanner::setShuttingDown(bool shuttingDown)
     g_shuttingDown = shuttingDown;
 }
 
-CostUsageScanner::CostUsageScanner() { initPricing(); }
+CostUsageScanner::CostUsageScanner(CostUsageCache* cache) : m_cache(cache) {
+    initPricing();
+}
 
 const QHash<QString, CostUsageScanner::Pricing>& CostUsageScanner::codexPricingMap() {
     static QHash<QString, Pricing> map;
@@ -278,6 +281,58 @@ static QDateTime parseJsonTimestamp(const QJsonValue& value) {
     return {};
 }
 
+// ---------------------------------------------------------------------------
+// Cache helpers
+// ---------------------------------------------------------------------------
+static void mergeFileIntoGlobal(
+    QHash<QString, QHash<QString, CostUsageModelBreakdown>>& global,
+    const QHash<QString, QHash<QString, CostUsageModelBreakdown>>& file)
+{
+    for (auto dit = file.constBegin(); dit != file.constEnd(); ++dit) {
+        const QString& dateKey = dit.key();
+        for (auto mit = dit.value().constBegin(); mit != dit.value().constEnd(); ++mit) {
+            const CostUsageModelBreakdown& src = mit.value();
+            CostUsageModelBreakdown& dst = global[dateKey][mit.key()];
+            dst.modelName = src.modelName;
+            dst.inputTokens += src.inputTokens;
+            dst.cacheReadTokens += src.cacheReadTokens;
+            dst.cacheCreationTokens += src.cacheCreationTokens;
+            dst.outputTokens += src.outputTokens;
+        }
+    }
+}
+
+static QHash<QString, QVector<CostUsageModelBreakdown>> convertToCacheContributions(
+    const QHash<QString, QHash<QString, CostUsageModelBreakdown>>& file)
+{
+    QHash<QString, QVector<CostUsageModelBreakdown>> result;
+    for (auto dit = file.constBegin(); dit != file.constEnd(); ++dit) {
+        QVector<CostUsageModelBreakdown> vec;
+        for (auto mit = dit.value().constBegin(); mit != dit.value().constEnd(); ++mit) {
+            vec.append(mit.value());
+        }
+        result[dit.key()] = vec;
+    }
+    return result;
+}
+
+static void mergeCachedIntoGlobal(
+    QHash<QString, QHash<QString, CostUsageModelBreakdown>>& global,
+    const QHash<QString, QVector<CostUsageModelBreakdown>>& cached)
+{
+    for (auto dit = cached.constBegin(); dit != cached.constEnd(); ++dit) {
+        const QString& dateKey = dit.key();
+        for (const auto& src : dit.value()) {
+            CostUsageModelBreakdown& dst = global[dateKey][src.modelName];
+            dst.modelName = src.modelName;
+            dst.inputTokens += src.inputTokens;
+            dst.cacheReadTokens += src.cacheReadTokens;
+            dst.cacheCreationTokens += src.cacheCreationTokens;
+            dst.outputTokens += src.outputTokens;
+        }
+    }
+}
+
 CostUsageSnapshot CostUsageScanner::scanClaude(const QString& configDir, const QDate& since, const QDate& until) {
     CostUsageSnapshot snap;
     snap.updatedAt = QDateTime::currentDateTime();
@@ -330,6 +385,14 @@ CostUsageSnapshot CostUsageScanner::scanClaude(const QString& configDir, const Q
 
         for (auto& path : jsonlFiles) {
             if (g_shuttingDown) break;
+            QFileInfo info(path);
+
+            // Cache hit: reuse parsed contributions
+            if (m_cache && m_cache->isValid(path, info)) {
+                mergeCachedIntoGlobal(dayModels, m_cache->contributions(path));
+                continue;
+            }
+
             QFile file(path);
             if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
 
@@ -340,6 +403,8 @@ CostUsageSnapshot CostUsageScanner::scanClaude(const QString& configDir, const Q
             };
             QHash<QString, ClaudeRow> keyedRows;
             QVector<ClaudeRow> unkeyedRows;
+            // Per-file accumulator for cache
+            QHash<QString, QHash<QString, CostUsageModelBreakdown>> fileDayModels;
 
         while (!file.atEnd()) {
             if (g_shuttingDown) break;
@@ -392,7 +457,7 @@ CostUsageSnapshot CostUsageScanner::scanClaude(const QString& configDir, const Q
             }
 
             auto addRow = [&](const ClaudeRow& row) {
-                auto& models = dayModels[row.dateKey];
+                auto& models = fileDayModels[row.dateKey];
                 auto& mb = models[row.model];
                 mb.modelName = row.model;
                 mb.inputTokens += row.input;
@@ -403,6 +468,12 @@ CostUsageSnapshot CostUsageScanner::scanClaude(const QString& configDir, const Q
 
             for (auto& row : keyedRows) addRow(row);
             for (auto& row : unkeyedRows) addRow(row);
+
+            // Merge per-file result into global and cache it
+            mergeFileIntoGlobal(dayModels, fileDayModels);
+            if (m_cache) {
+                m_cache->setContributions(path, "claude", convertToCacheContributions(fileDayModels));
+            }
         }
     }
 
@@ -487,6 +558,14 @@ CostUsageSnapshot CostUsageScanner::scanCodex(const QString& sessionsDir, const 
 
     for (auto& path : jsonlFiles) {
         if (g_shuttingDown) break;
+        QFileInfo info(path);
+
+        // Cache hit: reuse parsed contributions
+        if (m_cache && m_cache->isValid(path, info)) {
+            mergeCachedIntoGlobal(dayModels, m_cache->contributions(path));
+            continue;
+        }
+
         QFile file(path);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
 
@@ -495,6 +574,7 @@ CostUsageSnapshot CostUsageScanner::scanCodex(const QString& sessionsDir, const 
         QString currentModel;         // P0: track model from turn_context
         bool isForked = false;        // P1: fork session detection
         bool seenFirstTotal = false;  // P1: baseline for forked sessions
+        QHash<QString, QHash<QString, CostUsageModelBreakdown>> fileDayModels;
 
         while (!file.atEnd()) {
             QByteArray line = file.readLine().trimmed();
@@ -577,7 +657,7 @@ CostUsageSnapshot CostUsageScanner::scanCodex(const QString& sessionsDir, const 
                     int dOutput = qMax(0, output - prevTotals.output);
                     prevTotals = { input, cacheRead, output };
 
-                    auto& mb = dayModels[dateKey][model];
+                    auto& mb = fileDayModels[dateKey][model];
                     mb.modelName = model;
                     mb.inputTokens += dInput;
                     mb.cacheReadTokens += dCached;
@@ -594,13 +674,19 @@ CostUsageSnapshot CostUsageScanner::scanCodex(const QString& sessionsDir, const 
                     prevTotals.cached += dCached;
                     prevTotals.output += dOutput;
 
-                    auto& mb = dayModels[dateKey][model];
+                    auto& mb = fileDayModels[dateKey][model];
                     mb.modelName = model;
                     mb.inputTokens += dInput;
                     mb.cacheReadTokens += dCached;
                     mb.outputTokens += dOutput;
                 }
             }
+        }
+
+        // Merge per-file result into global and cache it
+        mergeFileIntoGlobal(dayModels, fileDayModels);
+        if (m_cache) {
+            m_cache->setContributions(path, "codex", convertToCacheContributions(fileDayModels));
         }
     }
 
@@ -670,6 +756,8 @@ CostUsageScanner::PiScanResult CostUsageScanner::scanPi(const QDate& since, cons
 
     for (auto& path : jsonlFiles) {
         if (g_shuttingDown) break;
+        // TODO: Pi files may contain both codex and claude data.
+        // Per-file cache needs multi-provider support; skipping for now.
         QFile file(path);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
 

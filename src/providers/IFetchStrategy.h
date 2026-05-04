@@ -9,6 +9,7 @@
 
 #include "ProviderFetchContext.h"
 #include "ProviderFetchResult.h"
+#include "../account/TokenAccountCredentials.h"
 
 struct ProviderSettingOption {
     QString value;
@@ -53,6 +54,9 @@ public:
     }
 
     virtual bool shouldFallback(const ProviderFetchResult& result, const ProviderFetchContext& ctx) const = 0;
+
+    // Token Account support: inject credentials before fetch
+    virtual void setAccountCredentials(const TokenAccountCredentials& creds) { Q_UNUSED(creds) }
 
 signals:
     void progressChanged(const QString& message, int percent);

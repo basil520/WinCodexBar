@@ -112,8 +112,25 @@ set(CORE_SOURCES
     src/util/TextParser.cpp
     src/util/BinaryLocator.cpp
     src/util/CostUsageScanner.cpp
+    src/util/CostUsageCache.cpp
     src/util/SingleInstanceGuard.cpp
     src/util/UsagePaceText.cpp
+
+    src/account/TokenAccountStore.cpp
+
+    src/runtime/IProviderRuntime.cpp
+    src/runtime/IProviderLoginFlow.cpp
+    src/runtime/ProviderRuntimeManager.cpp
+    src/runtime/GenericRuntime.cpp
+    src/runtime/CodexRuntime.cpp
+    src/runtime/AugmentRuntime.cpp
+    src/runtime/OAuthDeviceFlow.cpp
+
+    src/cli/CLIEntry.cpp
+    src/cli/CLIRenderer.cpp
+    src/cli/CLIUsageCommand.cpp
+    src/cli/CLICostCommand.cpp
+    src/cli/CLIConfigCommand.cpp
 )
 
 set(CORE_HEADERS
@@ -210,8 +227,28 @@ set(CORE_HEADERS
     src/util/TextParser.h
     src/util/BinaryLocator.h
     src/util/CostUsageScanner.h
+    src/util/CostUsageCache.h
     src/util/SingleInstanceGuard.h
     src/util/UsagePaceText.h
+
+    src/account/TokenAccount.h
+    src/account/TokenAccountCredentials.h
+    src/account/TokenAccountStore.h
+    src/account/SecureString.h
+
+    src/runtime/IProviderRuntime.h
+    src/runtime/IProviderLoginFlow.h
+    src/runtime/ProviderRuntimeManager.h
+    src/runtime/GenericRuntime.h
+    src/runtime/CodexRuntime.h
+    src/runtime/AugmentRuntime.h
+    src/runtime/OAuthDeviceFlow.h
+
+    src/cli/CLIEntry.h
+    src/cli/CLIRenderer.h
+    src/cli/CLIUsageCommand.h
+    src/cli/CLICostCommand.h
+    src/cli/CLIConfigCommand.h
 )
 
 add_library(codexbar_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})

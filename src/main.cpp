@@ -24,6 +24,8 @@
 #include <windows.h>
 #endif
 
+#include "cli/CLIEntry.h"
+
 static bool activateExistingInstance() {
 #ifdef Q_OS_WIN
     HWND hwnd = FindWindowW(nullptr, L"CodexBar");
@@ -68,6 +70,11 @@ static void fileMessageHandler(QtMsgType type, const QMessageLogContext& context
 #include "network/NetworkManager.h"
 #include "util/CostUsageScanner.h"
 #include "providers/ProviderRegistry.h"
+#include "account/TokenAccountStore.h"
+#include "runtime/ProviderRuntimeManager.h"
+#include "runtime/GenericRuntime.h"
+#include "runtime/CodexRuntime.h"
+#include "runtime/AugmentRuntime.h"
 #include "providers/zai/ZaiProvider.h"
 #include "providers/openrouter/OpenRouterProvider.h"
 #include "providers/copilot/CopilotProvider.h"
@@ -332,6 +339,15 @@ static void dumpQuickItemTree(QQuickItem* item, int depth = 0) {
 }
 
 int main(int argc, char* argv[]) {
+    // Check for CLI subcommands before creating QApplication
+    if (argc >= 2 && CLIEntry::isCliCommand(QString::fromUtf8(argv[1]))) {
+        QCoreApplication app(argc, argv);
+        app.setApplicationName("WinCodexBar");
+        app.setOrganizationName("CodexBar");
+        CLIEntry cli;
+        return cli.run(argc, argv);
+    }
+
     qputenv("QT_QUICK_CONTROLS_STYLE", QByteArray("Basic"));
 
     SingleInstanceGuard singleInstance(QStringLiteral("WinCodexBar_SingleInstance"));
@@ -390,10 +406,37 @@ int main(int argc, char* argv[]) {
     ProviderRegistry::instance().registerProvider(new WarpProvider());
     ProviderRegistry::instance().registerProvider(new AbacusProvider());
 
+    // Register provider runtimes
+    auto* runtimeManager = ProviderRuntimeManager::instance();
+
+    // Codex: special dual-account runtime
+    auto* codexRuntime = new CodexRuntime();
+    runtimeManager->registerRuntime("codex", codexRuntime);
+
+    // Augment: keepalive runtime
+    auto* augmentRuntime = new AugmentRuntime();
+    runtimeManager->registerRuntime("augment", augmentRuntime);
+
+    // All other providers: generic runtime
+    for (auto* provider : ProviderRegistry::instance().allProviders()) {
+        QString pid = provider->id();
+        if (!runtimeManager->hasRuntime(pid)) {
+            runtimeManager->registerRuntime(pid, new GenericRuntime(provider));
+        }
+    }
+
+    runtimeManager->startAll();
+
     SettingsStore* settings = new SettingsStore();
     UsageStore* usageStore = new UsageStore();
     usageStore->setSettingsStore(settings);
-    
+
+    // Initialize TokenAccountStore: load existing accounts or migrate from legacy config
+    TokenAccountStore* tokenStore = TokenAccountStore::instance();
+    tokenStore->loadFromDisk();
+    tokenStore->migrateFromLegacy(settings);
+    tokenStore->saveToDisk();
+
     QObject::connect(usageStore, &UsageStore::codexAccountsChanged, [usageStore]() {
         // Refresh Codex data when accounts change
         usageStore->refreshProvider("codex");

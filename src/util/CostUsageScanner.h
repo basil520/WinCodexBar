@@ -8,11 +8,13 @@
 #include <optional>
 #include "../models/CostUsageReport.h"
 
+class CostUsageCache;
+
 class CostUsageScanner {
 public:
     static void setShuttingDown(bool shuttingDown);
 
-    explicit CostUsageScanner();
+    explicit CostUsageScanner(CostUsageCache* cache = nullptr);
 
     CostUsageSnapshot scanClaude(const QString& configDir, const QDate& since, const QDate& until);
     CostUsageSnapshot scanCodex(const QString& sessionsDir, const QDate& since, const QDate& until);
@@ -63,4 +65,6 @@ private:
     QHash<QString, Pricing> m_claudePricing;
     QHash<QString, Pricing> m_opencodeGoPricing;
     void initPricing();
+
+    CostUsageCache* m_cache = nullptr;
 };

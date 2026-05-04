@@ -3,6 +3,7 @@
 #include "ProviderSourceMode.h"
 #include "ProviderFetchKind.h"
 #include "ProviderSettingsSnapshot.h"
+#include "../account/TokenAccountCredentials.h"
 
 #include <QString>
 #include <QHash>
@@ -19,5 +20,6 @@ struct ProviderFetchContext {
     bool webDebugDumpHTML = false;
     int networkTimeoutMs = 15000;
     QString accountID;
+    TokenAccountCredentials accountCredentials;
     std::optional<QString> manualCookieHeader;
 };

@@ -89,6 +89,15 @@ public:
     Q_INVOKABLE bool promoteCodexAccount(const QString& accountID);
     Q_INVOKABLE bool isCodexAuthenticating() const;
 
+    // Token Account management (generic multi-account support)
+    Q_INVOKABLE QVariantList tokenAccountsForProvider(const QString& providerId) const;
+    Q_INVOKABLE QString addTokenAccount(const QString& providerId, const QString& displayName, int sourceMode);
+    Q_INVOKABLE bool removeTokenAccount(const QString& accountId);
+    Q_INVOKABLE bool setTokenAccountVisibility(const QString& accountId, int visibility);
+    Q_INVOKABLE bool setTokenAccountSourceMode(const QString& accountId, int sourceMode);
+    Q_INVOKABLE bool setDefaultTokenAccount(const QString& providerId, const QString& accountId);
+    Q_INVOKABLE QString defaultTokenAccount(const QString& providerId) const;
+
     QThreadPool* threadPool() const { return m_threadPool; }
     void shutdown();
     Q_INVOKABLE bool isCodexRemoving() const;

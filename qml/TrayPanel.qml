@@ -453,6 +453,10 @@ Rectangle {
                 }
                 property bool expanded: root.expandedCards[modelData] === true
                 property color brandColor: brandColorFor(modelData)
+                property bool isDetailProvider: modelData === "deepseek"
+                    || modelData === "warp"
+                    || modelData === "kilo"
+                    || modelData === "abacus"
                 property string primaryLabel: snap.displayName === "OpenRouter" && snap.openRouterUsage !== undefined
                     ? qsTr("API key limit") : snap.sessionLabel
 
@@ -532,7 +536,7 @@ Rectangle {
                         visible: snap.hasUsage
                         spacing: 6
                         Text {
-                            text: cardDelegate.primaryLabel
+                            text: cardDelegate.isDetailProvider ? qsTr("Balance") : cardDelegate.primaryLabel
                             color: "#aaa"
                             font.pixelSize: 11
                             font.bold: true
@@ -544,14 +548,14 @@ Rectangle {
                             radius: 3
                             color: "#2a2a4a"
                             Rectangle {
-                                width: Math.max(0, parent.width * snap.primaryUsed / 100)
+                                width: Math.max(0, parent.width * (cardDelegate.isDetailProvider ? snap.primaryRemaining : snap.primaryUsed) / 100)
                                 height: parent.height
                                 radius: 3
                                 color: cardDelegate.brandColor
                                 Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
                             }
                             Rectangle {
-                                visible: snap.primaryPacePercent !== undefined && snap.primaryPacePercent >= 0
+                                visible: !cardDelegate.isDetailProvider && snap.primaryPacePercent !== undefined && snap.primaryPacePercent >= 0
                                 x: Math.max(0, Math.min(parent.width - 3, parent.width * (snap.primaryPacePercent || 0) / 100 - 1))
                                 width: 3
                                 height: parent.height
@@ -600,6 +604,21 @@ Rectangle {
                         Text {
                             text: qsTr("Resets") + " " + (snap.primaryResetDesc || "")
                             color: "#666"
+                            font.pixelSize: 10
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    // === Primary detail (balance/credit info text line) ===
+                    RowLayout {
+                        Layout.fillWidth: true
+                        visible: snap.hasUsage && snap.primaryDetail !== undefined && snap.primaryDetail !== ""
+                        spacing: 4
+                        Item { Layout.preferredWidth: 80 }
+                        Text {
+                            text: snap.primaryDetail || ""
+                            color: "#888"
                             font.pixelSize: 10
                             Layout.fillWidth: true
                             elide: Text.ElideRight
