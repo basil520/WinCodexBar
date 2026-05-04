@@ -65,7 +65,7 @@ CodexStatusProbe::ProbeResult CodexStatusProbe::fetchInternal(int cols, int rows
         return result;
     }
 
-    QThread::msleep(2000);
+    QThread::msleep(500);
 
     if (!session.isRunning()) {
         result.errorMessage = "codex CLI exited before we could send /status";
@@ -75,7 +75,7 @@ CodexStatusProbe::ProbeResult CodexStatusProbe::fetchInternal(int cols, int rows
     session.write(QByteArray("\x15/status\r\n", 10));
     qDebug() << "[CodexStatusProbe] Sent /status command";
 
-    QThread::msleep(1500);
+    QThread::msleep(300);
 
     QByteArray accumulatedOutput;
     QDateTime deadline = QDateTime::currentDateTimeUtc().addSecs(timeoutMs / 1000);
@@ -91,7 +91,7 @@ CodexStatusProbe::ProbeResult CodexStatusProbe::fetchInternal(int cols, int rows
             break;
         }
 
-        QThread::msleep(100);
+        QThread::msleep(50);
     }
 
     if (session.isRunning()) {

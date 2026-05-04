@@ -296,9 +296,9 @@ Rectangle {
                                 providersPane.providers = UsageStore.providerList()
                                 if (providersPane.selectedProvider === providerId) providersPane.reloadProvider(providerId)
                             }
-                            function onSnapshotChanged(providerId) {
+                            function onSnapshotRevisionChanged() {
                                 providersPane.providers = UsageStore.providerList()
-                                if (providersPane.selectedProvider === providerId) providersPane.reloadProvider(providerId)
+                                if (providersPane.selectedProvider !== "") providersPane.reloadProvider(providersPane.selectedProvider)
                             }
                         }
                     }

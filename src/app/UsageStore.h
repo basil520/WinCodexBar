@@ -23,6 +23,7 @@ class ProviderRegistry;
 class ProviderPipeline;
 class SettingsStore;
 class PlanUtilizationHistoryStore;
+class BatchUpdateController;
 
 class UsageStore : public QObject {
     Q_OBJECT
@@ -254,6 +255,12 @@ private:
     void clearCodexOpenAIWebState();
     void doRefresh(const QStringList& ids);
     QThreadPool* m_threadPool = nullptr;
+
+    // Batch update controller (merges UI signals to avoid signal storm)
+    BatchUpdateController* m_batchUpdater = nullptr;
+
+    void onBatchUpdateReady(const QStringList& providerIds);
+    void onBatchFinished();
 
     bool m_codexCreditsRefreshing = false;
     int m_pendingCreditsRefresh = 0;

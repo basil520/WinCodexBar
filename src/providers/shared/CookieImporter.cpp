@@ -14,6 +14,9 @@
 #include <QTemporaryDir>
 #include <QUuid>
 #include <QVariant>
+#include <QMutex>
+#include <QMutexLocker>
+#include <QCryptographicHash>
 
 #include <optional>
 
@@ -22,6 +25,43 @@
 #include <bcrypt.h>
 
 namespace {
+
+// Cache to avoid re-reading browser SQLite DBs on every refresh.
+static constexpr int COOKIE_CACHE_TTL_MS = 300000; // 5 minutes
+
+struct CookieCacheEntry {
+    QVector<QNetworkCookie> cookies;
+    QDateTime cachedAt;
+    QString key;
+};
+
+static QHash<QString, CookieCacheEntry> s_cookieCache;
+static QMutex s_cookieCacheMutex;
+
+QString cacheKeyFor(CookieImporter::Browser browser, const QStringList& domains) {
+    QStringList sortedDomains = domains;
+    sortedDomains.sort();
+    QString raw = QString::number(static_cast<int>(browser)) + "|" + sortedDomains.join(",");
+    return QString::fromLatin1(QCryptographicHash::hash(raw.toUtf8(), QCryptographicHash::Md5).toHex());
+}
+
+std::optional<QVector<QNetworkCookie>> tryCache(CookieImporter::Browser browser, const QStringList& domains) {
+    QString key = cacheKeyFor(browser, domains);
+    QMutexLocker locker(&s_cookieCacheMutex);
+    auto it = s_cookieCache.find(key);
+    if (it != s_cookieCache.end()) {
+        if (it->cachedAt.msecsTo(QDateTime::currentDateTimeUtc()) < COOKIE_CACHE_TTL_MS) {
+            return it->cookies;
+        }
+    }
+    return std::nullopt;
+}
+
+void updateCache(CookieImporter::Browser browser, const QStringList& domains, const QVector<QNetworkCookie>& cookies) {
+    QString key = cacheKeyFor(browser, domains);
+    QMutexLocker locker(&s_cookieCacheMutex);
+    s_cookieCache[key] = {cookies, QDateTime::currentDateTimeUtc(), key};
+}
 
 bool hostMatchesDomain(QString host, QString domain) {
     host = host.trimmed().toLower();
@@ -327,12 +367,21 @@ QVector<QNetworkCookie> CookieImporter::importCookies(
     QVector<QNetworkCookie> result;
     if (domains.isEmpty()) return result;
 
+    // Check cache first to avoid expensive SQLite I/O on every refresh.
+    auto cached = tryCache(browser, domains);
+    if (cached.has_value()) {
+        qDebug() << "[CookieImporter] Cache hit for browser" << static_cast<int>(browser)
+                 << "domains:" << domains.join(",");
+        return cached.value();
+    }
+
     if (browser == Firefox) {
         for (const auto& profile : BrowserDetection::profilePaths(browser)) {
             QString dbPath = profile + "/cookies.sqlite";
             qDebug() << "[CookieImporter] Firefox profile:" << profile << "db exists:" << QFileInfo::exists(dbPath);
             result += importFirefoxCookies(dbPath, domains);
         }
+        updateCache(browser, domains, result);
         return result;
     }
 
@@ -346,6 +395,7 @@ QVector<QNetworkCookie> CookieImporter::importCookies(
                  << "exists:" << QFileInfo::exists(dbPath);
         result += importChromiumCookies(browser, dbPath, domains, masterKey);
     }
+    updateCache(browser, domains, result);
     return result;
 }
 

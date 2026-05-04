@@ -62,7 +62,7 @@ void CodexPersistentCLISession::cleanup()
     if (m_session) {
         if (m_session->isRunning()) {
             m_session->write(QByteArray("/exit\n", 6));
-            QThread::msleep(200);
+            QThread::msleep(100);
             m_session->terminate();
         }
         delete m_session;
@@ -120,8 +120,8 @@ CodexPersistentCLISession::CaptureResult CodexPersistentCLISession::captureStatu
         return result;
     }
 
-    // Wait for session to stabilize
-    QThread::msleep(400);
+    // Wait for session to stabilize (reduced from 400ms after ConPTY event-driven optimization)
+    QThread::msleep(200);
     drainOutput();
 
     QByteArray buffer;
@@ -146,15 +146,15 @@ CodexPersistentCLISession::CaptureResult CodexPersistentCLISession::captureStatu
         if (!skippedUpdate && containsUpdatePrompt(bufferText)) {
             qDebug() << "[CodexPersistentCLI] Detected update prompt, skipping...";
             send("\x1b[B"); // Down arrow
-            QThread::msleep(120);
+            QThread::msleep(80);
             send("\r");
-            QThread::msleep(150);
+            QThread::msleep(80);
             send("\r");
             skippedUpdate = true;
             sentScript = false;
             buffer.clear();
             sawStatus = false;
-            QThread::msleep(300);
+            QThread::msleep(150);
             continue;
         }
 
@@ -169,27 +169,27 @@ CodexPersistentCLISession::CaptureResult CodexPersistentCLISession::captureStatu
             sentScript = true;
             scriptSentAt = QDateTime::currentDateTimeUtc();
             lastEnter = QDateTime::currentDateTimeUtc();
-            QThread::msleep(200);
+            QThread::msleep(100);
             continue;
         }
 
         // Retry with enter if no response
         if (sentScript && !sawStatus) {
-            if (lastEnter.secsTo(QDateTime::currentDateTimeUtc()) >= 1.2 && enterRetries < 6) {
+            if (lastEnter.secsTo(QDateTime::currentDateTimeUtc()) >= 1.0 && enterRetries < 5) {
                 send("\r");
                 enterRetries++;
                 lastEnter = QDateTime::currentDateTimeUtc();
-                QThread::msleep(120);
+                QThread::msleep(50);
                 continue;
             }
-            if (scriptSentAt.secsTo(QDateTime::currentDateTimeUtc()) >= 3.0 && resendRetries < 2) {
+            if (scriptSentAt.secsTo(QDateTime::currentDateTimeUtc()) >= 2.5 && resendRetries < 2) {
                 send("/status\r");
                 resendRetries++;
                 buffer.clear();
                 sawStatus = false;
                 scriptSentAt = QDateTime::currentDateTimeUtc();
                 lastEnter = QDateTime::currentDateTimeUtc();
-                QThread::msleep(220);
+                QThread::msleep(100);
                 continue;
             }
         }
@@ -202,18 +202,18 @@ CodexPersistentCLISession::CaptureResult CodexPersistentCLISession::captureStatu
             return result;
         }
 
-        QThread::msleep(120);
+        QThread::msleep(50);
     }
 
     // Wait for output to settle
     if (sawStatus) {
-        QDateTime settleDeadline = QDateTime::currentDateTimeUtc().addSecs(2);
+        QDateTime settleDeadline = QDateTime::currentDateTimeUtc().addMSecs(800);
         while (QDateTime::currentDateTimeUtc() < settleDeadline) {
             QByteArray newData = readChunk();
             if (!newData.isEmpty()) {
                 buffer.append(newData);
             }
-            QThread::msleep(100);
+            QThread::msleep(50);
         }
     }
 

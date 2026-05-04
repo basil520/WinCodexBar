@@ -259,17 +259,17 @@ private slots:
         store.setSettingsStore(&settings);
 
         QSignalSpy revisionSpy(&store, &UsageStore::snapshotRevisionChanged);
-        QSignalSpy snapshotSpy(&store, &UsageStore::snapshotChanged);
 
         settings.setUsageBarsShowUsed(true);
         QCOMPARE(revisionSpy.count(), 1);
-        QVERIFY(snapshotSpy.count() > 0);
 
         settings.setResetTimesShowAbsolute(true);
         QCOMPARE(revisionSpy.count(), 2);
 
         settings.setShowOptionalCreditsAndExtraUsage(false);
         QCOMPARE(revisionSpy.count(), 3);
+        // snapshotChanged is no longer emitted for display setting changes;
+        // TrayPanel/PlanUtilizationChart refresh via snapshotRevisionChanged binding.
     }
 };
 

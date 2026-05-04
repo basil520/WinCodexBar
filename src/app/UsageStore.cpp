@@ -1,4 +1,5 @@
 #include "UsageStore.h"
+#include "BatchUpdateController.h"
 #include "Localization.h"
 #include "PlanUtilizationHistoryStore.h"
 #include "SessionQuotaNotifications.h"
@@ -85,6 +86,13 @@ UsageStore::UsageStore(QObject* parent)
     m_threadPool->setMaxThreadCount(qMax(4, QThread::idealThreadCount()));
     m_threadPool->setExpiryTimeout(30000);
 
+    // Initialize batch update controller to avoid signal storm
+    m_batchUpdater = new BatchUpdateController(this);
+    connect(m_batchUpdater, &BatchUpdateController::batchUpdateReady,
+            this, &UsageStore::onBatchUpdateReady);
+    connect(m_batchUpdater, &BatchUpdateController::batchFinished,
+            this, &UsageStore::onBatchFinished);
+
     QObject::connect(&m_refreshTimer, &QTimer::timeout, this, &UsageStore::refresh);
     QObject::connect(&m_statusTimer, &QTimer::timeout, this, &UsageStore::refreshProviderStatuses);
     QObject::connect(m_pipeline, &ProviderPipeline::pipelineComplete,
@@ -144,10 +152,8 @@ void UsageStore::setSettingsStore(SettingsStore* s) {
             m_snapshotRevision++;
             m_snapshotDataCache.clear();
             emit snapshotRevisionChanged();
-            const auto ids = ProviderRegistry::instance().providerIDs();
-            for (const auto& id : ids) {
-                emit snapshotChanged(id);
-            }
+            // snapshotRevisionChanged() is sufficient; TrayPanel/PlanUtilizationChart
+            // bind to snapshotRevision. No need to emit snapshotChanged(id) individually.
         };
         connect(m_settingsStore, &SettingsStore::usageBarsShowUsedChanged,
                 this, notifyDisplaySettingsChanged);
@@ -988,6 +994,11 @@ void UsageStore::doRefresh(const QStringList& ids) {
     m_batchRefreshInProgress = ids.size() > 1;
     emit refreshingChanged();
 
+    // Begin batch UI update cycle to avoid signal storm
+    if (m_batchUpdater) {
+        m_batchUpdater->beginBatch();
+    }
+
     if (ids.isEmpty()) {
         m_isRefreshing = false;
         m_batchRefreshInProgress = false;
@@ -1007,7 +1018,7 @@ void UsageStore::doRefresh(const QStringList& ids) {
             ++m_pendingCreditsRefresh;
             // Fire-and-forget delayed credits refresh after usage establishes identity
             QtConcurrent::run(m_threadPool, [this, refreshStartedAt, expectedGuard]() mutable {
-                auto snap = waitForCodexSnapshot(refreshStartedAt, 6000);
+                auto snap = waitForCodexSnapshot(refreshStartedAt, 3000);
                 if (!snap.updatedAt.isValid()) {
                     // Usage refresh failed or timed out; still try credits with current guard
                 }
@@ -1077,8 +1088,8 @@ void UsageStore::clearCache() {
     m_snapshotDataCache.clear();
     m_snapshotRevision++;
     emit snapshotRevisionChanged();
+    // Batch emit connection test changes to avoid signal storm
     for (const auto& id : ids) {
-        emit snapshotChanged(id);
         emit providerConnectionTestChanged(id);
     }
 }
@@ -1100,8 +1111,12 @@ void UsageStore::refreshProvider(const QString& providerId) {
         if (m_pendingRefreshes <= 0) {
             m_batchRefreshInProgress = false;
             m_isRefreshing = false;
-            emit snapshotRevisionChanged();
-            emit refreshingChanged();
+            if (m_batchUpdater) {
+                m_batchUpdater->endBatch();
+            } else {
+                emit snapshotRevisionChanged();
+                emit refreshingChanged();
+            }
         }
         return;
     }
@@ -1123,8 +1138,12 @@ void UsageStore::refreshProvider(const QString& providerId) {
                 if (m_pendingRefreshes <= 0) {
                     m_batchRefreshInProgress = false;
                     m_isRefreshing = false;
-                    emit snapshotRevisionChanged();
-                    emit refreshingChanged();
+                    if (m_batchUpdater) {
+                        m_batchUpdater->endBatch();
+                    } else {
+                        emit snapshotRevisionChanged();
+                        emit refreshingChanged();
+                    }
                 }
             }, Qt::QueuedConnection);
             return;
@@ -1238,16 +1257,24 @@ void UsageStore::refreshProvider(const QString& providerId) {
             // Granular cache eviction: only remove the entry for this provider
             // instead of clearing the entire cache.
             m_snapshotDataCache.remove(providerId);
-            emit snapshotChanged(providerId);
+            if (m_batchUpdater) {
+                m_batchUpdater->markDirty(providerId);
+            } else {
+                emit snapshotChanged(providerId);
+            }
 
             m_pendingRefreshes--;
             if (m_pendingRefreshes <= 0 && m_pendingCreditsRefresh <= 0) {
                 m_batchRefreshInProgress = false;
                 m_isRefreshing = false;
-                m_snapshotRevision++;
-                m_snapshotDataCache.clear();
-                emit snapshotRevisionChanged();
-                emit refreshingChanged();
+                if (m_batchUpdater) {
+                    m_batchUpdater->endBatch();
+                } else {
+                    m_snapshotRevision++;
+                    m_snapshotDataCache.clear();
+                    emit snapshotRevisionChanged();
+                    emit refreshingChanged();
+                }
             }
         }, Qt::QueuedConnection);
     });
@@ -2074,7 +2101,8 @@ UsageSnapshot UsageStore::waitForCodexSnapshot(const QDateTime& minimumUpdatedAt
         if (snap.updatedAt.isValid() && snap.updatedAt >= minimumUpdatedAt) {
             return snap;
         }
-        QThread::msleep(100);
+        // Short sleep for faster response; max 3s default instead of 6s.
+        QThread::msleep(50);
     }
     return snapshot("codex");
 }
@@ -2427,6 +2455,30 @@ bool UsageStore::setDefaultTokenAccount(const QString& providerId, const QString
 {
     TokenAccountStore::instance()->setDefaultAccountId(providerId, accountId);
     return true;
+}
+
+// ============================================================================
+// BatchUpdateController slots
+// ============================================================================
+
+void UsageStore::onBatchUpdateReady(const QStringList& providerIds)
+{
+    PERF_PROBE("onBatchUpdateReady", 2000);
+
+    // 逐个发射 snapshotChanged（QML 中 ProviderDetailView 等需要这个粒度）
+    for (const auto& id : providerIds) {
+        emit snapshotChanged(id);
+    }
+
+    // 发射全量刷新信号
+    m_snapshotRevision++;
+    m_snapshotDataCache.clear();
+    emit snapshotRevisionChanged();
+}
+
+void UsageStore::onBatchFinished()
+{
+    emit refreshingChanged();
 }
 
 QString UsageStore::defaultTokenAccount(const QString& providerId) const

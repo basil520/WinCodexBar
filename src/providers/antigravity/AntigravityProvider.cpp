@@ -6,6 +6,13 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QRegularExpression>
+#include <QMutexLocker>
+
+// Cache isAvailable() for 30s to avoid repeated PowerShell calls blocking the thread pool.
+static constexpr int ANTIGRAVITY_AVAIL_CACHE_MS = 30000;
+
+AntigravityLocalStrategy::AvailabilityCache AntigravityLocalStrategy::s_availCache;
+QMutex AntigravityLocalStrategy::s_availCacheMutex;
 
 AntigravityProvider::AntigravityProvider(QObject* parent) : IProvider(parent) {}
 
@@ -21,7 +28,7 @@ bool AntigravityLocalStrategy::findProcess(int& port, QString& csrfToken) {
     QProcess proc;
     proc.start("powershell", {"-Command",
         "Get-CimInstance Win32_Process | Where-Object {$_.Name -like 'antigravity*'} | Select-Object -First 1 -ExpandProperty CommandLine"});
-    proc.waitForFinished(2000);
+    proc.waitForFinished(1000);
     QString cmdline = QString::fromUtf8(proc.readAllStandardOutput()).trimmed();
 
     if (cmdline.isEmpty()) return false;
@@ -32,12 +39,12 @@ bool AntigravityLocalStrategy::findProcess(int& port, QString& csrfToken) {
     if (portMatch.hasMatch()) {
         port = portMatch.captured(1).toInt();
     } else {
-        // Fallback: scan common ports
-        for (int p = 3000; p <= 3010; p++) {
+        // Fallback: scan a small set of common ports quickly
+        for (int p = 3000; p <= 3004; p++) {
             QProcess probe;
             probe.start("powershell", {"-Command",
                 QString("Test-NetConnection -ComputerName 127.0.0.1 -Port %1 -WarningAction SilentlyContinue | Select-Object -ExpandProperty TcpTestSucceeded").arg(p)});
-            probe.waitForFinished(1000);
+            probe.waitForFinished(300);
             QString result = QString::fromUtf8(probe.readAllStandardOutput()).trimmed().toLower();
             if (result == "true") {
                 port = p;
@@ -59,9 +66,27 @@ bool AntigravityLocalStrategy::findProcess(int& port, QString& csrfToken) {
 
 bool AntigravityLocalStrategy::isAvailable(const ProviderFetchContext& ctx) const {
     Q_UNUSED(ctx)
-    int port;
+
+    {
+        QMutexLocker locker(&s_availCacheMutex);
+        if (s_availCache.cachedAt.isValid() &&
+            s_availCache.cachedAt.msecsTo(QDateTime::currentDateTime()) < ANTIGRAVITY_AVAIL_CACHE_MS) {
+            return s_availCache.available;
+        }
+    }
+
+    int port = 0;
     QString csrf;
-    return findProcess(port, csrf);
+    bool ok = findProcess(port, csrf);
+
+    {
+        QMutexLocker locker(&s_availCacheMutex);
+        s_availCache.available = ok;
+        s_availCache.port = port;
+        s_availCache.csrfToken = csrf;
+        s_availCache.cachedAt = QDateTime::currentDateTime();
+    }
+    return ok;
 }
 
 bool AntigravityLocalStrategy::shouldFallback(const ProviderFetchResult& result,

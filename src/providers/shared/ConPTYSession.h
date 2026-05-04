@@ -6,6 +6,7 @@
 #include <QProcess>
 #include <QProcessEnvironment>
 #include <QRegularExpression>
+#include <QWaitCondition>
 #include <windows.h>
 
 #include <thread>
@@ -56,5 +57,6 @@ private:
     bool m_useFallback = false;
     QByteArray m_buffer;
     mutable QMutex m_bufferMutex;
+    QWaitCondition m_dataAvailable;
     std::thread m_readerThread;
 };

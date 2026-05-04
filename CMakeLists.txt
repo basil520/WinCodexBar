@@ -100,6 +100,7 @@ set(CORE_SOURCES
     src/app/CodexBarApp.cpp
     src/app/SettingsStore.cpp
     src/app/UsageStore.cpp
+    src/app/BatchUpdateController.cpp
     src/app/CredentialAccessGate.cpp
     src/app/PlanUtilizationHistoryStore.cpp
     src/app/SessionQuotaNotifications.cpp
@@ -219,6 +220,7 @@ set(CORE_HEADERS
     src/app/CodexBarApp.h
     src/app/SettingsStore.h
     src/app/UsageStore.h
+    src/app/BatchUpdateController.h
     src/app/CredentialAccessGate.h
     src/app/PlanUtilizationHistoryStore.h
     src/app/SessionQuotaNotifications.h

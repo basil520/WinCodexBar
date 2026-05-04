@@ -1,7 +1,6 @@
 #include "ConPTYSession.h"
 
 #include <QDebug>
-#include <QCoreApplication>
 #include <QDateTime>
 #include <QDir>
 #include <QMutexLocker>
@@ -162,23 +161,16 @@ bool ConPTYSession::write(const QByteArray& data)
 
 QByteArray ConPTYSession::readOutput(int timeoutMs)
 {
-    QDateTime deadline = QDateTime::currentDateTimeUtc().addMSecs(timeoutMs);
-    while (QDateTime::currentDateTimeUtc() < deadline) {
-        if (m_useFallback && m_process) {
-            QCoreApplication::processEvents();
-        }
-        {
-            QMutexLocker locker(&m_bufferMutex);
-            if (!m_buffer.isEmpty()) {
-                QByteArray out = m_buffer;
-                m_buffer.clear();
-                return out;
-            }
-        }
-        QThread::msleep(10);
+    QMutexLocker locker(&m_bufferMutex);
+    if (!m_buffer.isEmpty()) {
+        QByteArray out = m_buffer;
+        m_buffer.clear();
+        return out;
     }
 
-    QMutexLocker locker(&m_bufferMutex);
+    // Wait for data with timeout; avoids busy-waiting with msleep.
+    m_dataAvailable.wait(&m_bufferMutex, timeoutMs);
+
     QByteArray out = m_buffer;
     m_buffer.clear();
     return out;
@@ -188,16 +180,18 @@ bool ConPTYSession::waitForPattern(const QRegularExpression& pattern, int timeou
 {
     QDateTime deadline = QDateTime::currentDateTimeUtc().addMSecs(timeoutMs);
     while (QDateTime::currentDateTimeUtc() < deadline) {
-        if (m_useFallback && m_process) {
-            QCoreApplication::processEvents();
-        }
         {
             QMutexLocker locker(&m_bufferMutex);
             QString text = QString::fromLocal8Bit(m_buffer);
             if (pattern.match(text).hasMatch()) return true;
         }
         if (!m_running && !m_useFallback) break;
-        QThread::msleep(25);
+
+        // Wait for data instead of busy-polling with msleep.
+        QMutexLocker locker(&m_bufferMutex);
+        int remaining = static_cast<int>(QDateTime::currentDateTimeUtc().msecsTo(deadline));
+        if (remaining <= 0) break;
+        m_dataAvailable.wait(&m_bufferMutex, qMin(remaining, 50));
     }
     return false;
 }
@@ -213,7 +207,7 @@ void ConPTYSession::terminate()
 
     if (m_process) {
         m_process->kill();
-        m_process->waitForFinished(2000);
+        m_process->waitForFinished(500);
         delete m_process;
         m_process = nullptr;
     }
@@ -240,7 +234,7 @@ void ConPTYSession::terminate()
         while (m_readerThread.joinable()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             auto elapsed = std::chrono::steady_clock::now() - joinStart;
-            if (elapsed > std::chrono::milliseconds(500)) {
+            if (elapsed > std::chrono::milliseconds(200)) {
                 if (m_hOutput && m_hOutput != INVALID_HANDLE_VALUE) {
                     CloseHandle(m_hOutput);
                     m_hOutput = nullptr;
@@ -319,6 +313,7 @@ void ConPTYSession::appendOutput(const QByteArray& data)
         QMutexLocker locker(&m_bufferMutex);
         m_buffer.append(data);
     }
+    m_dataAvailable.wakeAll();
     emit outputReceived(data);
 }
 
