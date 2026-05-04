@@ -84,6 +84,20 @@ static void fileMessageHandler(QtMsgType type, const QMessageLogContext& context
 #include "providers/opencode/OpenCodeGoProvider.h"
 #include "providers/alibaba/AlibabaProvider.h"
 
+#include "providers/deepseek/DeepSeekProvider.h"
+#include "providers/minimax/MiniMaxProvider.h"
+#include "providers/synthetic/SyntheticProvider.h"
+#include "providers/perplexity/PerplexityProvider.h"
+#include "providers/amp/AmpProvider.h"
+#include "providers/augment/AugmentProvider.h"
+#include "providers/gemini/GeminiProvider.h"
+#include "providers/vertexai/VertexAIProvider.h"
+#include "providers/jetbrains/JetBrainsProvider.h"
+#include "providers/factory/FactoryProvider.h"
+#include "providers/antigravity/AntigravityProvider.h"
+#include "providers/warp/WarpProvider.h"
+#include "providers/abacus/AbacusProvider.h"
+
 #ifdef Q_OS_WIN
 static void applyRoundedWindowRegion(QWindow* window, int radius) {
     if (!window) return;
@@ -361,6 +375,20 @@ int main(int argc, char* argv[]) {
     ProviderRegistry::instance().registerProvider(new OpenCodeProvider());
     ProviderRegistry::instance().registerProvider(new OpenCodeGoProvider());
     ProviderRegistry::instance().registerProvider(new AlibabaProvider());
+
+    ProviderRegistry::instance().registerProvider(new DeepSeekProvider());
+    ProviderRegistry::instance().registerProvider(new MiniMaxProvider());
+    ProviderRegistry::instance().registerProvider(new SyntheticProvider());
+    ProviderRegistry::instance().registerProvider(new PerplexityProvider());
+    ProviderRegistry::instance().registerProvider(new AmpProvider());
+    ProviderRegistry::instance().registerProvider(new AugmentProvider());
+    ProviderRegistry::instance().registerProvider(new GeminiProvider());
+    ProviderRegistry::instance().registerProvider(new VertexAIProvider());
+    ProviderRegistry::instance().registerProvider(new JetBrainsProvider());
+    ProviderRegistry::instance().registerProvider(new FactoryProvider());
+    ProviderRegistry::instance().registerProvider(new AntigravityProvider());
+    ProviderRegistry::instance().registerProvider(new WarpProvider());
+    ProviderRegistry::instance().registerProvider(new AbacusProvider());
 
     SettingsStore* settings = new SettingsStore();
     UsageStore* usageStore = new UsageStore();

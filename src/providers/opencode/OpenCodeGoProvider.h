@@ -34,9 +34,10 @@ public:
     ProviderFetchResult fetchSync(const ProviderFetchContext& ctx) override;
     bool shouldFallback(const ProviderFetchResult&, const ProviderFetchContext&) const override { return false; }
 
-private:
-    static QString fetchUsagePage(const QString& workspaceID, const QString& cookieHeader, int timeoutMs);
     static UsageSnapshot parseUsage(const QString& text);
     static std::optional<RateWindow> parseWindow(const QJsonObject& obj);
     static double normalizePercent(double value);
+
+private:
+    static QString fetchUsagePage(const QString& workspaceID, const QString& cookieHeader, int timeoutMs);
 };

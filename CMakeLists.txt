@@ -80,6 +80,20 @@ set(CORE_SOURCES
     src/providers/opencode/OpenCodeUtils.cpp
     src/providers/alibaba/AlibabaProvider.cpp
 
+    src/providers/deepseek/DeepSeekProvider.cpp
+    src/providers/minimax/MiniMaxProvider.cpp
+    src/providers/synthetic/SyntheticProvider.cpp
+    src/providers/perplexity/PerplexityProvider.cpp
+    src/providers/amp/AmpProvider.cpp
+    src/providers/augment/AugmentProvider.cpp
+    src/providers/gemini/GeminiProvider.cpp
+    src/providers/vertexai/VertexAIProvider.cpp
+    src/providers/jetbrains/JetBrainsProvider.cpp
+    src/providers/factory/FactoryProvider.cpp
+    src/providers/antigravity/AntigravityProvider.cpp
+    src/providers/warp/WarpProvider.cpp
+    src/providers/abacus/AbacusProvider.cpp
+
     src/network/NetworkManager.cpp
 
     src/app/CodexBarApp.cpp
@@ -148,6 +162,20 @@ set(CORE_HEADERS
     src/providers/opencode/OpenCodeGoProvider.h
     src/providers/opencode/OpenCodeUtils.h
     src/providers/alibaba/AlibabaProvider.h
+
+    src/providers/deepseek/DeepSeekProvider.h
+    src/providers/minimax/MiniMaxProvider.h
+    src/providers/synthetic/SyntheticProvider.h
+    src/providers/perplexity/PerplexityProvider.h
+    src/providers/amp/AmpProvider.h
+    src/providers/augment/AugmentProvider.h
+    src/providers/gemini/GeminiProvider.h
+    src/providers/vertexai/VertexAIProvider.h
+    src/providers/jetbrains/JetBrainsProvider.h
+    src/providers/factory/FactoryProvider.h
+    src/providers/antigravity/AntigravityProvider.h
+    src/providers/warp/WarpProvider.h
+    src/providers/abacus/AbacusProvider.h
 
     src/providers/IProvider.h
     src/providers/IFetchStrategy.h

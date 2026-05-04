@@ -1135,7 +1135,11 @@ Rectangle {
             "amp": "#D946EF",
             "factory": "#84CC16",
             "jetbrains": "#F000F0",
-            "vertexai": "#4285F4"
+            "vertexai": "#4285F4",
+            "deepseek": "#4D6BFE",
+            "antigravity": "#10B981",
+            "synthetic": "#6366F1",
+            "opencodego": "#3B82F6"
         }
         return colors[providerId] || "#4A90D9"
     }

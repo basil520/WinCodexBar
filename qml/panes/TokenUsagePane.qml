@@ -384,7 +384,7 @@ Rectangle {
             "copilot": "#2DA44E",
             "zai": "#E85A6A",
             "opencode": "#E44D26",
-            "opencodego": "#E44D26",
+            "opencodego": "#3B82F6",
             "warp": "#00BCD4",
             "mistral": "#F77F00",
             "openrouter": "#FF6B6B",
@@ -401,7 +401,10 @@ Rectangle {
             "amp": "#D946EF",
             "factory": "#84CC16",
             "jetbrains": "#F000F0",
-            "vertexai": "#4285F4"
+            "vertexai": "#4285F4",
+            "deepseek": "#4D6BFE",
+            "antigravity": "#10B981",
+            "synthetic": "#6366F1"
         }
         return colors[providerId] || "#4A90D9"
     }

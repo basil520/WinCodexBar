@@ -39,6 +39,7 @@
         <file alias="icons/ProviderIcon-codex.svg">../resources/icons/ProviderIcon-codex.svg</file>
         <file alias="icons/ProviderIcon-copilot.svg">../resources/icons/ProviderIcon-copilot.svg</file>
         <file alias="icons/ProviderIcon-cursor.svg">../resources/icons/ProviderIcon-cursor.svg</file>
+        <file alias="icons/ProviderIcon-deepseek.svg">../resources/icons/ProviderIcon-deepseek.svg</file>
         <file alias="icons/ProviderIcon-factory.svg">../resources/icons/ProviderIcon-factory.svg</file>
         <file alias="icons/ProviderIcon-gemini.svg">../resources/icons/ProviderIcon-gemini.svg</file>
         <file alias="icons/ProviderIcon-jetbrains.svg">../resources/icons/ProviderIcon-jetbrains.svg</file>

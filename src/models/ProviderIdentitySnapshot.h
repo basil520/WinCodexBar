@@ -31,6 +31,7 @@ enum class UsageProvider : int {
     perplexity,
     abacus,
     mistral,
+    deepseek,
 };
 
 struct ProviderIdentitySnapshot {
