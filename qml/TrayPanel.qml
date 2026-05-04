@@ -777,7 +777,7 @@ Rectangle {
                             spacing: 8
 
                             Text {
-                                text: "Credits"
+                                            text: qsTr("Credits")
                                 color: "#888"
                                 font.pixelSize: 11
                                 font.bold: true

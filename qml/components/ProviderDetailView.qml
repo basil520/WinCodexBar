@@ -780,8 +780,8 @@ ScrollView {
                                 var m = root.codexProjection.supplementalMetrics || []
                                 var names = []
                                 for (var i = 0; i < m.length; i++) {
-                                    if (m[i] === 0) names.push("Code Review")
-                                    else names.push("Metric #" + m[i])
+                                    if (m[i] === 0) names.push(qsTr("Code Review"))
+                                    else names.push(qsTr("Metric #") + m[i])
                                 }
                                 return names.join(", ")
                             }

@@ -14,6 +14,11 @@
         <translation></translation>
     </message>
     <message>
+        <location filename="../qml/panes/AboutPane.qml" line="37"/>
+        <source>CodexBar</source>
+        <translation type="unfinished">CodexBar</translation>
+    </message>
+    <message>
         <location filename="../qml/panes/AboutPane.qml" line="44"/>
         <source>Version </source>
         <translation></translation>
@@ -125,44 +130,44 @@
 <context>
     <name>App</name>
     <message>
-        <location filename="../src/main.cpp" line="406"/>
+        <location filename="../src/main.cpp" line="489"/>
         <source>Failed to create system tray icon. Please restart the app.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="489"/>
-        <location filename="../src/main.cpp" line="536"/>
-        <location filename="../src/main.cpp" line="563"/>
+        <location filename="../src/main.cpp" line="572"/>
+        <location filename="../src/main.cpp" line="632"/>
+        <location filename="../src/main.cpp" line="659"/>
         <source>Unknown QML loading error.</source>
         <translation>Unknown QML loading error.</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="519"/>
+        <location filename="../src/main.cpp" line="602"/>
         <source>CodexBar Settings</source>
         <translation>CodexBar Settings</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="549"/>
+        <location filename="../src/main.cpp" line="645"/>
         <source>Usage Details</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="600"/>
+        <location filename="../src/main.cpp" line="696"/>
         <source>WinCodexBar v0.1.0</source>
         <translation>WinCodexBar v0.1.0</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="601"/>
+        <location filename="../src/main.cpp" line="697"/>
         <source>Windows system tray app for tracking AI provider usage limits.</source>
         <translation>Windows system tray app for tracking AI provider usage limits.</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="607"/>
+        <location filename="../src/main.cpp" line="703"/>
         <source>About WinCodexBar</source>
         <translation>About WinCodexBar</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="604"/>
+        <location filename="../src/main.cpp" line="700"/>
         <source>Built with Qt 6.5 + QML</source>
         <translation>Built with Qt 6.5 + QML</translation>
     </message>
@@ -574,190 +579,205 @@
 <context>
     <name>ProviderDetailView</name>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="64"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="65"/>
         <source>Operational</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="65"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="66"/>
         <source>Degraded</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="66"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="67"/>
         <source>Outage</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="67"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="68"/>
         <source>Unknown</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="78"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="79"/>
         <source>Testing connection</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="79"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="80"/>
         <source>Connection OK</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="80"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="81"/>
         <source>Connection failed</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="81"/>
-        <location filename="../qml/components/ProviderDetailView.qml" line="270"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="82"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="292"/>
         <source>Not tested</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="176"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="182"/>
         <source>Sources: </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="177"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="183"/>
         <source>Descriptor-driven provider settings</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="188"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="194"/>
         <source>Dashboard</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="195"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="201"/>
         <source>Status</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="202"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="208"/>
         <source>Refresh</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="209"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="215"/>
         <source>Enabled</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="232"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="238"/>
         <source>Usage</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="235"/>
-        <location filename="../qml/components/ProviderDetailView.qml" line="654"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="241"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="676"/>
         <source>Session</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../qml/components/ProviderDetailView.qml" line="241"/>
-        <location filename="../qml/components/ProviderDetailView.qml" line="655"/>
+        <source>Balance</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/components/ProviderDetailView.qml" line="248"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="677"/>
         <source>Weekly</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="247"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="257"/>
         <source>Monthly</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="264"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="286"/>
         <source>Connection</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="274"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="296"/>
         <source>Testing...</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="274"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="296"/>
         <source>Test Connection</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="333"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="355"/>
         <source>Running one non-interactive provider refresh.</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="346"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="368"/>
         <source>Last tested: </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="372"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="394"/>
         <source>Hide Details</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="372"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="394"/>
         <source>Show Details</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="377"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="399"/>
         <source>Copy</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="386"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="408"/>
         <source>Retry</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="405"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="427"/>
         <source>Settings</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="429"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="451"/>
         <source>Secret</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="560"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="582"/>
         <source>Account Management</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="564"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="586"/>
         <source>Manage multiple Codex accounts. Switch between accounts to track usage separately.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="624"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="646"/>
         <source>Usage Projection</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="628"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="650"/>
         <source>Projected rate lanes and credits from the current active account.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="693"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="715"/>
         <source>Credits</source>
         <translation type="unfinished">Credits</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="714"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="736"/>
         <source>Buy More Credits</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="749"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="771"/>
         <source>Supplemental Metrics</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="776"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="783"/>
+        <source>Code Review</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/components/ProviderDetailView.qml" line="784"/>
+        <source>Metric #</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/components/ProviderDetailView.qml" line="798"/>
         <source>Last Provider Error</source>
         <translation></translation>
     </message>
@@ -783,144 +803,574 @@
 <context>
     <name>ProviderErrors</name>
     <message>
-        <location filename="../src/app/Localization.cpp" line="48"/>
+        <location filename="../src/app/Localization.cpp" line="74"/>
         <source>fetchSync not implemented</source>
         <translation>fetchSync not implemented</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="49"/>
+        <location filename="../src/app/Localization.cpp" line="75"/>
         <source>strategy timed out</source>
         <translation>strategy timed out</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="50"/>
+        <location filename="../src/app/Localization.cpp" line="76"/>
         <source>no available fetch strategy</source>
         <translation>no available fetch strategy</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="51"/>
+        <location filename="../src/app/Localization.cpp" line="77"/>
         <source>empty or invalid response</source>
         <translation>empty or invalid response</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="52"/>
+        <location filename="../src/app/Localization.cpp" line="78"/>
         <source>API error</source>
         <translation>API error</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="53"/>
+        <location filename="../src/app/Localization.cpp" line="79"/>
         <source>no cookies found</source>
         <translation>no cookies found</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="54"/>
+        <location filename="../src/app/Localization.cpp" line="80"/>
         <source>empty response</source>
         <translation>empty response</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="55"/>
+        <location filename="../src/app/Localization.cpp" line="81"/>
         <source>empty HTML</source>
         <translation>empty HTML</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="56"/>
+        <location filename="../src/app/Localization.cpp" line="82"/>
         <source>Claude OAuth credentials not found. Run `claude` to authenticate.</source>
         <translation>Claude OAuth credentials not found. Run `claude` to authenticate.</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="57"/>
+        <location filename="../src/app/Localization.cpp" line="83"/>
         <source>empty or invalid response from Claude OAuth API</source>
         <translation>empty or invalid response from Claude OAuth API</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="58"/>
+        <location filename="../src/app/Localization.cpp" line="84"/>
         <source>OAuth error</source>
         <translation>OAuth error</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="59"/>
+        <location filename="../src/app/Localization.cpp" line="85"/>
         <source>no usage data in Claude OAuth response</source>
         <translation>no usage data in Claude OAuth response</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="60"/>
+        <location filename="../src/app/Localization.cpp" line="86"/>
         <source>No Claude session key found in browser cookies.</source>
         <translation>No Claude session key found in browser cookies.</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="61"/>
+        <location filename="../src/app/Localization.cpp" line="87"/>
         <source>No Claude organization found.</source>
         <translation>No Claude organization found.</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="62"/>
+        <location filename="../src/app/Localization.cpp" line="88"/>
         <source>No usage data from Claude web API.</source>
         <translation>No usage data from Claude web API.</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="63"/>
+        <location filename="../src/app/Localization.cpp" line="89"/>
         <source>No Cursor session cookies found in browser.</source>
         <translation>No Cursor session cookies found in browser.</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="64"/>
+        <location filename="../src/app/Localization.cpp" line="90"/>
         <source>No Cursor session cookie found.</source>
         <translation>No Cursor session cookie found.</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="65"/>
+        <location filename="../src/app/Localization.cpp" line="91"/>
         <source>empty response from Cursor usage API</source>
         <translation>empty response from Cursor usage API</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="66"/>
+        <location filename="../src/app/Localization.cpp" line="92"/>
         <source>no usage data in Cursor response</source>
         <translation>no usage data in Cursor response</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="67"/>
+        <location filename="../src/app/Localization.cpp" line="93"/>
         <source>OAuth device flow failed</source>
         <translation>OAuth device flow failed</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="68"/>
+        <location filename="../src/app/Localization.cpp" line="94"/>
         <source>empty copilot response</source>
         <translation>empty copilot response</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="69"/>
+        <location filename="../src/app/Localization.cpp" line="95"/>
         <source>kiro-cli timed out</source>
         <translation>kiro-cli timed out</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="70"/>
+        <location filename="../src/app/Localization.cpp" line="96"/>
         <source>empty CLI output</source>
         <translation>empty CLI output</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="71"/>
+        <location filename="../src/app/Localization.cpp" line="97"/>
         <source>no results in tRPC response</source>
         <translation>no results in tRPC response</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="72"/>
+        <location filename="../src/app/Localization.cpp" line="98"/>
         <source>Codex auth.json not found. Run `codex` to log in.</source>
         <translation>Codex auth.json not found. Run `codex` to log in.</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="73"/>
+        <location filename="../src/app/Localization.cpp" line="99"/>
         <source>empty or invalid response from Codex API</source>
         <translation>empty or invalid response from Codex API</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="74"/>
+        <location filename="../src/app/Localization.cpp" line="100"/>
         <source>no rate limit data in response</source>
         <translation>no rate limit data in response</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="75"/>
+        <location filename="../src/app/Localization.cpp" line="101"/>
         <source>empty credits response</source>
         <translation>empty credits response</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="103"/>
+        <source>DeepSeek API key not configured.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="104"/>
+        <source>Empty or invalid response from DeepSeek API</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="106"/>
+        <source>MiniMax API key not configured.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="107"/>
+        <source>Empty or invalid response from MiniMax API</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="108"/>
+        <source>MiniMax API credentials are invalid or expired.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="109"/>
+        <source>Empty response from MiniMax coding plan page</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="110"/>
+        <source>MiniMax session expired. Please re-import your cookie.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="111"/>
+        <source>Could not parse MiniMax coding plan data from page</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="112"/>
+        <source>No MiniMax cookie available. Log in to platform.minimax.io in your browser.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="114"/>
+        <source>Empty or invalid response from Synthetic API</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="115"/>
+        <source>Synthetic API key not configured.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="117"/>
+        <source>Empty or invalid response from Perplexity API</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="118"/>
+        <source>No Perplexity cookie available. Log in to perplexity.ai in your browser or paste cookie manually.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="120"/>
+        <source>Empty response from Amp</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="121"/>
+        <source>Not signed in. Log in to ampcode.com in your browser.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="122"/>
+        <source>Could not parse Amp usage data from page</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="123"/>
+        <source>Could not find quota in Amp usage data</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="124"/>
+        <source>No Amp cookie available. Log in to ampcode.com in your browser.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="126"/>
+        <source>auggie CLI not found in PATH.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="127"/>
+        <source>auggie account status timed out</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="128"/>
+        <source>Empty output from auggie CLI</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="129"/>
+        <source>Empty response from Augment API</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="130"/>
+        <source>No Augment cookie available.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="132"/>
+        <source>No quota buckets in Gemini response</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="133"/>
+        <source>Gemini OAuth credentials not found. Run &apos;gemini&apos; CLI to authenticate.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="134"/>
+        <source>Failed to refresh Gemini OAuth token.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="135"/>
+        <source>Gemini API key mode does not support usage quotas. Use OAuth mode (run &apos;gemini&apos; CLI to authenticate).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="137"/>
+        <source>Google ADC not found. Run &apos;gcloud auth application-default login&apos;.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="138"/>
+        <source>GCP project not found. Set GOOGLE_CLOUD_PROJECT or run &apos;gcloud config set project&apos;.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="140"/>
+        <source>No AIAssistant quota data found in XML</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="141"/>
+        <source>No quotaInfo in JetBrains data</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="142"/>
+        <source>No JetBrains IDE installation found.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="144"/>
+        <source>Empty response from Factory API</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="145"/>
+        <source>No Factory cookie available. Log in to app.factory.ai in your browser.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="147"/>
+        <source>No response from Antigravity local service</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="148"/>
+        <source>Antigravity is not running.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="150"/>
+        <source>Warp API key not configured.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="151"/>
+        <source>Empty response from Warp GraphQL API</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="152"/>
+        <source>GraphQL error</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="154"/>
+        <source>No Abacus AI cookie available. Log in to apps.abacus.ai in your browser.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="155"/>
+        <source>Empty response from Abacus AI API</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="156"/>
+        <source>Abacus AI API error</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="158"/>
+        <source>Kimi auth token is missing. Please add your JWT token from the Kimi console.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="159"/>
+        <source>Kimi auth token is invalid or expired. Please refresh your token.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="160"/>
+        <source>Invalid request</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="161"/>
+        <source>Kimi network error</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="162"/>
+        <source>Kimi API error</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="163"/>
+        <source>Failed to parse Kimi usage data</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="164"/>
+        <source>Unknown Kimi error</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="166"/>
+        <source>Codex CLI RPC returned no rate limit data.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="167"/>
+        <source>Codex CLI RPC returned no rate limit windows.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="168"/>
+        <source>ConPTY is not available on this Windows version (requires Windows 10 1809+). codex CLI needs a terminal.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="169"/>
+        <source>codex CLI still reports &apos;stdin is not a terminal&apos; even with ConPTY.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="170"/>
+        <source>Codex CLI update needed. Run `npm i -g @openai/codex` to continue.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="171"/>
+        <source>Codex data not available yet; will retry shortly.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="172"/>
+        <source>Could not parse codex CLI status output. The CLI returned interactive screen output instead of usage data.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="173"/>
+        <source>Empty response from web dashboard (HTTP request failed or returned empty)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="174"/>
+        <source>Could not parse usage data from web dashboard.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="175"/>
+        <source>codex CLI not found in PATH. Install via `npm i -g @openai/codex`</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="176"/>
+        <source>Failed to start ConPTY session for codex CLI</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="177"/>
+        <source>codex CLI exited before we could send /status</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="178"/>
+        <source>Could not parse codex CLI status output.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="179"/>
+        <source>Failed to start persistent CLI session</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="180"/>
+        <source>CLI session exited unexpectedly</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="181"/>
+        <source>Timed out waiting for status output</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="182"/>
+        <source>Empty response from token refresh endpoint</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="183"/>
+        <source>Refresh token expired. Please run `codex` to log in again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="184"/>
+        <source>Refresh token was revoked. Please run `codex` to log in again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="185"/>
+        <source>Refresh token was already used. Please run `codex` to log in again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="186"/>
+        <source>Token refresh failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="187"/>
+        <source>Invalid refresh response: missing access_token</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="188"/>
+        <source>RPC client not started</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="189"/>
+        <source>No credits data in OAuth response</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="190"/>
+        <source>Codex CLI RPC failed to start</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="191"/>
+        <source>No credits in RPC response</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="192"/>
+        <source>No credits parsed from CLI status output</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="194"/>
+        <source>No OpenCode Go auth cookie found in browser cookies or manual input.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="195"/>
+        <source>Failed to fetch OpenCode workspace ID.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="196"/>
+        <source>OpenCode Go workspace page returned no usage data.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="197"/>
+        <source>No usage data found in OpenCode Go response.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="199"/>
+        <source>Application shutting down</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="200"/>
+        <source>No available fetch strategy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="201"/>
+        <source>test override returned no credits</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="203"/>
+        <source>empty or invalid response from Alibaba web</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="204"/>
+        <source>Quota information unavailable</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="205"/>
+        <source>API authenticated</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1005,23 +1455,153 @@
         <source>Bonus</source>
         <translation>Bonus</translation>
     </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="39"/>
+        <source>Balance</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="40"/>
+        <source>Prompts</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="41"/>
+        <source>Window</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="42"/>
+        <source>Search</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="43"/>
+        <source>Recurring</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="44"/>
+        <source>Promo</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="45"/>
+        <source>Purchased</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="46"/>
+        <source>Usage</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="47"/>
+        <source>Pro</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="48"/>
+        <source>Flash</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="49"/>
+        <source>Flash Lite</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="50"/>
+        <source>Standard</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="51"/>
+        <source>Claude</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="52"/>
+        <source>Gemini Pro</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="53"/>
+        <source>Gemini Flash</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="54"/>
+        <source>Requests</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="55"/>
+        <source>Interval</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="56"/>
+        <source>Rate Limit</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ProviderSettings</name>
     <message>
-        <location filename="../src/app/Localization.cpp" line="42"/>
+        <location filename="../src/app/Localization.cpp" line="60"/>
         <source>Data source</source>
         <translation>Data source</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="43"/>
+        <location filename="../src/app/Localization.cpp" line="61"/>
         <source>Cookie source</source>
         <translation>Cookie source</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="44"/>
+        <location filename="../src/app/Localization.cpp" line="62"/>
         <source>API region</source>
         <translation>API region</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="63"/>
+        <source>API key</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="64"/>
+        <source>API Key</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="65"/>
+        <source>API key (optional)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="66"/>
+        <source>Manual cookie</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="67"/>
+        <source>Manual cookie header</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="68"/>
+        <source>Region</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="69"/>
+        <source>Workspace ID</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="70"/>
+        <source>Browser or manual cookie</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1096,47 +1676,47 @@
 <context>
     <name>SettingsWindow</name>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="136"/>
+        <location filename="../qml/SettingsWindow.qml" line="135"/>
         <source>Settings</source>
         <translation>Settings</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="18"/>
+        <location filename="../qml/SettingsWindow.qml" line="17"/>
         <source>General</source>
         <translation>General</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="19"/>
+        <location filename="../qml/SettingsWindow.qml" line="18"/>
         <source>Providers</source>
         <translation>Providers</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="20"/>
+        <location filename="../qml/SettingsWindow.qml" line="19"/>
         <source>Display</source>
         <translation>Display</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="21"/>
+        <location filename="../qml/SettingsWindow.qml" line="20"/>
         <source>Advanced</source>
         <translation>Advanced</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="22"/>
+        <location filename="../qml/SettingsWindow.qml" line="21"/>
         <source>About</source>
         <translation>About</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="24"/>
+        <location filename="../qml/SettingsWindow.qml" line="23"/>
         <source>Debug</source>
         <translation>Debug</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="76"/>
+        <location filename="../qml/SettingsWindow.qml" line="75"/>
         <source>CodexBar Settings</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="143"/>
+        <location filename="../qml/SettingsWindow.qml" line="142"/>
         <source>Configure providers and app behavior</source>
         <translation></translation>
     </message>
@@ -1214,7 +1794,7 @@
     </message>
     <message>
         <location filename="../qml/panes/TokenUsagePane.qml" line="111"/>
-        <location filename="../qml/panes/TokenUsagePane.qml" line="671"/>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="674"/>
         <source>Today</source>
         <translation type="unfinished">Today</translation>
     </message>
@@ -1223,15 +1803,15 @@
         <location filename="../qml/panes/TokenUsagePane.qml" line="121"/>
         <location filename="../qml/panes/TokenUsagePane.qml" line="178"/>
         <location filename="../qml/panes/TokenUsagePane.qml" line="359"/>
-        <location filename="../qml/panes/TokenUsagePane.qml" line="673"/>
-        <location filename="../qml/panes/TokenUsagePane.qml" line="680"/>
-        <location filename="../qml/panes/TokenUsagePane.qml" line="732"/>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="676"/>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="683"/>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="735"/>
         <source>tokens</source>
         <translation type="unfinished">tokens</translation>
     </message>
     <message>
         <location filename="../qml/panes/TokenUsagePane.qml" line="119"/>
-        <location filename="../qml/panes/TokenUsagePane.qml" line="678"/>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="681"/>
         <source>30 days</source>
         <translation type="unfinished">30 days</translation>
     </message>
@@ -1258,7 +1838,7 @@
     <message>
         <location filename="../qml/panes/TokenUsagePane.qml" line="259"/>
         <location filename="../qml/panes/TokenUsagePane.qml" line="302"/>
-        <location filename="../qml/panes/TokenUsagePane.qml" line="639"/>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="642"/>
         <source>Token</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1273,7 +1853,7 @@
         <translation type="unfinished">Quota</translation>
     </message>
     <message>
-        <location filename="../qml/panes/TokenUsagePane.qml" line="715"/>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="718"/>
         <source>Unknown model</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1323,7 +1903,7 @@
     <message>
         <location filename="../qml/TrayPanel.qml" line="229"/>
         <location filename="../qml/TrayPanel.qml" line="245"/>
-        <location filename="../qml/TrayPanel.qml" line="377"/>
+        <location filename="../qml/TrayPanel.qml" line="383"/>
         <source>tokens</source>
         <translation>tokens</translation>
     </message>
@@ -1333,147 +1913,157 @@
         <translation>30 days</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="297"/>
+        <location filename="../qml/TrayPanel.qml" line="303"/>
         <source>max</source>
         <translation>max</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="307"/>
+        <location filename="../qml/TrayPanel.qml" line="313"/>
         <source>Mon</source>
         <translation>Mon</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="310"/>
+        <location filename="../qml/TrayPanel.qml" line="316"/>
         <source>other day</source>
         <translation>other day</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="946"/>
+        <location filename="../qml/TrayPanel.qml" line="544"/>
+        <source>Balance</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/TrayPanel.qml" line="780"/>
+        <source>Credits</source>
+        <translation type="unfinished">Credits</translation>
+    </message>
+    <message>
+        <location filename="../qml/TrayPanel.qml" line="970"/>
         <source>Credit Events</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="985"/>
+        <location filename="../qml/TrayPanel.qml" line="1009"/>
         <source>Usage by Service</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1021"/>
+        <location filename="../qml/TrayPanel.qml" line="1045"/>
         <source>Purchase credits</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1075"/>
+        <location filename="../qml/TrayPanel.qml" line="1099"/>
         <source>Refresh</source>
         <translation>Refresh</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="524"/>
-        <location filename="../qml/TrayPanel.qml" line="1075"/>
+        <location filename="../qml/TrayPanel.qml" line="533"/>
+        <location filename="../qml/TrayPanel.qml" line="1099"/>
         <source>Refreshing...</source>
         <translation>Refreshing...</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1082"/>
+        <location filename="../qml/TrayPanel.qml" line="1106"/>
         <source>Settings</source>
         <translation>Settings</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1088"/>
+        <location filename="../qml/TrayPanel.qml" line="1112"/>
         <source>Quit</source>
         <translation>Quit</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="524"/>
+        <location filename="../qml/TrayPanel.qml" line="533"/>
         <source>No usage yet</source>
         <translation>No usage yet</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="457"/>
+        <location filename="../qml/TrayPanel.qml" line="467"/>
         <source>API key limit</source>
         <translation>API key limit</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="601"/>
-        <location filename="../qml/TrayPanel.qml" line="681"/>
-        <location filename="../qml/TrayPanel.qml" line="733"/>
+        <location filename="../qml/TrayPanel.qml" line="610"/>
+        <location filename="../qml/TrayPanel.qml" line="705"/>
+        <location filename="../qml/TrayPanel.qml" line="757"/>
         <source>Resets</source>
         <translation>Resets</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="838"/>
-        <location filename="../qml/TrayPanel.qml" line="1033"/>
+        <location filename="../qml/TrayPanel.qml" line="862"/>
+        <location filename="../qml/TrayPanel.qml" line="1057"/>
         <source>Updated</source>
         <translation>Updated</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1146"/>
+        <location filename="../qml/TrayPanel.qml" line="1175"/>
         <source>just now</source>
         <translation>just now</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1147"/>
+        <location filename="../qml/TrayPanel.qml" line="1176"/>
         <source>m ago</source>
         <translation>m ago</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1148"/>
+        <location filename="../qml/TrayPanel.qml" line="1177"/>
         <source>h ago</source>
         <translation>h ago</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1149"/>
+        <location filename="../qml/TrayPanel.qml" line="1178"/>
         <source>d ago</source>
         <translation>d ago</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1144"/>
+        <location filename="../qml/TrayPanel.qml" line="1173"/>
         <source>never</source>
         <translation>never</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="792"/>
+        <location filename="../qml/TrayPanel.qml" line="816"/>
         <source>Extra usage</source>
         <translation>Extra usage</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="792"/>
+        <location filename="../qml/TrayPanel.qml" line="816"/>
         <source>Quota usage</source>
         <translation>Quota usage</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="818"/>
+        <location filename="../qml/TrayPanel.qml" line="842"/>
         <source>This month</source>
         <translation>This month</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="826"/>
+        <location filename="../qml/TrayPanel.qml" line="850"/>
         <source>%1 used</source>
         <translation>%1 used</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="695"/>
-        <location filename="../qml/TrayPanel.qml" line="921"/>
+        <location filename="../qml/TrayPanel.qml" line="719"/>
+        <location filename="../qml/TrayPanel.qml" line="945"/>
         <source>Opus</source>
         <translation>Opus</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="895"/>
+        <location filename="../qml/TrayPanel.qml" line="919"/>
         <source>No limit set for the API key</source>
         <translation>No limit set for the API key</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="901"/>
+        <location filename="../qml/TrayPanel.qml" line="925"/>
         <source>API key limit unavailable right now</source>
         <translation>API key limit unavailable right now</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="862"/>
+        <location filename="../qml/TrayPanel.qml" line="886"/>
         <source>MCP details</source>
         <translation>MCP details</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="908"/>
+        <location filename="../qml/TrayPanel.qml" line="932"/>
         <source>left</source>
         <translation>left</translation>
     </message>

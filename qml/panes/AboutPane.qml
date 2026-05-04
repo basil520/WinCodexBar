@@ -34,7 +34,7 @@ SettingsPage {
                 spacing: 4
 
                 Label {
-                    text: "CodexBar"
+                    text: qsTr("CodexBar")
                     color: AppTheme.textPrimary
                     font.pixelSize: AppTheme.fontSizeXl
                     font.bold: true

@@ -14,6 +14,11 @@
         <translation>构建信息和项目链接。</translation>
     </message>
     <message>
+        <location filename="../qml/panes/AboutPane.qml" line="37"/>
+        <source>CodexBar</source>
+        <translation>CodexBar</translation>
+    </message>
+    <message>
         <location filename="../qml/panes/AboutPane.qml" line="44"/>
         <source>Version </source>
         <translation>版本 </translation>
@@ -125,44 +130,44 @@
 <context>
     <name>App</name>
     <message>
-        <location filename="../src/main.cpp" line="406"/>
+        <location filename="../src/main.cpp" line="489"/>
         <source>Failed to create system tray icon. Please restart the app.</source>
         <translation>创建系统托盘图标失败。请重启应用。</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="489"/>
-        <location filename="../src/main.cpp" line="536"/>
-        <location filename="../src/main.cpp" line="563"/>
+        <location filename="../src/main.cpp" line="572"/>
+        <location filename="../src/main.cpp" line="632"/>
+        <location filename="../src/main.cpp" line="659"/>
         <source>Unknown QML loading error.</source>
         <translation>未知 QML 加载错误。</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="519"/>
+        <location filename="../src/main.cpp" line="602"/>
         <source>CodexBar Settings</source>
         <translation>CodexBar 设置</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="549"/>
+        <location filename="../src/main.cpp" line="645"/>
         <source>Usage Details</source>
         <translation>用量详情</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="600"/>
+        <location filename="../src/main.cpp" line="696"/>
         <source>WinCodexBar v0.1.0</source>
         <translation>WinCodexBar v0.1.0</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="601"/>
+        <location filename="../src/main.cpp" line="697"/>
         <source>Windows system tray app for tracking AI provider usage limits.</source>
         <translation>用于追踪 AI 提供商用量限额的 Windows 系统托盘应用。</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="607"/>
+        <location filename="../src/main.cpp" line="703"/>
         <source>About WinCodexBar</source>
         <translation>关于 WinCodexBar</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="604"/>
+        <location filename="../src/main.cpp" line="700"/>
         <source>Built with Qt 6.5 + QML</source>
         <translation>使用 Qt 6.5 + QML 构建</translation>
     </message>
@@ -574,190 +579,205 @@
 <context>
     <name>ProviderDetailView</name>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="64"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="65"/>
         <source>Operational</source>
         <translation>正常</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="65"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="66"/>
         <source>Degraded</source>
         <translation>降级</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="66"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="67"/>
         <source>Outage</source>
         <translation>中断</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="67"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="68"/>
         <source>Unknown</source>
         <translation>未知</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="78"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="79"/>
         <source>Testing connection</source>
         <translation>正在测试连接</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="79"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="80"/>
         <source>Connection OK</source>
         <translation>连接正常</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="80"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="81"/>
         <source>Connection failed</source>
         <translation>连接失败</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="81"/>
-        <location filename="../qml/components/ProviderDetailView.qml" line="270"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="82"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="292"/>
         <source>Not tested</source>
         <translation>未测试</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="176"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="182"/>
         <source>Sources: </source>
         <translation>来源：</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="177"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="183"/>
         <source>Descriptor-driven provider settings</source>
         <translation>基于描述符的提供商设置</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="188"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="194"/>
         <source>Dashboard</source>
         <translation>控制台</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="195"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="201"/>
         <source>Status</source>
         <translation>状态</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="202"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="208"/>
         <source>Refresh</source>
         <translation>刷新</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="209"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="215"/>
         <source>Enabled</source>
         <translation>已启用</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="232"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="238"/>
         <source>Usage</source>
         <translation>用量</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="235"/>
-        <location filename="../qml/components/ProviderDetailView.qml" line="654"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="241"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="676"/>
         <source>Session</source>
         <translation>会话</translation>
     </message>
     <message>
         <location filename="../qml/components/ProviderDetailView.qml" line="241"/>
-        <location filename="../qml/components/ProviderDetailView.qml" line="655"/>
+        <source>Balance</source>
+        <translation>余额</translation>
+    </message>
+    <message>
+        <location filename="../qml/components/ProviderDetailView.qml" line="248"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="677"/>
         <source>Weekly</source>
         <translation>每周</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="247"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="257"/>
         <source>Monthly</source>
         <translation>每月</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="264"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="286"/>
         <source>Connection</source>
         <translation>连接</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="274"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="296"/>
         <source>Test Connection</source>
         <translation>测试连接</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="274"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="296"/>
         <source>Testing...</source>
         <translation>测试中...</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="333"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="355"/>
         <source>Running one non-interactive provider refresh.</source>
         <translation>正在执行一次非交互式提供商刷新。</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="346"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="368"/>
         <source>Last tested: </source>
         <translation>最近测试：</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="372"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="394"/>
         <source>Hide Details</source>
         <translation>隐藏详情</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="372"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="394"/>
         <source>Show Details</source>
         <translation>显示详情</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="377"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="399"/>
         <source>Copy</source>
         <translation>复制</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="386"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="408"/>
         <source>Retry</source>
         <translation>重试</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="405"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="427"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="429"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="451"/>
         <source>Secret</source>
         <translation>密钥</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="560"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="582"/>
         <source>Account Management</source>
         <translation>账户管理</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="564"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="586"/>
         <source>Manage multiple Codex accounts. Switch between accounts to track usage separately.</source>
         <translation>管理多个 Codex 账户。切换账户以分别追踪用量。</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="624"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="646"/>
         <source>Usage Projection</source>
         <translation>用量预测</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="628"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="650"/>
         <source>Projected rate lanes and credits from the current active account.</source>
         <translation>来自当前活动账户的预测速率通道和积分。</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="693"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="715"/>
         <source>Credits</source>
         <translation>积分</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="714"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="736"/>
         <source>Buy More Credits</source>
         <translation>购买更多积分</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="749"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="771"/>
         <source>Supplemental Metrics</source>
         <translation>补充指标</translation>
     </message>
     <message>
-        <location filename="../qml/components/ProviderDetailView.qml" line="776"/>
+        <location filename="../qml/components/ProviderDetailView.qml" line="783"/>
+        <source>Code Review</source>
+        <translation>Code Review</translation>
+    </message>
+    <message>
+        <location filename="../qml/components/ProviderDetailView.qml" line="784"/>
+        <source>Metric #</source>
+        <translation>指标 #</translation>
+    </message>
+    <message>
+        <location filename="../qml/components/ProviderDetailView.qml" line="798"/>
         <source>Last Provider Error</source>
         <translation>最近的提供商错误</translation>
     </message>
@@ -783,144 +803,574 @@
 <context>
     <name>ProviderErrors</name>
     <message>
-        <location filename="../src/app/Localization.cpp" line="48"/>
+        <location filename="../src/app/Localization.cpp" line="74"/>
         <source>fetchSync not implemented</source>
         <translation>fetchSync 未实现</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="49"/>
+        <location filename="../src/app/Localization.cpp" line="75"/>
         <source>strategy timed out</source>
         <translation>策略超时</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="50"/>
+        <location filename="../src/app/Localization.cpp" line="76"/>
         <source>no available fetch strategy</source>
         <translation>没有可用的获取策略</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="51"/>
+        <location filename="../src/app/Localization.cpp" line="77"/>
         <source>empty or invalid response</source>
         <translation>响应为空或无效</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="52"/>
+        <location filename="../src/app/Localization.cpp" line="78"/>
         <source>API error</source>
         <translation>API 错误</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="53"/>
+        <location filename="../src/app/Localization.cpp" line="79"/>
         <source>no cookies found</source>
         <translation>未找到 Cookie</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="54"/>
+        <location filename="../src/app/Localization.cpp" line="80"/>
         <source>empty response</source>
         <translation>响应为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="55"/>
+        <location filename="../src/app/Localization.cpp" line="81"/>
         <source>empty HTML</source>
         <translation>HTML 为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="56"/>
+        <location filename="../src/app/Localization.cpp" line="82"/>
         <source>Claude OAuth credentials not found. Run `claude` to authenticate.</source>
         <translation>未找到 Claude OAuth 凭据。请运行 `claude` 进行认证。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="57"/>
+        <location filename="../src/app/Localization.cpp" line="83"/>
         <source>empty or invalid response from Claude OAuth API</source>
         <translation>Claude OAuth API 响应为空或无效</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="58"/>
+        <location filename="../src/app/Localization.cpp" line="84"/>
         <source>OAuth error</source>
         <translation>OAuth 错误</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="59"/>
+        <location filename="../src/app/Localization.cpp" line="85"/>
         <source>no usage data in Claude OAuth response</source>
         <translation>Claude OAuth 响应中没有用量数据</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="60"/>
+        <location filename="../src/app/Localization.cpp" line="86"/>
         <source>No Claude session key found in browser cookies.</source>
         <translation>浏览器 Cookie 中未找到 Claude 会话密钥。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="61"/>
+        <location filename="../src/app/Localization.cpp" line="87"/>
         <source>No Claude organization found.</source>
         <translation>未找到 Claude 组织。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="62"/>
+        <location filename="../src/app/Localization.cpp" line="88"/>
         <source>No usage data from Claude web API.</source>
         <translation>Claude Web API 未返回用量数据。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="63"/>
+        <location filename="../src/app/Localization.cpp" line="89"/>
         <source>No Cursor session cookies found in browser.</source>
         <translation>浏览器中未找到 Cursor 会话 Cookie。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="64"/>
+        <location filename="../src/app/Localization.cpp" line="90"/>
         <source>No Cursor session cookie found.</source>
         <translation>未找到 Cursor 会话 Cookie。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="65"/>
+        <location filename="../src/app/Localization.cpp" line="91"/>
         <source>empty response from Cursor usage API</source>
         <translation>Cursor 用量 API 响应为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="66"/>
+        <location filename="../src/app/Localization.cpp" line="92"/>
         <source>no usage data in Cursor response</source>
         <translation>Cursor 响应中没有用量数据</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="67"/>
+        <location filename="../src/app/Localization.cpp" line="93"/>
         <source>OAuth device flow failed</source>
         <translation>OAuth 设备流程失败</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="68"/>
+        <location filename="../src/app/Localization.cpp" line="94"/>
         <source>empty copilot response</source>
         <translation>Copilot 响应为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="69"/>
+        <location filename="../src/app/Localization.cpp" line="95"/>
         <source>kiro-cli timed out</source>
         <translation>kiro-cli 超时</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="70"/>
+        <location filename="../src/app/Localization.cpp" line="96"/>
         <source>empty CLI output</source>
         <translation>CLI 输出为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="71"/>
+        <location filename="../src/app/Localization.cpp" line="97"/>
         <source>no results in tRPC response</source>
         <translation>tRPC 响应中没有结果</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="72"/>
+        <location filename="../src/app/Localization.cpp" line="98"/>
         <source>Codex auth.json not found. Run `codex` to log in.</source>
         <translation>未找到 Codex auth.json。请运行 `codex` 登录。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="73"/>
+        <location filename="../src/app/Localization.cpp" line="99"/>
         <source>empty or invalid response from Codex API</source>
         <translation>Codex API 响应为空或无效</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="74"/>
+        <location filename="../src/app/Localization.cpp" line="100"/>
         <source>no rate limit data in response</source>
         <translation>响应中没有速率限制数据</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="75"/>
+        <location filename="../src/app/Localization.cpp" line="101"/>
         <source>empty credits response</source>
         <translation>积分响应为空</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="103"/>
+        <source>DeepSeek API key not configured.</source>
+        <translation>DeepSeek API 密钥未配置。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="104"/>
+        <source>Empty or invalid response from DeepSeek API</source>
+        <translation>DeepSeek API 响应为空或无效</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="106"/>
+        <source>MiniMax API key not configured.</source>
+        <translation>MiniMax API 密钥未配置。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="107"/>
+        <source>Empty or invalid response from MiniMax API</source>
+        <translation>MiniMax API 响应为空或无效</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="108"/>
+        <source>MiniMax API credentials are invalid or expired.</source>
+        <translation>MiniMax API 凭据无效或已过期。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="109"/>
+        <source>Empty response from MiniMax coding plan page</source>
+        <translation>MiniMax Coding Plan 页面响应为空</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="110"/>
+        <source>MiniMax session expired. Please re-import your cookie.</source>
+        <translation>MiniMax 会话已过期，请重新导入 Cookie。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="111"/>
+        <source>Could not parse MiniMax coding plan data from page</source>
+        <translation>无法解析页面中的 MiniMax Coding Plan 数据</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="112"/>
+        <source>No MiniMax cookie available. Log in to platform.minimax.io in your browser.</source>
+        <translation>无 MiniMax Cookie。请在浏览器中登录 platform.minimax.io。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="114"/>
+        <source>Empty or invalid response from Synthetic API</source>
+        <translation>Synthetic API 响应为空或无效</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="115"/>
+        <source>Synthetic API key not configured.</source>
+        <translation>Synthetic API 密钥未配置。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="117"/>
+        <source>Empty or invalid response from Perplexity API</source>
+        <translation>Perplexity API 响应为空或无效</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="118"/>
+        <source>No Perplexity cookie available. Log in to perplexity.ai in your browser or paste cookie manually.</source>
+        <translation>无 Perplexity Cookie。请在浏览器中登录 perplexity.ai 或手动粘贴 Cookie。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="120"/>
+        <source>Empty response from Amp</source>
+        <translation>Amp 响应为空</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="121"/>
+        <source>Not signed in. Log in to ampcode.com in your browser.</source>
+        <translation>未登录。请在浏览器中登录 ampcode.com。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="122"/>
+        <source>Could not parse Amp usage data from page</source>
+        <translation>无法解析页面中的 Amp 用量数据</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="123"/>
+        <source>Could not find quota in Amp usage data</source>
+        <translation>未在 Amp 用量数据中找到配额</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="124"/>
+        <source>No Amp cookie available. Log in to ampcode.com in your browser.</source>
+        <translation>无 Amp Cookie。请在浏览器中登录 ampcode.com。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="126"/>
+        <source>auggie CLI not found in PATH.</source>
+        <translation>未在 PATH 中找到 auggie CLI。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="127"/>
+        <source>auggie account status timed out</source>
+        <translation>auggie account status 超时</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="128"/>
+        <source>Empty output from auggie CLI</source>
+        <translation>auggie CLI 输出为空</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="129"/>
+        <source>Empty response from Augment API</source>
+        <translation>Augment API 响应为空</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="130"/>
+        <source>No Augment cookie available.</source>
+        <translation>无 Augment Cookie。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="132"/>
+        <source>No quota buckets in Gemini response</source>
+        <translation>Gemini 响应中无配额桶</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="133"/>
+        <source>Gemini OAuth credentials not found. Run &apos;gemini&apos; CLI to authenticate.</source>
+        <translation>刷新 Gemini OAuth 令牌失败。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="134"/>
+        <source>Failed to refresh Gemini OAuth token.</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="135"/>
+        <source>Gemini API key mode does not support usage quotas. Use OAuth mode (run &apos;gemini&apos; CLI to authenticate).</source>
+        <translation>Gemini API Key 模式不支持用量配额。请使用 OAuth 模式（运行 &apos;gemini&apos; CLI 认证）。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="137"/>
+        <source>Google ADC not found. Run &apos;gcloud auth application-default login&apos;.</source>
+        <translation>未找到 Google ADC。请运行 &apos;gcloud auth application-default login&apos;。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="138"/>
+        <source>GCP project not found. Set GOOGLE_CLOUD_PROJECT or run &apos;gcloud config set project&apos;.</source>
+        <translation>未找到 GCP 项目。请设置 GOOGLE_CLOUD_PROJECT 或运行 &apos;gcloud config set project&apos;。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="140"/>
+        <source>No AIAssistant quota data found in XML</source>
+        <translation>XML 中未找到 AI Assistant 配额数据</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="141"/>
+        <source>No quotaInfo in JetBrains data</source>
+        <translation>JetBrains 数据中无 quotaInfo</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="142"/>
+        <source>No JetBrains IDE installation found.</source>
+        <translation>未找到 JetBrains IDE 安装。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="144"/>
+        <source>Empty response from Factory API</source>
+        <translation>Factory API 响应为空</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="145"/>
+        <source>No Factory cookie available. Log in to app.factory.ai in your browser.</source>
+        <translation>无 Factory Cookie。请在浏览器中登录 app.factory.ai。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="147"/>
+        <source>No response from Antigravity local service</source>
+        <translation>Antigravity 本地服务无响应</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="148"/>
+        <source>Antigravity is not running.</source>
+        <translation>Antigravity 未在运行。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="150"/>
+        <source>Warp API key not configured.</source>
+        <translation>Warp API 密钥未配置。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="151"/>
+        <source>Empty response from Warp GraphQL API</source>
+        <translation>Warp GraphQL API 响应为空</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="152"/>
+        <source>GraphQL error</source>
+        <translation>GraphQL 错误</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="154"/>
+        <source>No Abacus AI cookie available. Log in to apps.abacus.ai in your browser.</source>
+        <translation>无 Abacus AI Cookie。请在浏览器中登录 apps.abacus.ai。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="155"/>
+        <source>Empty response from Abacus AI API</source>
+        <translation>Abacus AI API 响应为空</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="156"/>
+        <source>Abacus AI API error</source>
+        <translation>Abacus AI API 错误</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="158"/>
+        <source>Kimi auth token is missing. Please add your JWT token from the Kimi console.</source>
+        <translation>Kimi 认证令牌缺失。请从 Kimi 控制台添加 JWT 令牌。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="159"/>
+        <source>Kimi auth token is invalid or expired. Please refresh your token.</source>
+        <translation>Kimi 认证令牌无效或已过期。请刷新令牌。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="160"/>
+        <source>Invalid request</source>
+        <translation>无效请求</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="161"/>
+        <source>Kimi network error</source>
+        <translation>Kimi 网络错误</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="162"/>
+        <source>Kimi API error</source>
+        <translation>Kimi API 错误</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="163"/>
+        <source>Failed to parse Kimi usage data</source>
+        <translation>无法解析 Kimi 用量数据</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="164"/>
+        <source>Unknown Kimi error</source>
+        <translation>未知 Kimi 错误</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="166"/>
+        <source>Codex CLI RPC returned no rate limit data.</source>
+        <translation>Codex CLI RPC 未返回速率限制数据。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="167"/>
+        <source>Codex CLI RPC returned no rate limit windows.</source>
+        <translation>Codex CLI RPC 未返回速率限制窗口。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="168"/>
+        <source>ConPTY is not available on this Windows version (requires Windows 10 1809+). codex CLI needs a terminal.</source>
+        <translation>此 Windows 版本不支持 ConPTY（需要 Windows 10 1809+）。codex CLI 需要终端。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="169"/>
+        <source>codex CLI still reports &apos;stdin is not a terminal&apos; even with ConPTY.</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="170"/>
+        <source>Codex CLI update needed. Run `npm i -g @openai/codex` to continue.</source>
+        <translation>需更新 Codex CLI。请运行 `npm i -g @openai/codex` 继续。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="171"/>
+        <source>Codex data not available yet; will retry shortly.</source>
+        <translation>Codex 数据暂不可用，稍后将重试。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="172"/>
+        <source>Could not parse codex CLI status output. The CLI returned interactive screen output instead of usage data.</source>
+        <translation>无法解析 codex CLI 状态输出。CLI 返回了交互式屏幕输出而非用量数据。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="173"/>
+        <source>Empty response from web dashboard (HTTP request failed or returned empty)</source>
+        <translation>Web Dashboard 响应为空（HTTP 请求失败或返回空内容）</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="174"/>
+        <source>Could not parse usage data from web dashboard.</source>
+        <translation>无法解析 Web Dashboard 用量数据。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="175"/>
+        <source>codex CLI not found in PATH. Install via `npm i -g @openai/codex`</source>
+        <translation>PATH 中未找到 codex CLI。请通过 `npm i -g @openai/codex` 安装。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="176"/>
+        <source>Failed to start ConPTY session for codex CLI</source>
+        <translation>无法启动 codex CLI 的 ConPTY 会话</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="177"/>
+        <source>codex CLI exited before we could send /status</source>
+        <translation>codex CLI 在发送 /status 前已退出</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="178"/>
+        <source>Could not parse codex CLI status output.</source>
+        <translation>无法解析 codex CLI 状态输出。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="179"/>
+        <source>Failed to start persistent CLI session</source>
+        <translation>无法启动持久 CLI 会话</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="180"/>
+        <source>CLI session exited unexpectedly</source>
+        <translation>CLI 会话意外退出</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="181"/>
+        <source>Timed out waiting for status output</source>
+        <translation>等待状态输出超时</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="182"/>
+        <source>Empty response from token refresh endpoint</source>
+        <translation>令牌刷新端点响应为空</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="183"/>
+        <source>Refresh token expired. Please run `codex` to log in again.</source>
+        <translation>刷新令牌已过期。请运行 `codex` 重新登录。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="184"/>
+        <source>Refresh token was revoked. Please run `codex` to log in again.</source>
+        <translation>刷新令牌已被撤销。请运行 `codex` 重新登录。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="185"/>
+        <source>Refresh token was already used. Please run `codex` to log in again.</source>
+        <translation>刷新令牌已被使用。请运行 `codex` 重新登录。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="186"/>
+        <source>Token refresh failed</source>
+        <translation>令牌刷新失败</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="187"/>
+        <source>Invalid refresh response: missing access_token</source>
+        <translation>无效的刷新响应：缺少 access_token</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="188"/>
+        <source>RPC client not started</source>
+        <translation>RPC 客户端未启动</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="189"/>
+        <source>No credits data in OAuth response</source>
+        <translation>OAuth 响应中无积分数据</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="190"/>
+        <source>Codex CLI RPC failed to start</source>
+        <translation>Codex CLI RPC 启动失败</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="191"/>
+        <source>No credits in RPC response</source>
+        <translation>RPC 响应中无积分</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="192"/>
+        <source>No credits parsed from CLI status output</source>
+        <translation>CLI 状态输出中未解析到积分</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="194"/>
+        <source>No OpenCode Go auth cookie found in browser cookies or manual input.</source>
+        <translation>未找到 OpenCode Go 认证 Cookie。请在浏览器 Cookie 或手动输入中检查。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="195"/>
+        <source>Failed to fetch OpenCode workspace ID.</source>
+        <translation>获取 OpenCode 工作区 ID 失败。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="196"/>
+        <source>OpenCode Go workspace page returned no usage data.</source>
+        <translation>OpenCode Go 工作区页面未返回用量数据。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="197"/>
+        <source>No usage data found in OpenCode Go response.</source>
+        <translation>OpenCode Go 响应中未找到用量数据。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="199"/>
+        <source>Application shutting down</source>
+        <translation>应用正在关闭</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="200"/>
+        <source>No available fetch strategy</source>
+        <translation>无可用获取策略</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="201"/>
+        <source>test override returned no credits</source>
+        <translation>测试覆盖未返回积分</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="203"/>
+        <source>empty or invalid response from Alibaba web</source>
+        <translation>Alibaba Web 响应为空或无效</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="204"/>
+        <source>Quota information unavailable</source>
+        <translation>配额信息不可用</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="205"/>
+        <source>API authenticated</source>
+        <translation>API 已认证</translation>
     </message>
 </context>
 <context>
@@ -1005,23 +1455,153 @@
         <source>Bonus</source>
         <translation>奖励</translation>
     </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="39"/>
+        <source>Balance</source>
+        <translation>余额</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="40"/>
+        <source>Prompts</source>
+        <translation>提示次数</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="41"/>
+        <source>Window</source>
+        <translation>窗口</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="42"/>
+        <source>Search</source>
+        <translation>搜索</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="43"/>
+        <source>Recurring</source>
+        <translation>周期</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="44"/>
+        <source>Promo</source>
+        <translation>促销</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="45"/>
+        <source>Purchased</source>
+        <translation>已购</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="46"/>
+        <source>Usage</source>
+        <translation>用量</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="47"/>
+        <source>Pro</source>
+        <translation>专业版</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="48"/>
+        <source>Flash</source>
+        <translation>闪电版</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="49"/>
+        <source>Flash Lite</source>
+        <translation>闪电精简版</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="50"/>
+        <source>Standard</source>
+        <translation>标准</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="51"/>
+        <source>Claude</source>
+        <translation>Claude</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="52"/>
+        <source>Gemini Pro</source>
+        <translation>Gemini Pro</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="53"/>
+        <source>Gemini Flash</source>
+        <translation>Gemini Flash</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="54"/>
+        <source>Requests</source>
+        <translation>请求</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="55"/>
+        <source>Interval</source>
+        <translation>间隔</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="56"/>
+        <source>Rate Limit</source>
+        <translation>速率限制</translation>
+    </message>
 </context>
 <context>
     <name>ProviderSettings</name>
     <message>
-        <location filename="../src/app/Localization.cpp" line="42"/>
+        <location filename="../src/app/Localization.cpp" line="60"/>
         <source>Data source</source>
         <translation>数据来源</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="43"/>
+        <location filename="../src/app/Localization.cpp" line="61"/>
         <source>Cookie source</source>
         <translation>Cookie 来源</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="44"/>
+        <location filename="../src/app/Localization.cpp" line="62"/>
         <source>API region</source>
         <translation>API 区域</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="63"/>
+        <source>API key</source>
+        <translation>API 密钥</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="64"/>
+        <source>API Key</source>
+        <translation>API 密钥</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="65"/>
+        <source>API key (optional)</source>
+        <translation>API 密钥（可选）</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="66"/>
+        <source>Manual cookie</source>
+        <translation>手动 Cookie</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="67"/>
+        <source>Manual cookie header</source>
+        <translation>手动 Cookie 头部</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="68"/>
+        <source>Region</source>
+        <translation>区域</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="69"/>
+        <source>Workspace ID</source>
+        <translation>工作区 ID</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="70"/>
+        <source>Browser or manual cookie</source>
+        <translation>浏览器或手动 Cookie</translation>
     </message>
 </context>
 <context>
@@ -1096,47 +1676,47 @@
 <context>
     <name>SettingsWindow</name>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="136"/>
+        <location filename="../qml/SettingsWindow.qml" line="135"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="18"/>
+        <location filename="../qml/SettingsWindow.qml" line="17"/>
         <source>General</source>
         <translation>通用</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="19"/>
+        <location filename="../qml/SettingsWindow.qml" line="18"/>
         <source>Providers</source>
         <translation>提供商</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="20"/>
+        <location filename="../qml/SettingsWindow.qml" line="19"/>
         <source>Display</source>
         <translation>显示</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="21"/>
+        <location filename="../qml/SettingsWindow.qml" line="20"/>
         <source>Advanced</source>
         <translation>高级</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="22"/>
+        <location filename="../qml/SettingsWindow.qml" line="21"/>
         <source>About</source>
         <translation>关于</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="24"/>
+        <location filename="../qml/SettingsWindow.qml" line="23"/>
         <source>Debug</source>
         <translation>调试</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="76"/>
+        <location filename="../qml/SettingsWindow.qml" line="75"/>
         <source>CodexBar Settings</source>
         <translation>CodexBar 设置</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsWindow.qml" line="143"/>
+        <location filename="../qml/SettingsWindow.qml" line="142"/>
         <source>Configure providers and app behavior</source>
         <translation>配置提供商和应用行为</translation>
     </message>
@@ -1214,7 +1794,7 @@
     </message>
     <message>
         <location filename="../qml/panes/TokenUsagePane.qml" line="111"/>
-        <location filename="../qml/panes/TokenUsagePane.qml" line="671"/>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="674"/>
         <source>Today</source>
         <translation>今日</translation>
     </message>
@@ -1223,15 +1803,15 @@
         <location filename="../qml/panes/TokenUsagePane.qml" line="121"/>
         <location filename="../qml/panes/TokenUsagePane.qml" line="178"/>
         <location filename="../qml/panes/TokenUsagePane.qml" line="359"/>
-        <location filename="../qml/panes/TokenUsagePane.qml" line="673"/>
-        <location filename="../qml/panes/TokenUsagePane.qml" line="680"/>
-        <location filename="../qml/panes/TokenUsagePane.qml" line="732"/>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="676"/>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="683"/>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="735"/>
         <source>tokens</source>
         <translation>词元</translation>
     </message>
     <message>
         <location filename="../qml/panes/TokenUsagePane.qml" line="119"/>
-        <location filename="../qml/panes/TokenUsagePane.qml" line="678"/>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="681"/>
         <source>30 days</source>
         <translation>30天</translation>
     </message>
@@ -1258,7 +1838,7 @@
     <message>
         <location filename="../qml/panes/TokenUsagePane.qml" line="259"/>
         <location filename="../qml/panes/TokenUsagePane.qml" line="302"/>
-        <location filename="../qml/panes/TokenUsagePane.qml" line="639"/>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="642"/>
         <source>Token</source>
         <translation>词元</translation>
     </message>
@@ -1273,7 +1853,7 @@
         <translation>配额</translation>
     </message>
     <message>
-        <location filename="../qml/panes/TokenUsagePane.qml" line="715"/>
+        <location filename="../qml/panes/TokenUsagePane.qml" line="718"/>
         <source>Unknown model</source>
         <translation>未知模型</translation>
     </message>
@@ -1323,7 +1903,7 @@
     <message>
         <location filename="../qml/TrayPanel.qml" line="229"/>
         <location filename="../qml/TrayPanel.qml" line="245"/>
-        <location filename="../qml/TrayPanel.qml" line="377"/>
+        <location filename="../qml/TrayPanel.qml" line="383"/>
         <source>tokens</source>
         <translation>词元</translation>
     </message>
@@ -1333,147 +1913,157 @@
         <translation>30天</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="297"/>
+        <location filename="../qml/TrayPanel.qml" line="303"/>
         <source>max</source>
         <translation>最大</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="307"/>
+        <location filename="../qml/TrayPanel.qml" line="313"/>
         <source>Mon</source>
         <translation>周一</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="310"/>
+        <location filename="../qml/TrayPanel.qml" line="316"/>
         <source>other day</source>
         <translation>其他</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="946"/>
+        <location filename="../qml/TrayPanel.qml" line="544"/>
+        <source>Balance</source>
+        <translation>余额</translation>
+    </message>
+    <message>
+        <location filename="../qml/TrayPanel.qml" line="780"/>
+        <source>Credits</source>
+        <translation>积分</translation>
+    </message>
+    <message>
+        <location filename="../qml/TrayPanel.qml" line="970"/>
         <source>Credit Events</source>
         <translation>积分事件</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="985"/>
+        <location filename="../qml/TrayPanel.qml" line="1009"/>
         <source>Usage by Service</source>
         <translation>按服务用量</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1021"/>
+        <location filename="../qml/TrayPanel.qml" line="1045"/>
         <source>Purchase credits</source>
         <translation>购买积分</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1075"/>
+        <location filename="../qml/TrayPanel.qml" line="1099"/>
         <source>Refresh</source>
         <translation>刷新</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="524"/>
-        <location filename="../qml/TrayPanel.qml" line="1075"/>
+        <location filename="../qml/TrayPanel.qml" line="533"/>
+        <location filename="../qml/TrayPanel.qml" line="1099"/>
         <source>Refreshing...</source>
         <translation>刷新中...</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1082"/>
+        <location filename="../qml/TrayPanel.qml" line="1106"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1088"/>
+        <location filename="../qml/TrayPanel.qml" line="1112"/>
         <source>Quit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="524"/>
+        <location filename="../qml/TrayPanel.qml" line="533"/>
         <source>No usage yet</source>
         <translation>暂无用量</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="457"/>
+        <location filename="../qml/TrayPanel.qml" line="467"/>
         <source>API key limit</source>
         <translation>API Key 限额</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="601"/>
-        <location filename="../qml/TrayPanel.qml" line="681"/>
-        <location filename="../qml/TrayPanel.qml" line="733"/>
+        <location filename="../qml/TrayPanel.qml" line="610"/>
+        <location filename="../qml/TrayPanel.qml" line="705"/>
+        <location filename="../qml/TrayPanel.qml" line="757"/>
         <source>Resets</source>
         <translation>重置于</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="838"/>
-        <location filename="../qml/TrayPanel.qml" line="1033"/>
+        <location filename="../qml/TrayPanel.qml" line="862"/>
+        <location filename="../qml/TrayPanel.qml" line="1057"/>
         <source>Updated</source>
         <translation>更新于</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1146"/>
+        <location filename="../qml/TrayPanel.qml" line="1175"/>
         <source>just now</source>
         <translation>刚刚</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1147"/>
+        <location filename="../qml/TrayPanel.qml" line="1176"/>
         <source>m ago</source>
         <translation>分钟前</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1148"/>
+        <location filename="../qml/TrayPanel.qml" line="1177"/>
         <source>h ago</source>
         <translation>小时前</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1149"/>
+        <location filename="../qml/TrayPanel.qml" line="1178"/>
         <source>d ago</source>
         <translation>天前</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="1144"/>
+        <location filename="../qml/TrayPanel.qml" line="1173"/>
         <source>never</source>
         <translation>从未</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="792"/>
+        <location filename="../qml/TrayPanel.qml" line="816"/>
         <source>Extra usage</source>
         <translation>额外用量</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="792"/>
+        <location filename="../qml/TrayPanel.qml" line="816"/>
         <source>Quota usage</source>
         <translation>配额用量</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="818"/>
+        <location filename="../qml/TrayPanel.qml" line="842"/>
         <source>This month</source>
         <translation>本月</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="826"/>
+        <location filename="../qml/TrayPanel.qml" line="850"/>
         <source>%1 used</source>
         <translation>已用 %1%</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="695"/>
-        <location filename="../qml/TrayPanel.qml" line="921"/>
+        <location filename="../qml/TrayPanel.qml" line="719"/>
+        <location filename="../qml/TrayPanel.qml" line="945"/>
         <source>Opus</source>
         <translation>Opus</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="895"/>
+        <location filename="../qml/TrayPanel.qml" line="919"/>
         <source>No limit set for the API key</source>
         <translation>此 API Key 未设置限额</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="901"/>
+        <location filename="../qml/TrayPanel.qml" line="925"/>
         <source>API key limit unavailable right now</source>
         <translation>API Key 限额暂不可用</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="862"/>
+        <location filename="../qml/TrayPanel.qml" line="886"/>
         <source>MCP details</source>
         <translation>MCP 详情</translation>
     </message>
     <message>
-        <location filename="../qml/TrayPanel.qml" line="908"/>
+        <location filename="../qml/TrayPanel.qml" line="932"/>
         <source>left</source>
         <translation>剩余</translation>
     </message>
