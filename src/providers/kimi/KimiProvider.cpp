@@ -1,12 +1,15 @@
 #include "KimiProvider.h"
+#include "KimiAPIError.h"
+#include "KimiTokenResolver.h"
+#include "KimiModels.h"
 #include "../../network/NetworkManager.h"
 #include "../../providers/shared/CookieImporter.h"
 
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-#include <QRegularExpression>
 #include <QDateTime>
+#include <utility>
 
 KimiProvider::KimiProvider(QObject* parent) : IProvider(parent) {}
 
@@ -26,6 +29,16 @@ QVector<ProviderSettingsDescriptor> KimiProvider::settingsDescriptors() const {
 
 KimiWebStrategy::KimiWebStrategy(QObject* parent) : IFetchStrategy(parent) {}
 
+bool KimiWebStrategy::shouldFallback(const ProviderFetchResult& result,
+                                      const ProviderFetchContext& ctx) const {
+    Q_UNUSED(ctx)
+    if (!result.success) {
+        QString msg = result.errorMessage.toLower();
+        if (msg.contains("missing") || msg.contains("invalid")) return false;
+    }
+    return true;
+}
+
 bool KimiWebStrategy::isAvailable(const ProviderFetchContext& ctx) const {
     return resolveAuthToken(ctx).has_value();
 }
@@ -33,14 +46,14 @@ bool KimiWebStrategy::isAvailable(const ProviderFetchContext& ctx) const {
 std::optional<QString> KimiWebStrategy::resolveAuthToken(const ProviderFetchContext& ctx) {
     // 1. Manual cookie header from settings
     if (ctx.manualCookieHeader.has_value() && !ctx.manualCookieHeader->isEmpty()) {
-        auto token = extractKimiAuthToken(*ctx.manualCookieHeader);
+        auto token = KimiTokenResolver::extractKimiAuthToken(*ctx.manualCookieHeader);
         if (token.has_value()) return token;
     }
 
     // 2. Environment variable
     for (const auto& key : {"KIMI_AUTH_TOKEN", "KIMI_MANUAL_COOKIE", "kimi_auth_token"}) {
         if (ctx.env.contains(key)) {
-            auto token = extractKimiAuthToken(ctx.env[key]);
+            auto token = KimiTokenResolver::extractKimiAuthToken(ctx.env[key]);
             if (token.has_value()) return token;
         }
     }
@@ -61,44 +74,6 @@ std::optional<QString> KimiWebStrategy::resolveAuthToken(const ProviderFetchCont
     return std::nullopt;
 }
 
-std::optional<QString> KimiWebStrategy::extractKimiAuthToken(const QString& raw) {
-    QString trimmed = raw.trimmed();
-    if (trimmed.isEmpty()) return std::nullopt;
-
-    // Direct JWT token: eyJ... with 3 parts
-    if (trimmed.startsWith("eyJ") && trimmed.split('.').count() == 3) {
-        return trimmed;
-    }
-
-    // Cookie header patterns
-    QRegularExpression re1(R"re((?i)kimi-auth=([A-Za-z0-9._\-+=/]+))re");
-    QRegularExpressionMatch m1 = re1.match(trimmed);
-    if (m1.hasMatch() && !m1.captured(1).isEmpty()) return m1.captured(1);
-
-    QRegularExpression re2(R"re((?i)kimi-auth:\s*([A-Za-z0-9._\-+=/]+))re");
-    QRegularExpressionMatch m2 = re2.match(trimmed);
-    if (m2.hasMatch() && !m2.captured(1).isEmpty()) return m2.captured(1);
-
-    return std::nullopt;
-}
-
-QJsonObject KimiWebStrategy::decodeJWTPayload(const QString& jwt) {
-    QStringList parts = jwt.split('.');
-    if (parts.size() != 3) return {};
-
-    QString payload = parts[1];
-    payload.replace('-', '+').replace('_', '/');
-    while (payload.size() % 4 != 0) payload.append('=');
-
-    QByteArray data = QByteArray::fromBase64(payload.toUtf8());
-    if (data.isEmpty()) return {};
-
-    QJsonParseError err;
-    QJsonDocument doc = QJsonDocument::fromJson(data, &err);
-    if (err.error != QJsonParseError::NoError) return {};
-    return doc.object();
-}
-
 ProviderFetchResult KimiWebStrategy::fetchSync(const ProviderFetchContext& ctx) {
     ProviderFetchResult result;
     result.strategyID = id();
@@ -108,7 +83,7 @@ ProviderFetchResult KimiWebStrategy::fetchSync(const ProviderFetchContext& ctx) 
     auto tokenOpt = resolveAuthToken(ctx);
     if (!tokenOpt.has_value()) {
         result.success = false;
-        result.errorMessage = "No kimi-auth token found in browser cookies or manual input.";
+        result.errorMessage = kimiErrorMessage(KimiAPIError::MissingToken);
         return result;
     }
 
@@ -129,7 +104,7 @@ ProviderFetchResult KimiWebStrategy::fetchSync(const ProviderFetchContext& ctx) 
     headers["r-timezone"] = QDateTime::currentDateTime().timeZoneAbbreviation();
 
     // Decode JWT for session headers
-    QJsonObject jwtPayload = decodeJWTPayload(token);
+    QJsonObject jwtPayload = KimiTokenResolver::decodeJWTPayload(token);
     if (!jwtPayload.isEmpty()) {
         QString deviceId = jwtPayload.value("device_id").toString();
         QString sessionId = jwtPayload.value("ssid").toString();
@@ -144,87 +119,80 @@ ProviderFetchResult KimiWebStrategy::fetchSync(const ProviderFetchContext& ctx) 
     scopeArr.append("FEATURE_CODING");
     body["scope"] = scopeArr;
 
-    QJsonObject json = NetworkManager::instance().postJsonSync(
+    auto [json, httpStatus] = NetworkManager::instance().postJsonSyncWithStatus(
         QUrl("https://www.kimi.com/apiv2/kimi.gateway.billing.v1.BillingService/GetUsages"),
         body, headers, ctx.networkTimeoutMs, false);
 
+    if (httpStatus == 0) {
+        result.success = false;
+        result.errorMessage = kimiErrorMessage(KimiAPIError::NetworkError,
+            "Kimi API unreachable or request timed out");
+        return result;
+    }
+
+    if (httpStatus == 401 || httpStatus == 403) {
+        result.success = false;
+        result.errorMessage = kimiErrorMessage(KimiAPIError::InvalidToken,
+            QStringLiteral("HTTP %1").arg(httpStatus));
+        return result;
+    }
+
+    if (httpStatus >= 400) {
+        result.success = false;
+        QString detail = json.contains("message")
+            ? json.value("message").toString()
+            : QStringLiteral("HTTP %1").arg(httpStatus);
+        result.errorMessage = kimiErrorMessage(KimiAPIError::APIError, detail);
+        return result;
+    }
+
     if (json.isEmpty()) {
         result.success = false;
-        result.errorMessage = "empty or invalid response from Kimi API";
+        result.errorMessage = kimiErrorMessage(KimiAPIError::ParseFailed,
+            "empty or invalid JSON response");
         return result;
     }
 
     if (!json.contains("usages")) {
         result.success = false;
-        result.errorMessage = "no usages field in Kimi response";
+        result.errorMessage = kimiErrorMessage(KimiAPIError::ParseFailed,
+            "missing 'usages' field in response");
         return result;
     }
 
     result.usage = parseKimiResponse(json);
     result.success = result.usage.primary.has_value() || result.usage.identity.has_value();
     if (!result.success) {
-        result.errorMessage = "no usage data in Kimi response";
+        result.errorMessage = kimiErrorMessage(KimiAPIError::ParseFailed,
+            "no FEATURE_CODING usage data found");
+        qDebug() << "[KimiProvider] Parsed usage has no primary data. Raw response:"
+                 << QJsonDocument(json).toJson(QJsonDocument::Compact);
     }
     return result;
 }
 
-static std::optional<double> parseKimiNumber(const QJsonObject& obj, const QString& key) {
-    if (obj.contains(key)) {
-        QJsonValue v = obj.value(key);
-        if (v.isString()) {
-            bool ok = false;
-            double d = v.toString().toDouble(&ok);
-            if (ok) return d;
-        } else if (v.isDouble()) {
-            return v.toDouble();
-        }
-    }
-    return std::nullopt;
-}
-
-static QDateTime parseKimiResetTime(const QString& iso) {
-    if (iso.isEmpty()) return {};
-    // Kimi returns microsecond precision (e.g. 2026-05-07T02:43:45.585111Z)
-    // Qt::ISODate handles up to milliseconds; strip extra digits.
-    QString simplified = iso;
-    int dotIdx = simplified.lastIndexOf('.');
-    int zIdx = simplified.lastIndexOf('Z');
-    if (dotIdx > 0 && zIdx > dotIdx) {
-        QString ms = simplified.mid(dotIdx + 1, zIdx - dotIdx - 1);
-        if (ms.length() > 3) {
-            ms = ms.left(3);
-            simplified = simplified.left(dotIdx + 1) + ms + "Z";
-        }
-    }
-    QDateTime dt = QDateTime::fromString(simplified, Qt::ISODate);
-    if (!dt.isValid()) {
-        dt = QDateTime::fromString(simplified, Qt::ISODateWithMs);
-    }
-    return dt;
-}
-
-static RateWindow makeKimiWindow(const QJsonObject& detail, int windowMinutes = 0) {
+static RateWindow makeKimiWindow(const KimiUsageDetail& detail, int windowMinutes = 0, const QString& resetDesc = QString()) {
     RateWindow rw;
-    auto limitOpt = parseKimiNumber(detail, "limit");
-    auto usedOpt = parseKimiNumber(detail, "used");
-    auto remainingOpt = parseKimiNumber(detail, "remaining");
-    QString resetStr = detail.value("resetTime").toString();
 
-    if (!limitOpt.has_value() || *limitOpt <= 0) return rw;
+    if (!detail.limit.has_value() || *detail.limit <= 0) return rw;
 
-    double limit = *limitOpt;
+    double limit = *detail.limit;
     double used = 0;
-    if (usedOpt.has_value()) {
-        used = *usedOpt;
-    } else if (remainingOpt.has_value()) {
-        used = limit - *remainingOpt;
+    if (detail.used.has_value()) {
+        used = *detail.used;
+    } else if (detail.remaining.has_value()) {
+        used = limit - *detail.remaining;
     }
 
     rw.usedPercent = std::clamp(used / limit * 100.0, 0.0, 100.0);
     if (windowMinutes > 0) rw.windowMinutes = windowMinutes;
 
-    QDateTime resetDt = parseKimiResetTime(resetStr);
+    QDateTime resetDt = parseKimiResetTime(detail.resetTime);
     if (resetDt.isValid()) rw.resetsAt = resetDt;
+
+    if (!resetDesc.isEmpty()) {
+        rw.resetDescription = resetDesc;
+    }
 
     return rw;
 }
@@ -234,42 +202,41 @@ UsageSnapshot KimiWebStrategy::parseKimiResponse(const QJsonObject& json) {
     snapshot.updatedAt = QDateTime::currentDateTime();
 
     QJsonArray usages = json.value("usages").toArray();
-    QJsonObject codingUsage;
+    std::optional<KimiCodingUsage> codingUsage;
     for (const auto& val : usages) {
-        QJsonObject usage = val.toObject();
-        if (usage.value("scope").toString() == "FEATURE_CODING") {
-            codingUsage = usage;
+        auto maybe = KimiCodingUsage::fromJson(val.toObject());
+        if (maybe.has_value()) {
+            codingUsage = maybe;
             break;
         }
     }
 
-    if (codingUsage.isEmpty()) return snapshot;
+    if (!codingUsage.has_value()) return snapshot;
 
-    // limits[0] = rate limit window (e.g. 5 min) -> primary (session)
-    QJsonArray limits = codingUsage.value("limits").toArray();
-    if (!limits.isEmpty()) {
-        QJsonObject firstLimit = limits[0].toObject();
-        QJsonObject limitDetail = firstLimit.value("detail").toObject();
-        QJsonObject window = firstLimit.value("window").toObject();
-        int duration = window.value("duration").toInt(0);
-        QString timeUnit = window.value("timeUnit").toString();
-        int windowMinutes = duration;
-        if (timeUnit == "TIME_UNIT_SECOND") windowMinutes = duration / 60;
-        else if (timeUnit == "TIME_UNIT_HOUR") windowMinutes = duration * 60;
-        else if (timeUnit == "TIME_UNIT_DAY") windowMinutes = duration * 24 * 60;
-        // TIME_UNIT_MINUTE -> duration is already minutes
-
-        RateWindow rw = makeKimiWindow(limitDetail, windowMinutes);
-        if (rw.usedPercent > 0 || limitDetail.contains("limit")) {
+    // Primary = overall weekly quota from detail
+    {
+        const auto& detail = codingUsage->detail;
+        if (detail.limit.has_value() && *detail.limit > 0) {
+            double limitVal = *detail.limit;
+            double usedVal = detail.used.has_value() ? *detail.used
+                : (detail.remaining.has_value() ? (limitVal - *detail.remaining) : 0);
+            QString desc = QString("%1/%2 requests").arg(usedVal, 0, 'f', 0).arg(limitVal, 0, 'f', 0);
+            RateWindow rw = makeKimiWindow(detail, 0, desc);
             snapshot.primary = rw;
         }
     }
 
-    // detail = overall quota -> secondary (weekly)
-    QJsonObject detail = codingUsage.value("detail").toObject();
-    {
-        RateWindow rw = makeKimiWindow(detail, 10080); // 7 days in minutes
-        if (rw.usedPercent > 0 || detail.contains("limit")) {
+    // Secondary = rate limit (first limits entry, usually 5h window)
+    // Upstream: uses limits.first?.detail, windowMinutes = 300
+    if (!codingUsage->limits.isEmpty()) {
+        const auto& rl = codingUsage->limits[0];
+        const auto& detail = rl.detail;
+        if (detail.limit.has_value() && *detail.limit > 0) {
+            double limitVal = *detail.limit;
+            double usedVal = detail.used.has_value() ? *detail.used
+                : (detail.remaining.has_value() ? (limitVal - *detail.remaining) : 0);
+            QString desc = QString("Rate: %1/%2 per 5 hours").arg(usedVal, 0, 'f', 0).arg(limitVal, 0, 'f', 0);
+            RateWindow rw = makeKimiWindow(detail, 300, desc);
             snapshot.secondary = rw;
         }
     }

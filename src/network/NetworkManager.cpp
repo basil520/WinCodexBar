@@ -32,7 +32,12 @@ void applyHeaders(QNetworkRequest& request,
     }
 }
 
-QByteArray waitForReply(QNetworkReply* reply, int timeoutMs)
+struct ReplyResult {
+    QByteArray data;
+    int httpStatus = 0;
+};
+
+ReplyResult waitForReplyWithStatus(QNetworkReply* reply, int timeoutMs)
 {
     if (g_shuttingDown) {
         reply->abort();
@@ -61,17 +66,23 @@ QByteArray waitForReply(QNetworkReply* reply, int timeoutMs)
     loop.exec();
     pollTimer.stop();
 
-    QByteArray data;
+    ReplyResult result;
     if (timeoutTimer.isActive()) {
         timeoutTimer.stop();
+        result.httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         if (reply->error() == QNetworkReply::NoError) {
-            data = reply->readAll();
+            result.data = reply->readAll();
         }
     } else {
         reply->abort();
     }
     reply->deleteLater();
-    return data;
+    return result;
+}
+
+QByteArray waitForReply(QNetworkReply* reply, int timeoutMs)
+{
+    return waitForReplyWithStatus(reply, timeoutMs).data;
 }
 
 QJsonObject parseJsonObject(const QByteArray& data)
@@ -167,6 +178,25 @@ QJsonObject NetworkManager::postJsonSync(
     return parseJsonObject(waitForReply(
         nam->post(request, data),
         timeoutMs > 0 ? timeoutMs : m_defaultTimeout));
+}
+
+std::pair<QJsonObject, int> NetworkManager::postJsonSyncWithStatus(
+    const QUrl& url,
+    const QJsonObject& body,
+    const QHash<QString, QString>& headers,
+    int timeoutMs,
+    bool http2Allowed)
+{
+    QNetworkAccessManager* nam = threadLocalNam();
+    QNetworkRequest request(url);
+    request.setAttribute(QNetworkRequest::Http2AllowedAttribute, http2Allowed);
+    applyHeaders(request, headers);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    QByteArray data = QJsonDocument(body).toJson();
+    auto result = waitForReplyWithStatus(
+        nam->post(request, data),
+        timeoutMs > 0 ? timeoutMs : m_defaultTimeout);
+    return {parseJsonObject(result.data), result.httpStatus};
 }
 
 QFuture<QJsonObject> NetworkManager::getJson(

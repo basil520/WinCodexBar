@@ -251,6 +251,8 @@ ScrollView {
 
                     UsageMetricRow {
                         visible: !root.isDetailProvider
+                            && root.usageSnapshot
+                            && root.usageSnapshot.hasTertiary === true
                         label: root.descriptor ? root.descriptor.opusLabel || qsTr("Monthly") : qsTr("Monthly")
                         metric: root.usageSnapshot ? root.usageSnapshot.tertiary : null
                         tintColor: root.brandColor

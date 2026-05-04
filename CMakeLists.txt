@@ -75,6 +75,7 @@ set(CORE_SOURCES
     src/providers/claude/ClaudeProvider.cpp
     src/providers/cursor/CursorProvider.cpp
     src/providers/kimi/KimiProvider.cpp
+    src/providers/kimi/KimiTokenResolver.cpp
     src/providers/opencode/OpenCodeProvider.cpp
     src/providers/opencode/OpenCodeGoProvider.cpp
     src/providers/opencode/OpenCodeUtils.cpp
@@ -175,6 +176,9 @@ set(CORE_HEADERS
     src/providers/codex/ManagedCodexAccountService.h
     src/providers/codex/CodexLoginRunner.h
     src/providers/kimi/KimiProvider.h
+    src/providers/kimi/KimiAPIError.h
+    src/providers/kimi/KimiTokenResolver.h
+    src/providers/kimi/KimiModels.h
     src/providers/opencode/OpenCodeProvider.h
     src/providers/opencode/OpenCodeGoProvider.h
     src/providers/opencode/OpenCodeUtils.h

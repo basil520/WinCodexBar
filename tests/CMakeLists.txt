@@ -306,3 +306,10 @@ target_include_directories(tst_CLI PRIVATE ${COMMON_INCLUDE})
 target_compile_definitions(tst_CLI PRIVATE ${COMMON_DEFINES})
 target_link_libraries(tst_CLI PRIVATE codexbar_core Qt6::Core Qt6::Test)
 add_wincodexbar_test(tst_CLI tst_CLI)
+
+# KimiProvider unit tests
+add_executable(tst_KimiProvider tst_KimiProvider.cpp)
+target_include_directories(tst_KimiProvider PRIVATE ${COMMON_INCLUDE})
+target_compile_definitions(tst_KimiProvider PRIVATE ${COMMON_DEFINES})
+target_link_libraries(tst_KimiProvider PRIVATE codexbar_core Qt6::Core Qt6::Test)
+add_wincodexbar_test(tst_KimiProvider tst_KimiProvider)
