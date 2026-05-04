@@ -42,6 +42,7 @@ ScrollView {
 
     // Reactive binding for codexAccountState
     Connections {
+        enabled: root.visible
         target: UsageStore
         function onCodexAccountStateChanged() {
             if (root.providerId === "codex") {

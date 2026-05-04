@@ -16,6 +16,8 @@
 #include <QUrl>
 #include <QVariantMap>
 #include <QtQml>
+#include <QThreadPool>
+#include <QThread>
 #include <algorithm>
 #include <functional>
 
@@ -424,6 +426,12 @@ int main(int argc, char* argv[]) {
             runtimeManager->registerRuntime(pid, new GenericRuntime(provider));
         }
     }
+
+    // Increase global thread pool to handle concurrent provider refreshes
+    // without exhausting workers. Default is QThread::idealThreadCount().
+    int idealThreads = QThread::idealThreadCount();
+    int poolMax = qMax(idealThreads * 2, 12);
+    QThreadPool::globalInstance()->setMaxThreadCount(poolMax);
 
     runtimeManager->startAll();
 

@@ -21,7 +21,7 @@ bool AntigravityLocalStrategy::findProcess(int& port, QString& csrfToken) {
     QProcess proc;
     proc.start("powershell", {"-Command",
         "Get-CimInstance Win32_Process | Where-Object {$_.Name -like 'antigravity*'} | Select-Object -First 1 -ExpandProperty CommandLine"});
-    proc.waitForFinished(5000);
+    proc.waitForFinished(2000);
     QString cmdline = QString::fromUtf8(proc.readAllStandardOutput()).trimmed();
 
     if (cmdline.isEmpty()) return false;
@@ -37,7 +37,7 @@ bool AntigravityLocalStrategy::findProcess(int& port, QString& csrfToken) {
             QProcess probe;
             probe.start("powershell", {"-Command",
                 QString("Test-NetConnection -ComputerName 127.0.0.1 -Port %1 -WarningAction SilentlyContinue | Select-Object -ExpandProperty TcpTestSucceeded").arg(p)});
-            probe.waitForFinished(3000);
+            probe.waitForFinished(1000);
             QString result = QString::fromUtf8(probe.readAllStandardOutput()).trimmed().toLower();
             if (result == "true") {
                 port = p;

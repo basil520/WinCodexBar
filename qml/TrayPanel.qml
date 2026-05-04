@@ -257,22 +257,28 @@ Rectangle {
                         clip: true
 
                         Row {
+                            id: dailyBarChart
                             anchors.fill: parent
                             anchors.margins: 8
                             spacing: 2
                             layoutDirection: Qt.RightToLeft
+                            property double dailyMaxCost: {
+                                var maxCost = 0
+                                if (costData.daily) {
+                                    for (var i = 0; i < costData.daily.length; i++)
+                                        maxCost = Math.max(maxCost, costData.daily[i].costUSD)
+                                }
+                                return maxCost
+                            }
 
                             Repeater {
                                 model: costData.daily ? costData.daily.slice(-21) : []
                                 delegate: Rectangle {
                                     width: Math.max(2, parent.width / 21 - 2)
                                     height: {
-                                        var maxCost = 0
-                                        for (var i = 0; i < costData.daily.length; i++)
-                                            maxCost = Math.max(maxCost, costData.daily[i].costUSD)
                                         var chartHeight = Math.max(2, parent ? parent.height : 44)
-                                        return maxCost > 0
-                                            ? Math.max(2, chartHeight * modelData.costUSD / maxCost)
+                                        return dailyBarChart.dailyMaxCost > 0
+                                            ? Math.max(2, chartHeight * modelData.costUSD / dailyBarChart.dailyMaxCost)
                                             : 2
                                     }
                                     y: Math.max(0, (parent ? parent.height : 44) - height)
@@ -460,7 +466,6 @@ Rectangle {
                 property string primaryLabel: snap.displayName === "OpenRouter" && snap.openRouterUsage !== undefined
                     ? qsTr("API key limit") : snap.sessionLabel
 
-                Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
                 Behavior on border.color { ColorAnimation { duration: 150 } }
 
                 MouseArea {
@@ -1129,38 +1134,39 @@ Rectangle {
         return value.toFixed(4)
     }
 
+    property var brandColors: {
+        "codex": "#49A3B0",
+        "claude": "#CC7C5E",
+        "cursor": "#5B8DFA",
+        "gemini": "#8860D0",
+        "copilot": "#2DA44E",
+        "zai": "#E85A6A",
+        "opencode": "#E44D26",
+        "warp": "#00BCD4",
+        "mistral": "#F77F00",
+        "openrouter": "#FF6B6B",
+        "ollama": "#E6EF6C",
+        "kilo": "#7C3AED",
+        "kiro": "#F59E0B",
+        "kimik2": "#06B6D4",
+        "minimax": "#EC4899",
+        "perplexity": "#22C55E",
+        "kimi": "#8B5CF6",
+        "abacus": "#6366F1",
+        "alibaba": "#F97316",
+        "augment": "#14B8A6",
+        "amp": "#D946EF",
+        "factory": "#84CC16",
+        "jetbrains": "#F000F0",
+        "vertexai": "#4285F4",
+        "deepseek": "#4D6BFE",
+        "antigravity": "#10B981",
+        "synthetic": "#6366F1",
+        "opencodego": "#3B82F6"
+    }
+
     function brandColorFor(providerId) {
-        var colors = {
-            "codex": "#49A3B0",
-            "claude": "#CC7C5E",
-            "cursor": "#5B8DFA",
-            "gemini": "#8860D0",
-            "copilot": "#2DA44E",
-            "zai": "#E85A6A",
-            "opencode": "#E44D26",
-            "warp": "#00BCD4",
-            "mistral": "#F77F00",
-            "openrouter": "#FF6B6B",
-            "ollama": "#E6EF6C",
-            "kilo": "#7C3AED",
-            "kiro": "#F59E0B",
-            "kimik2": "#06B6D4",
-            "minimax": "#EC4899",
-            "perplexity": "#22C55E",
-            "kimi": "#8B5CF6",
-            "abacus": "#6366F1",
-            "alibaba": "#F97316",
-            "augment": "#14B8A6",
-            "amp": "#D946EF",
-            "factory": "#84CC16",
-            "jetbrains": "#F000F0",
-            "vertexai": "#4285F4",
-            "deepseek": "#4D6BFE",
-            "antigravity": "#10B981",
-            "synthetic": "#6366F1",
-            "opencodego": "#3B82F6"
-        }
-        return colors[providerId] || "#4A90D9"
+        return brandColors[providerId] || "#4A90D9"
     }
 
     function timeAgo(ms) {

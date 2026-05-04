@@ -47,7 +47,7 @@ ProviderFetchResult AugmentCLIStrategy::fetchSync(const ProviderFetchContext& ct
     QStringList env = QProcessEnvironment::systemEnvironment().toStringList();
     proc.setProcessEnvironment(QProcessEnvironment::systemEnvironment());
     proc.start(auggiePath, {"account", "status"});
-    if (!proc.waitForFinished(10000)) {
+    if (!proc.waitForFinished(5000)) {
         proc.kill();
         result.success = false;
         result.errorMessage = "auggie account status timed out";

@@ -29,8 +29,8 @@ public:
         const ProviderFetchContext& ctx
     );
 
-    static constexpr int STRATEGY_TIMEOUT_MS = 15000;
-    static constexpr int PIPELINE_TIMEOUT_MS = 30000;
+    static constexpr int STRATEGY_TIMEOUT_MS = 8000;
+    static constexpr int PIPELINE_TIMEOUT_MS = 15000;
 
 signals:
     void strategyStarted(const QString& strategyID);

@@ -1512,15 +1512,20 @@ bool UsageStore::setProviderSecret(const QString& providerId,
     if (trimmed.isEmpty()) return false;
 
     if (!descriptor->credentialTarget.isEmpty()) {
-        bool ok = ProviderCredentialStore::write(descriptor->credentialTarget, {}, trimmed.toUtf8());
-        // Update cache after write
-        {
-            QMutexLocker locker(&m_credentialCacheMutex);
-            m_credentialCache[descriptor->credentialTarget] = {trimmed.toUtf8(), QDateTime::currentDateTime()};
-            m_credentialMissing.remove(descriptor->credentialTarget);
-        }
-        emit providerConnectionTestChanged(providerId);
-        return ok;
+        // Move WinCred write to background thread to avoid blocking UI
+        QString target = descriptor->credentialTarget;
+        QtConcurrent::run(m_threadPool, [this, target, trimmed, providerId]() {
+            bool ok = ProviderCredentialStore::write(target, {}, trimmed.toUtf8());
+            if (ok) {
+                QMutexLocker locker(&m_credentialCacheMutex);
+                m_credentialCache[target] = {trimmed.toUtf8(), QDateTime::currentDateTime()};
+                m_credentialMissing.remove(target);
+            }
+            QMetaObject::invokeMethod(this, [this, providerId]() {
+                emit providerConnectionTestChanged(providerId);
+            }, Qt::QueuedConnection);
+        });
+        return true; // Optimistic success
     } else {
         // Fall back to settings store when no credential target is configured
         if (m_settingsStore) {
@@ -1538,15 +1543,20 @@ bool UsageStore::clearProviderSecret(const QString& providerId, const QString& k
     }
 
     if (!descriptor->credentialTarget.isEmpty()) {
-        bool ok = ProviderCredentialStore::remove(descriptor->credentialTarget);
-        // Clear cache after removal
-        {
-            QMutexLocker locker(&m_credentialCacheMutex);
-            m_credentialCache.remove(descriptor->credentialTarget);
-            m_credentialMissing[descriptor->credentialTarget] = true;
-        }
-        emit providerConnectionTestChanged(providerId);
-        return ok;
+        // Move WinCred remove to background thread to avoid blocking UI
+        QString target = descriptor->credentialTarget;
+        QtConcurrent::run(m_threadPool, [this, target, providerId]() {
+            ProviderCredentialStore::remove(target);
+            {
+                QMutexLocker locker(&m_credentialCacheMutex);
+                m_credentialCache.remove(target);
+                m_credentialMissing[target] = true;
+            }
+            QMetaObject::invokeMethod(this, [this, providerId]() {
+                emit providerConnectionTestChanged(providerId);
+            }, Qt::QueuedConnection);
+        });
+        return true; // Optimistic success
     } else {
         // Fall back to settings store when no credential target is configured
         if (m_settingsStore) {

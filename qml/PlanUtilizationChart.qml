@@ -205,6 +205,7 @@ Rectangle {
     }
 
     Connections {
+        enabled: chartRoot.visible
         target: UsageStore
         function onSnapshotRevisionChanged() {
             chartRoot.refreshChart()
@@ -212,6 +213,7 @@ Rectangle {
     }
 
     Connections {
+        enabled: chartRoot.visible
         target: LanguageManager
         function onTranslationRevisionChanged() {
             chartRoot.ensureValidSeries()

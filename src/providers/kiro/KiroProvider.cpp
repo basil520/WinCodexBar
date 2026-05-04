@@ -81,7 +81,7 @@ ProviderFetchResult KiroCLIStrategy::fetchSync(const ProviderFetchContext&) {
     QString binary = BinaryLocator::resolve("kiro-cli");
     QProcess proc;
     proc.start(binary, {"chat", "--no-interactive", "/usage"});
-    if (!proc.waitForFinished(20000)) {
+    if (!proc.waitForFinished(5000)) {
         proc.kill();
         result.errorMessage = "kiro-cli timed out";
         return result;

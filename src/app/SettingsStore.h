@@ -82,6 +82,9 @@ public:
     Q_INVOKABLE void resetToDefaults();
     QString configPath() const;
 
+private:
+    void scheduleSave();
+
 signals:
     void refreshFrequencyChanged();
     void launchAtLoginChanged();
@@ -102,6 +105,7 @@ signals:
 private:
     QSettings m_settings;
     QJsonObject m_config;
+    QTimer m_saveDelayTimer;
 
     int m_refreshFrequency = 5;
     bool m_launchAtLogin = false;

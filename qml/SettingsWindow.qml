@@ -283,6 +283,7 @@ Rectangle {
                         }
 
                         Connections {
+                            enabled: settingsWindow.visible
                             target: UsageStore
                             function onProviderIDsChanged() {
                                 providersPane.providers = UsageStore.providerList()

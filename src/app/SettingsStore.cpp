@@ -26,6 +26,10 @@ SettingsStore::SettingsStore(QObject* parent)
     m_sessionQuotaNotificationsEnabled = m_settings.value("sessionQuotaNotificationsEnabled", true).toBool();
     m_language = m_settings.value("language", "en").toString();
     loadConfig();
+
+    m_saveDelayTimer.setSingleShot(true);
+    m_saveDelayTimer.setInterval(500);
+    connect(&m_saveDelayTimer, &QTimer::timeout, this, &SettingsStore::saveConfig);
 }
 
 QString SettingsStore::configPath() const {
@@ -157,7 +161,7 @@ QStringList SettingsStore::providerOrder() const {
 
 void SettingsStore::setProviderOrder(const QStringList& order) {
     m_providerOrder = order;
-    saveConfig();
+    scheduleSave();
     emit providerOrderChanged();
 }
 
@@ -176,11 +180,11 @@ QVariant SettingsStore::providerSetting(const QString& providerID,
 }
 
 void SettingsStore::setProviderSetting(const QString& providerID,
-                                        const QString& key,
-                                        const QVariant& value)
+                                         const QString& key,
+                                         const QVariant& value)
 {
     m_providerSettings[providerID][key] = value;
-    saveConfig();
+    scheduleSave();
     emit providerSettingChanged(providerID, key);
 }
 
@@ -207,6 +211,13 @@ void SettingsStore::loadConfig() {
             m_providerOrder.append(v.toString());
         }
     }
+}
+
+void SettingsStore::scheduleSave() {
+    if (m_saveDelayTimer.isActive()) {
+        m_saveDelayTimer.stop();
+    }
+    m_saveDelayTimer.start();
 }
 
 void SettingsStore::saveConfig() {

@@ -167,7 +167,7 @@ private slots:
         ProviderPipeline pipeline;
         ProviderFetchContext ctx;
 
-        // Strategy that takes longer than PIPELINE_TIMEOUT_MS (30s)
+        // Strategy that takes longer than PIPELINE_TIMEOUT_MS
         // to trigger the timeout check branch
         class SlowStrategy : public IFetchStrategy {
         public:
@@ -183,18 +183,20 @@ private slots:
             }
         };
 
-        // Create 35 failed strategies (35s > 30s PIPELINE_TIMEOUT_MS)
+        // Create enough strategies to exceed PIPELINE_TIMEOUT_MS
+        int timeoutSec = ProviderPipeline::PIPELINE_TIMEOUT_MS / 1000;
+        int strategyCount = timeoutSec + 5;
         QVector<IFetchStrategy*> strategies;
-        for (int i = 0; i < 35; ++i) {
+        for (int i = 0; i < strategyCount; ++i) {
             strategies.append(new SlowStrategy());
         }
 
         ProviderFetchResult result = pipeline.execute(strategies, ctx);
 
-        // Pipeline should timeout before all 35 strategies run
+        // Pipeline should timeout before all strategies run
         QVERIFY(!result.success);
         QVERIFY(result.errorMessage.contains("timeout"));
-        QVERIFY(result.errorMessage.contains("30000"));
+        QVERIFY(result.errorMessage.contains(QString::number(ProviderPipeline::PIPELINE_TIMEOUT_MS)));
 
         // Cleanup: delete remaining strategies that didn't get cleanup'd
         qDeleteAll(strategies);
