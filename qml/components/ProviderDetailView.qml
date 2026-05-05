@@ -479,8 +479,15 @@ ScrollView {
                                         color: AppTheme.textPrimary
                                         font.pixelSize: AppTheme.fontSizeMd
                                         text: modelData.value || ""
+                                        property string committedText: modelData.value || ""
                                         placeholderText: modelData.placeholder || ""
                                         placeholderTextColor: AppTheme.textTertiary
+
+                                        function commitIfChanged() {
+                                            if (text === committedText) return
+                                            committedText = text
+                                            root.settingChanged(modelData.key, text)
+                                        }
 
                                         background: Rectangle {
                                             radius: 6
@@ -489,9 +496,8 @@ ScrollView {
                                             border.width: 1
                                         }
 
-                                        onTextEdited: function() {
-                                            root.settingChanged(modelData.key, text)
-                                        }
+                                        onAccepted: commitIfChanged()
+                                        onEditingFinished: commitIfChanged()
                                     }
                                 }
 

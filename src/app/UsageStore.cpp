@@ -32,6 +32,8 @@
 #include <QFutureWatcher>
 #include <QElapsedTimer>
 
+#include <memory>
+
 // Performance probe: logs when a scoped block exceeds thresholdMicros.
 // Only active in debug builds to avoid overhead in production.
 #ifdef QT_DEBUG
@@ -120,9 +122,12 @@ UsageStore::UsageStore(QObject* parent)
     , m_pipeline(new ProviderPipeline(this))
     , m_historyStore(new PlanUtilizationHistoryStore(this))
     , m_threadPool(new QThreadPool(this))
+    , m_interactiveThreadPool(new QThreadPool(this))
 {
     m_threadPool->setMaxThreadCount(qMax(4, QThread::idealThreadCount()));
     m_threadPool->setExpiryTimeout(30000);
+    m_interactiveThreadPool->setMaxThreadCount(qMax(2, QThread::idealThreadCount() / 2));
+    m_interactiveThreadPool->setExpiryTimeout(30000);
 
     // Initialize batch update controller to avoid signal storm
     m_batchUpdater = new BatchUpdateController(this);
@@ -272,10 +277,9 @@ ProviderFetchContext UsageStore::buildFetchContextForProvider(const QString& pro
     ctx.allowInteractiveAuth = false;
     ctx.networkTimeoutMs = ProviderPipeline::STRATEGY_TIMEOUT_MS;
 
-    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    const auto envKeys = env.keys();
-    for (const auto& key : envKeys) {
-        ctx.env[key] = env.value(key);
+    const auto& env = cachedSystemEnv();
+    for (auto it = env.constBegin(); it != env.constEnd(); ++it) {
+        ctx.env[it.key()] = it.value();
     }
 
     auto addSetting = [&](const QString& key, const QVariant& defaultValue = QVariant()) {
@@ -1115,7 +1119,7 @@ void UsageStore::doRefresh(const QStringList& ids) {
     }
 
     for (const auto& id : ids) {
-        refreshProvider(id);
+        refreshProviderWithPool(id, m_threadPool);
     }
 }
 
@@ -1139,6 +1143,10 @@ void UsageStore::clearCache() {
 }
 
 void UsageStore::refreshProvider(const QString& providerId) {
+    refreshProviderWithPool(providerId, m_interactiveThreadPool);
+}
+
+void UsageStore::refreshProviderWithPool(const QString& providerId, QThreadPool* pool) {
     // Ensure count is sane when called individually (outside doRefresh).
     if (m_pendingRefreshes <= 0) {
         m_batchRefreshInProgress = false;
@@ -1167,7 +1175,7 @@ void UsageStore::refreshProvider(const QString& providerId) {
 
     // buildFetchContextForProvider is moved into the worker thread to avoid
     // blocking the main thread with WinCred API calls on cache miss.
-    QtConcurrent::run(m_threadPool, [this, providerId, provider]() {
+    QtConcurrent::run(pool ? pool : m_threadPool, [this, providerId, provider]() {
         ProviderFetchContext ctx = buildFetchContextForProvider(providerId);
 
         if (!isSourceModeAllowed(providerId, ctx.sourceMode)) {
@@ -1602,14 +1610,15 @@ bool UsageStore::setProviderSecret(const QString& providerId,
     if (!descriptor->credentialTarget.isEmpty()) {
         // Move WinCred write to background thread to avoid blocking UI
         QString target = descriptor->credentialTarget;
-        QtConcurrent::run(m_threadPool, [this, target, trimmed, providerId]() {
+        QtConcurrent::run(m_threadPool, [this, target, trimmed, providerId, key]() {
             bool ok = ProviderCredentialStore::write(target, {}, trimmed.toUtf8());
             if (ok) {
                 QMutexLocker locker(&m_credentialCacheMutex);
                 m_credentialCache[target] = {trimmed.toUtf8(), QDateTime::currentDateTime()};
                 m_credentialMissing.remove(target);
             }
-            QMetaObject::invokeMethod(this, [this, providerId]() {
+            QMetaObject::invokeMethod(this, [this, providerId, key]() {
+                emit providerSecretChanged(providerId, key);
                 emit providerConnectionTestChanged(providerId);
             }, Qt::QueuedConnection);
         });
@@ -1619,6 +1628,7 @@ bool UsageStore::setProviderSecret(const QString& providerId,
         if (m_settingsStore) {
             m_settingsStore->setProviderSetting(providerId, key, trimmed);
         }
+        emit providerSecretChanged(providerId, key);
         emit providerConnectionTestChanged(providerId);
         return true;
     }
@@ -1633,14 +1643,15 @@ bool UsageStore::clearProviderSecret(const QString& providerId, const QString& k
     if (!descriptor->credentialTarget.isEmpty()) {
         // Move WinCred remove to background thread to avoid blocking UI
         QString target = descriptor->credentialTarget;
-        QtConcurrent::run(m_threadPool, [this, target, providerId]() {
+        QtConcurrent::run(m_threadPool, [this, target, providerId, key]() {
             ProviderCredentialStore::remove(target);
             {
                 QMutexLocker locker(&m_credentialCacheMutex);
                 m_credentialCache.remove(target);
                 m_credentialMissing[target] = true;
             }
-            QMetaObject::invokeMethod(this, [this, providerId]() {
+            QMetaObject::invokeMethod(this, [this, providerId, key]() {
+                emit providerSecretChanged(providerId, key);
                 emit providerConnectionTestChanged(providerId);
             }, Qt::QueuedConnection);
         });
@@ -1650,6 +1661,7 @@ bool UsageStore::clearProviderSecret(const QString& providerId, const QString& k
         if (m_settingsStore) {
             m_settingsStore->setProviderSetting(providerId, key, QVariant());
         }
+        emit providerSecretChanged(providerId, key);
         emit providerConnectionTestChanged(providerId);
         return true;
     }
@@ -1691,13 +1703,6 @@ void UsageStore::testProviderConnection(const QString& providerId) {
         return;
     }
 
-    ProviderFetchContext ctx = buildFetchContextForProvider(providerId);
-    ctx.allowInteractiveAuth = false;
-    if (!isSourceModeAllowed(providerId, ctx.sourceMode)) {
-        failNow(QString("Unsupported source mode: %1").arg(sourceModeToString(ctx.sourceMode)));
-        return;
-    }
-
     qDebug() << "[TestConnection] Starting test for provider:" << providerId;
     setProviderConnectionTest(providerId, {
         {"state", "testing"},
@@ -1707,7 +1712,28 @@ void UsageStore::testProviderConnection(const QString& providerId) {
         {"finishedAt", 0},
         {"durationMs", 0}
     });
-    QtConcurrent::run(m_threadPool, [this, providerId, provider, ctx, startedAt]() {
+
+    QtConcurrent::run(m_interactiveThreadPool, [this, providerId, provider, startedAt]() {
+        ProviderFetchContext ctx = buildFetchContextForProvider(providerId);
+        ctx.allowInteractiveAuth = false;
+        if (!isSourceModeAllowed(providerId, ctx.sourceMode)) {
+            ProviderFetchResult errResult;
+            errResult.success = false;
+            errResult.errorMessage = QString("Unsupported source mode: %1").arg(sourceModeToString(ctx.sourceMode));
+            QMetaObject::invokeMethod(this, [this, providerId, errResult, startedAt]() {
+                const qint64 finishedAt = QDateTime::currentDateTime().toMSecsSinceEpoch();
+                setProviderConnectionTest(providerId, {
+                    {"state", "failed"},
+                    {"message", errResult.errorMessage},
+                    {"details", errResult.errorMessage},
+                    {"startedAt", startedAt},
+                    {"finishedAt", finishedAt},
+                    {"durationMs", finishedAt - startedAt}
+                });
+            }, Qt::QueuedConnection);
+            return;
+        }
+
         ProviderPipeline pipeline;
         ProviderFetchResult result = pipeline.executeProvider(provider, ctx);
         QMetaObject::invokeMethod(this, [this, providerId, result, startedAt]() {
@@ -1870,6 +1896,21 @@ void UsageStore::setProviderStatus(const QString& providerId, const QVariantMap&
     emit providerStatusChanged(providerId);
 }
 
+void UsageStore::setProviderStatuses(const QHash<QString, QVariantMap>& statuses) {
+    if (statuses.isEmpty()) return;
+
+    for (auto it = statuses.constBegin(); it != statuses.constEnd(); ++it) {
+        m_providerStatuses[it.key()] = it.value();
+    }
+
+    m_statusRevision++;
+    m_providerListCacheValid = false;
+    emit statusRevisionChanged();
+    for (auto it = statuses.constBegin(); it != statuses.constEnd(); ++it) {
+        emit providerStatusChanged(it.key());
+    }
+}
+
 QVariantMap UsageStore::providerStatus(const QString& providerId) const {
     return m_providerStatuses.value(providerId, QVariantMap{{"state", "unknown"}});
 }
@@ -1916,6 +1957,24 @@ void UsageStore::refreshProviderStatuses() {
     const bool enabled = m_settingsStore ? m_settingsStore->statusChecksEnabled() : true;
     if (!enabled) return;
 
+    struct StatusBatch {
+        QMutex mutex;
+        QHash<QString, QVariantMap> statuses;
+        int pending = 0;
+    };
+
+    auto batch = std::make_shared<StatusBatch>();
+    auto finishBatch = [this, batch]() {
+        QHash<QString, QVariantMap> statuses;
+        {
+            QMutexLocker locker(&batch->mutex);
+            statuses = batch->statuses;
+        }
+        QMetaObject::invokeMethod(this, [this, statuses]() {
+            setProviderStatuses(statuses);
+        }, Qt::QueuedConnection);
+    };
+
     const auto ids = ProviderRegistry::instance().providerIDs();
     for (const auto& id : ids) {
         auto desc = ProviderRegistry::instance().descriptor(id);
@@ -1923,11 +1982,17 @@ void UsageStore::refreshProviderStatuses() {
 
         const QString endpoint = statusEndpointFor(desc->metadata.statusPageURL);
         if (endpoint.isEmpty()) {
-            setProviderStatus(id, {{"state", "unknown"}});
+            QMutexLocker locker(&batch->mutex);
+            batch->statuses[id] = {{"state", "unknown"}};
             continue;
         }
 
-        QtConcurrent::run(m_threadPool, [this, id, endpoint]() {
+        {
+            QMutexLocker locker(&batch->mutex);
+            batch->pending++;
+        }
+
+        QtConcurrent::run(m_threadPool, [batch, finishBatch, id, endpoint]() {
             QJsonObject json = NetworkManager::instance().getJsonSync(QUrl(endpoint), {}, 8000);
             QString state = "unknown";
             QString description;
@@ -1936,14 +2001,30 @@ void UsageStore::refreshProviderStatuses() {
                 state = mappedStatusFromIndicator(status.value("indicator").toString());
                 description = status.value("description").toString();
             }
-            QMetaObject::invokeMethod(this, [this, id, state, description]() {
+            bool shouldFinish = false;
+            {
+                QMutexLocker locker(&batch->mutex);
                 QVariantMap map;
                 map["state"] = state;
                 map["description"] = description;
                 map["updatedAt"] = QDateTime::currentDateTime().toMSecsSinceEpoch();
-                setProviderStatus(id, map);
-            }, Qt::QueuedConnection);
+                batch->statuses[id] = map;
+                batch->pending--;
+                shouldFinish = batch->pending == 0;
+            }
+            if (shouldFinish) {
+                finishBatch();
+            }
         });
+    }
+
+    bool shouldFinish = false;
+    {
+        QMutexLocker locker(&batch->mutex);
+        shouldFinish = batch->pending == 0 && !batch->statuses.isEmpty();
+    }
+    if (shouldFinish) {
+        finishBatch();
     }
 }
 
@@ -2441,6 +2522,9 @@ void UsageStore::shutdown()
     stopAutoRefresh();
     if (m_threadPool) {
         m_threadPool->clear();
+    }
+    if (m_interactiveThreadPool) {
+        m_interactiveThreadPool->clear();
     }
     if (m_historyStore) {
         m_historyStore->stopSaveTimer();

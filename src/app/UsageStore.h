@@ -142,6 +142,7 @@ signals:
     void providerConnectionTestChanged(const QString& providerId);
     void providerLoginStateChanged(const QString& providerId);
     void providerStatusChanged(const QString& providerId);
+    void providerSecretChanged(const QString& providerId, const QString& key);
     void statusRevisionChanged();
 
     // Codex multi-account signals
@@ -164,6 +165,8 @@ private:
     void setProviderLoginState(const QString& providerId, const QVariantMap& state);
     void setProviderConnectionTest(const QString& providerId, const QVariantMap& state);
     void setProviderStatus(const QString& providerId, const QVariantMap& status);
+    void setProviderStatuses(const QHash<QString, QVariantMap>& statuses);
+    void refreshProviderWithPool(const QString& providerId, QThreadPool* pool);
     void configureStatusPolling();
 
     QTimer m_refreshTimer;
@@ -187,6 +190,7 @@ private:
     QHash<QString, CostUsageSnapshot> m_perProviderCostUsage;
     QVector<ProviderCostUsageSnapshot> m_allProviderCostUsage;
     ProviderPipeline* m_pipeline = nullptr;
+    QThreadPool* m_interactiveThreadPool = nullptr;
     SettingsStore* m_settingsStore = nullptr;
     PlanUtilizationHistoryStore* m_historyStore = nullptr;
     int m_pendingRefreshes = 0;

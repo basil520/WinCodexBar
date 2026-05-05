@@ -68,7 +68,7 @@ class MockUsageStore : public QObject {
     Q_PROPERTY(QVariantList codexFetchAttempts READ codexFetchAttempts CONSTANT)
 public:
     QStringList providerIDs() const { return {"codex", "claude", "cursor"}; }
-    QStringList allProviderIDs() const { return {"codex", "claude", "cursor", "zai"}; }
+    Q_INVOKABLE QStringList allProviderIDs() const { return {"codex", "claude", "cursor", "zai"}; }
     bool isRefreshing() const { return false; }
     bool costUsageEnabled() const { return false; }
     bool costUsageRefreshing() const { return false; }
@@ -87,7 +87,8 @@ public:
         m["hasUsage"] = true; m["updatedAt"] = 0;
         return m;
     }
-    QVariantList providerList() const {
+    Q_INVOKABLE QVariantList providerList() const {
+        ++providerListCalls;
         auto makeEntry = [](const QString& id, const QString& name, bool enabled) {
             QVariantMap e; e["id"] = id; e["name"] = name; e["enabled"] = enabled;
             e["sessionLabel"] = "Session"; e["weeklyLabel"] = "Weekly";
@@ -103,10 +104,14 @@ public:
     }
     Q_INVOKABLE QString providerError(const QString&) const { return {}; }
     Q_INVOKABLE QVariantMap providerStatus(const QString&) const { return {{"state", "ok"}}; }
+    Q_INVOKABLE QVariantMap providerUsageSnapshot(const QString&) const { return {}; }
     Q_INVOKABLE QVariantMap providerConnectionTest(const QString&) const { return {{"state", "idle"}}; }
     Q_INVOKABLE QVariantMap providerSecretStatus(const QString&, const QString&) const { return {{"configured", false}}; }
     Q_INVOKABLE QVariantList providerSettingsFields(const QString&) const { return {}; }
-    Q_INVOKABLE QVariantMap providerDescriptorData(const QString&) const { return {}; }
+    Q_INVOKABLE QVariantMap providerDescriptorData(const QString&) const {
+        ++providerDescriptorCalls;
+        return {};
+    }
     Q_INVOKABLE QString codexActiveAccountID() const { return "live-system"; }
     Q_INVOKABLE QVariantList codexAccounts() const { return {}; }
     Q_INVOKABLE QVariantMap codexAccountState() const { return {}; }
@@ -122,8 +127,17 @@ public:
     Q_INVOKABLE void refreshCostUsage() {}
     Q_INVOKABLE void refreshProvider(const QString&) {}
     Q_INVOKABLE void setProviderEnabled(const QString&, bool) {}
-    Q_INVOKABLE void setProviderSetting(const QString&, const QString&, const QVariant&) {}
-    Q_INVOKABLE bool setProviderSecret(const QString&, const QString&, const QString&) { return false; }
+    Q_INVOKABLE void setProviderSetting(const QString&, const QString& key, const QVariant& value) {
+        ++setProviderSettingCalls;
+        lastSettingKey = key;
+        lastSettingValue = value;
+    }
+    Q_INVOKABLE bool setProviderSecret(const QString&, const QString& key, const QString& value) {
+        ++setProviderSecretCalls;
+        lastSecretKey = key;
+        lastSecretValue = value;
+        return true;
+    }
     Q_INVOKABLE bool clearProviderSecret(const QString&, const QString&) { return false; }
     Q_INVOKABLE void testProviderConnection(const QString&) {}
     Q_INVOKABLE void startProviderLogin(const QString&) {}
@@ -131,6 +145,30 @@ public:
     Q_INVOKABLE void refreshProviderStatuses() {}
     Q_INVOKABLE void moveProvider(int, int) {}
     Q_INVOKABLE void updateProviderIDs() {}
+
+    void resetCounters() {
+        providerListCalls = 0;
+        providerDescriptorCalls = 0;
+        setProviderSettingCalls = 0;
+        setProviderSecretCalls = 0;
+        lastSettingKey.clear();
+        lastSettingValue.clear();
+        lastSecretKey.clear();
+        lastSecretValue.clear();
+    }
+
+    void emitProviderStatusChangedForTest(const QString& providerId) {
+        emit providerStatusChanged(providerId);
+    }
+
+    mutable int providerListCalls = 0;
+    mutable int providerDescriptorCalls = 0;
+    int setProviderSettingCalls = 0;
+    int setProviderSecretCalls = 0;
+    QString lastSettingKey;
+    QVariant lastSettingValue;
+    QString lastSecretKey;
+    QString lastSecretValue;
 
 signals:
     void snapshotChanged(const QString&);
@@ -143,6 +181,7 @@ signals:
     void providerConnectionTestChanged(const QString&);
     void providerLoginStateChanged(const QString&);
     void providerStatusChanged(const QString&);
+    void providerSecretChanged(const QString&, const QString&);
     void statusRevisionChanged();
     void codexAccountsChanged();
     void codexActiveAccountChanged(const QString&);
@@ -207,6 +246,53 @@ private:
         qmlRegisterSingletonInstance("CodexBar", 1, 0, "UsageStore", &mockUsage);
         qmlRegisterSingletonInstance("CodexBar", 1, 0, "AppController", &mockAppCtrl);
         qmlRegisterSingletonInstance("CodexBar", 1, 0, "LanguageManager", &mockLang);
+    }
+
+    QObject* findObjectByStringProperty(QObject* root, const char* propertyName, const QString& value) const {
+        if (!root) return nullptr;
+        QVariant propertyValue = root->property(propertyName);
+        if (propertyValue.isValid() && propertyValue.toString() == value) {
+            return root;
+        }
+        const auto children = root->children();
+        for (QObject* child : children) {
+            if (QObject* match = findObjectByStringProperty(child, propertyName, value)) {
+                return match;
+            }
+        }
+        if (auto* item = qobject_cast<QQuickItem*>(root)) {
+            const auto childItems = item->childItems();
+            for (QQuickItem* childItem : childItems) {
+                if (QObject* match = findObjectByStringProperty(childItem, propertyName, value)) {
+                    return match;
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    QQuickItem* textInputByPlaceholder(QQuickItem* root, const QString& placeholder) const {
+        return qobject_cast<QQuickItem*>(
+            findObjectByStringProperty(root, "placeholderText", placeholder));
+    }
+
+    QQuickItem* createInlineRoot(QQuickView& view, const QByteArray& qml, const QUrl& url) {
+        QQmlComponent component(view.engine());
+        component.setData(qml, url);
+        if (component.status() == QQmlComponent::Error) {
+            qWarning() << component.errorString();
+        }
+        if (component.status() != QQmlComponent::Ready) {
+            return nullptr;
+        }
+        QObject* object = component.create();
+        auto* root = qobject_cast<QQuickItem*>(object);
+        if (!root) {
+            delete object;
+            return nullptr;
+        }
+        view.setContent(url, &component, root);
+        return root;
     }
 
 private slots:
@@ -306,6 +392,133 @@ private slots:
 
         // Verify the window loaded with content by checking it has child items
         QVERIFY(root->childItems().size() > 0);
+
+        view.hide();
+    }
+
+    void secretInputCommitsOnlyOnExplicitAction() {
+        QQuickView view;
+        setupEngine(*view.engine());
+        view.resize(420, 80);
+        QQuickItem* root = createInlineRoot(view, R"(
+            import QtQuick 2.15
+            import QtQuick.Controls 2.15
+            import "qrc:/qml/components" as Components
+
+            Components.SecretInput {
+                width: 400
+                height: 44
+                placeholder: "secret placeholder"
+                property int saveCount: 0
+                property string lastSecret: ""
+                onSaveRequested: function(value) {
+                    saveCount += 1
+                    lastSecret = value
+                }
+            }
+        )", QUrl("qrc:/tests/SecretInputHarness.qml"));
+
+        QVERIFY(root != nullptr);
+        view.show();
+        QTest::qWait(150);
+
+        QQuickItem* input = textInputByPlaceholder(root, "secret placeholder");
+        QVERIFY(input != nullptr);
+        input->forceActiveFocus();
+        QTest::keyClick(&view, Qt::Key_A);
+        QTest::keyClick(&view, Qt::Key_B);
+        QTest::keyClick(&view, Qt::Key_C);
+        QCoreApplication::processEvents();
+
+        QCOMPARE(root->property("saveCount").toInt(), 0);
+
+        QTest::keyClick(&view, Qt::Key_Return);
+        QTRY_COMPARE(root->property("saveCount").toInt(), 1);
+        QCOMPARE(root->property("lastSecret").toString(), QString("abc"));
+
+        view.hide();
+    }
+
+    void providerTextSettingCommitsOnlyOnExplicitAction() {
+        QQuickView view;
+        setupEngine(*view.engine());
+        view.resize(760, 560);
+        QQuickItem* root = createInlineRoot(view, R"(
+            import QtQuick 2.15
+            import QtQuick.Controls 2.15
+            import "qrc:/qml/components" as Components
+
+            Components.ProviderDetailView {
+                width: 740
+                height: 540
+                providerId: "zai"
+                descriptor: ({
+                    displayName: "z.ai",
+                    enabled: true,
+                    sessionLabel: "Session",
+                    weeklyLabel: "Weekly",
+                    sourceModes: ["api"],
+                    settingsFields: [
+                        {
+                            key: "apiBaseUrl",
+                            label: "API Base URL",
+                            type: "text",
+                            value: "",
+                            placeholder: "base url"
+                        }
+                    ]
+                })
+                connectionTest: ({state: "idle"})
+                providerStatus: ({state: "ok"})
+                usageSnapshot: null
+                property int settingCount: 0
+                property string lastKey: ""
+                property string lastValue: ""
+                onSettingChanged: function(key, value) {
+                    settingCount += 1
+                    lastKey = key
+                    lastValue = value
+                }
+            }
+        )", QUrl("qrc:/tests/ProviderDetailHarness.qml"));
+
+        QVERIFY(root != nullptr);
+        view.show();
+        QTest::qWait(250);
+
+        QQuickItem* input = textInputByPlaceholder(root, "base url");
+        QVERIFY(input != nullptr);
+        input->forceActiveFocus();
+        QTest::keyClick(&view, Qt::Key_A);
+        QTest::keyClick(&view, Qt::Key_B);
+        QTest::keyClick(&view, Qt::Key_C);
+        QCoreApplication::processEvents();
+
+        QCOMPARE(root->property("settingCount").toInt(), 0);
+
+        QTest::keyClick(&view, Qt::Key_Return);
+        QTRY_COMPARE(root->property("settingCount").toInt(), 1);
+        QCOMPARE(root->property("lastKey").toString(), QString("apiBaseUrl"));
+        QCOMPARE(root->property("lastValue").toString(), QString("abc"));
+
+        view.hide();
+    }
+
+    void settingsWindowDebouncesStatusProviderListRefresh() {
+        QQuickView view;
+        setupEngine(*view.engine());
+        view.setSource(QUrl("qrc:/qml/SettingsWindow.qml"));
+        view.show();
+        QTest::qWait(400);
+
+        mockUsage.resetCounters();
+        mockUsage.emitProviderStatusChangedForTest("codex");
+        mockUsage.emitProviderStatusChangedForTest("claude");
+        mockUsage.emitProviderStatusChangedForTest("cursor");
+        QTest::qWait(250);
+
+        QVERIFY2(mockUsage.providerListCalls <= 1,
+                 qPrintable(QString("providerList called %1 times").arg(mockUsage.providerListCalls)));
 
         view.hide();
     }

@@ -11,6 +11,7 @@
 #include <QDir>
 #include <QFile>
 #include <QStandardPaths>
+#include <QThread>
 #include <QTemporaryDir>
 #include <memory>
 
@@ -73,6 +74,66 @@ public:
     QVector<QString> supportedSourceModes() const override { return {"api"}; }
 };
 
+class ConnectionLagStrategy : public IFetchStrategy {
+public:
+    QString id() const override { return "connection-lag.strategy"; }
+    int kind() const override { return ProviderFetchKind::APIToken; }
+    bool isAvailable(const ProviderFetchContext&) const override { return true; }
+
+    ProviderFetchResult fetchSync(const ProviderFetchContext&) override {
+        ProviderFetchResult result;
+        result.success = true;
+        result.strategyID = id();
+        result.strategyKind = kind();
+        UsageSnapshot snapshot;
+        snapshot.updatedAt = QDateTime::currentDateTimeUtc();
+        result.usage = snapshot;
+        return result;
+    }
+
+    bool shouldFallback(const ProviderFetchResult&, const ProviderFetchContext&) const override {
+        return false;
+    }
+};
+
+class ConnectionLagProvider : public IProvider {
+public:
+    QString id() const override { return "connection-lag"; }
+    QString displayName() const override { return "Connection Lag"; }
+    QString sessionLabel() const override { return "Session"; }
+    QString weeklyLabel() const override { return "Weekly"; }
+    bool defaultEnabled() const override { return false; }
+
+    QVector<ProviderSettingsDescriptor> settingsDescriptors() const override {
+        return {
+            {"apiKey", "API Key", "secret", {}, {}, "com.codexbar.test.connection-lag",
+             {}, "secret", "Stored in Windows Credential Manager", false, true}
+        };
+    }
+
+    QVector<IFetchStrategy*> createStrategies(const ProviderFetchContext&) override {
+        return { new ConnectionLagStrategy() };
+    }
+
+    QVector<QString> supportedSourceModes() const override { return {"api"}; }
+};
+
+class SlowReadCredentialBackend : public ProviderCredentialBackend {
+public:
+    bool write(const QString&, const QString&, const QByteArray&) override { return true; }
+
+    std::optional<QByteArray> read(const QString&) override {
+        ++readCount;
+        QThread::msleep(220);
+        return QByteArray("slow-secret");
+    }
+
+    bool remove(const QString&) override { return true; }
+    bool exists(const QString&) override { return false; }
+
+    int readCount = 0;
+};
+
 class tst_FetchContext : public QObject {
     Q_OBJECT
 private slots:
@@ -85,6 +146,7 @@ private slots:
         ProviderRegistry::instance().registerProvider(new CodexProvider());
         ProviderRegistry::instance().registerProvider(new ZaiProvider());
         ProviderRegistry::instance().registerProvider(new DisplaySettingsProvider());
+        ProviderRegistry::instance().registerProvider(new ConnectionLagProvider());
     }
 
     void init() {
@@ -108,6 +170,7 @@ private slots:
 
     void injectsEnvironmentAndZaiRegion() {
         qputenv("CODEXBAR_TEST_ENV", "present");
+        UsageStore::rebuildSystemEnvCache();
 
         SettingsStore settings;
         settings.setProviderSetting("zai", "apiRegion", "bigmodelCN");
@@ -121,6 +184,16 @@ private slots:
         QCOMPARE(ctx.env.value("CODEXBAR_TEST_ENV"), QString("present"));
         QCOMPARE(ctx.env.value("ZAI_API_REGION"), QString("bigmodelCN"));
         QCOMPARE(ctx.settings.get("apiRegion").toString(), QString("bigmodelCN"));
+    }
+
+    void rebuildSystemEnvCacheRefreshesFetchContextEnv() {
+        qputenv("CODEXBAR_TEST_ENV", "updated-by-cache");
+        UsageStore::rebuildSystemEnvCache();
+
+        UsageStore store;
+        ProviderFetchContext ctx = store.buildFetchContextForProvider("zai");
+
+        QCOMPARE(ctx.env.value("CODEXBAR_TEST_ENV"), QString("updated-by-cache"));
     }
 
     void mapsSourceModeAndManualCookieSettings() {
@@ -274,6 +347,28 @@ private slots:
         QCOMPARE(revisionSpy.count(), 3);
         // snapshotChanged is no longer emitted for display setting changes;
         // TrayPanel/PlanUtilizationChart refresh via snapshotRevisionChanged binding.
+    }
+
+    void testProviderConnectionDoesNotBlockOnCredentialRead() {
+        auto backend = std::make_shared<SlowReadCredentialBackend>();
+        ProviderCredentialStore::setBackendForTesting(backend);
+
+        UsageStore store;
+        QSignalSpy connectionSpy(&store, &UsageStore::providerConnectionTestChanged);
+
+        QElapsedTimer elapsed;
+        elapsed.start();
+        store.testProviderConnection("connection-lag");
+        const qint64 returnedInMs = elapsed.elapsed();
+
+        QVERIFY2(returnedInMs < 100,
+                 qPrintable(QString("testProviderConnection returned after %1 ms").arg(returnedInMs)));
+        QCOMPARE(connectionSpy.count(), 1);
+        QCOMPARE(store.providerConnectionTest("connection-lag").value("state").toString(), QString("testing"));
+
+        QTRY_VERIFY_WITH_TIMEOUT(connectionSpy.count() >= 2, 3000);
+        QCOMPARE(store.providerConnectionTest("connection-lag").value("state").toString(), QString("succeeded"));
+        QVERIFY(backend->readCount > 0);
     }
 };
 

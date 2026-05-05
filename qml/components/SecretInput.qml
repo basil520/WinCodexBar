@@ -15,6 +15,13 @@ RowLayout {
 
     spacing: AppTheme.spacingSm
 
+    function commitSecret() {
+        var value = secretInput.text.trim()
+        if (value.length === 0) return
+        root.saveRequested(value)
+        secretInput.text = ""
+    }
+
     TextField {
         id: secretInput
         Layout.fillWidth: true
@@ -39,11 +46,15 @@ RowLayout {
             border.width: 1
         }
 
-        onTextEdited: {
-            if (text.length > 0) {
-                root.saveRequested(text)
-            }
-        }
+        onAccepted: root.commitSecret()
+        onEditingFinished: root.commitSecret()
+    }
+
+    SettingsButton {
+        text: qsTr("Save")
+        primary: true
+        enabled: root.secretStatus.source !== "env" && secretInput.text.trim().length > 0
+        onClicked: root.commitSecret()
     }
 
     SettingsButton {
