@@ -80,6 +80,7 @@ private slots:
         QStandardPaths::setTestModeEnabled(true);
         qputenv("CODEXBAR_MANAGED_CODEX_ACCOUNTS_PATH",
                 QDir::toNativeSeparators(managedAccountStorePath()).toUtf8());
+        UsageStore::rebuildSystemEnvCache();
         ProviderRegistry::instance().registerProvider(new ClaudeProvider());
         ProviderRegistry::instance().registerProvider(new CodexProvider());
         ProviderRegistry::instance().registerProvider(new ZaiProvider());
@@ -94,6 +95,7 @@ private slots:
     void cleanup() {
         ProviderCredentialStore::resetBackendForTesting();
         qunsetenv("Z_AI_API_KEY");
+        UsageStore::rebuildSystemEnvCache();
         QFile::remove(managedAccountStorePath());
         QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
              + "/managed-codex-homes").removeRecursively();
@@ -178,6 +180,7 @@ private slots:
 
     void envSecretBeatsStoredCredential() {
         qputenv("Z_AI_API_KEY", "env-secret");
+        UsageStore::rebuildSystemEnvCache();
         ProviderCredentialStore::write("com.codexbar.apikey.zai", {}, "stored-secret");
 
         SettingsStore settings;
@@ -200,6 +203,7 @@ private slots:
         QCOMPARE(credentialStatus.value("source").toString(), QString("credential"));
 
         qputenv("Z_AI_API_KEY", "env-secret");
+        UsageStore::rebuildSystemEnvCache();
         QVariantMap envStatus = store.providerSecretStatus("zai", "apiKey");
         QCOMPARE(envStatus.value("configured").toBool(), true);
         QCOMPARE(envStatus.value("source").toString(), QString("env"));

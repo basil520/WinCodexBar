@@ -33,6 +33,8 @@
 #include <QElapsedTimer>
 
 // Performance probe: logs when a scoped block exceeds thresholdMicros.
+// Only active in debug builds to avoid overhead in production.
+#ifdef QT_DEBUG
 struct PerfProbe {
     QElapsedTimer timer;
     const char* name;
@@ -46,8 +48,44 @@ struct PerfProbe {
     }
 };
 #define PERF_PROBE(name, thresholdMicros) PerfProbe _perfProbe(name, thresholdMicros);
+#else
+#define PERF_PROBE(name, thresholdMicros)
+#endif
 
 namespace {
+
+// Lazily-populated snapshot of system environment variables.
+// Populated once on first access and then cached for the process lifetime.
+// This avoids repeated QProcessEnvironment::systemEnvironment() calls which
+// invoke GetEnvironmentStrings() on Windows each time.
+// After initial population, any env vars set via qputenv() after cache
+// creation are NOT reflected. Call rebuildSystemEnvCache() to force a refresh.
+QHash<QString, QString> g_systemEnvCache;
+bool g_systemEnvCachePopulated = false;
+
+const QHash<QString, QString>& cachedSystemEnv()
+{
+    if (!g_systemEnvCachePopulated) {
+        auto systemEnv = QProcessEnvironment::systemEnvironment();
+        const auto keys = systemEnv.keys();
+        for (const auto& key : keys) {
+            g_systemEnvCache.insert(key, systemEnv.value(key));
+        }
+        g_systemEnvCachePopulated = true;
+    }
+    return g_systemEnvCache;
+}
+
+void rebuildSystemEnvCache()
+{
+    g_systemEnvCache.clear();
+    auto systemEnv = QProcessEnvironment::systemEnvironment();
+    const auto keys = systemEnv.keys();
+    for (const auto& key : keys) {
+        g_systemEnvCache.insert(key, systemEnv.value(key));
+    }
+    g_systemEnvCachePopulated = true;
+}
 
 bool isSourceModeAllowed(const QString& providerId, ProviderSourceMode mode)
 {
@@ -100,12 +138,7 @@ UsageStore::UsageStore(QObject* parent)
     });
 
     // Initialize Codex multi-account service
-    QHash<QString, QString> env;
-    auto systemEnv = QProcessEnvironment::systemEnvironment();
-    for (const auto& key : systemEnv.keys()) {
-        env.insert(key, systemEnv.value(key));
-    }
-    m_codexAccountService = new ManagedCodexAccountService(env, this);
+    m_codexAccountService = new ManagedCodexAccountService(cachedSystemEnv(), this);
     QObject::connect(m_codexAccountService, &ManagedCodexAccountService::accountsChanged,
                      this, &UsageStore::codexAccountsChanged);
     QObject::connect(m_codexAccountService, &ManagedCodexAccountService::accountsChanged,
@@ -200,6 +233,11 @@ QStringList UsageStore::providerIDs() const {
     return m_providerIDs;
 }
 
+void UsageStore::rebuildSystemEnvCache()
+{
+    ::rebuildSystemEnvCache();
+}
+
 void UsageStore::preloadCredentials() {
     const auto ids = ProviderRegistry::instance().providerIDs();
     for (const auto& id : ids) {
@@ -235,8 +273,8 @@ ProviderFetchContext UsageStore::buildFetchContextForProvider(const QString& pro
     ctx.networkTimeoutMs = ProviderPipeline::STRATEGY_TIMEOUT_MS;
 
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    const auto keys = env.keys();
-    for (const auto& key : keys) {
+    const auto envKeys = env.keys();
+    for (const auto& key : envKeys) {
         ctx.env[key] = env.value(key);
     }
 
@@ -374,6 +412,7 @@ ProviderFetchContext UsageStore::buildFetchContextForProvider(const QString& pro
 
 void UsageStore::updateProviderIDs() {
     m_providerIDs = ProviderRegistry::instance().enabledProviderIDs();
+    m_providerListCacheValid = false;
     emit providerIDsChanged();
 }
 
@@ -839,6 +878,8 @@ void UsageStore::refreshCostUsage() {
             m_perProviderCostUsage = perProvider;
             m_allProviderCostUsage = allProviders;
             m_costUsageRefreshing = false;
+            m_costUsageDataCacheValid = false;
+            m_providerCostUsageListCacheValid = false;
             emit costUsageRefreshingChanged();
             emit costUsageChanged();
         }, Qt::QueuedConnection);
@@ -847,6 +888,9 @@ void UsageStore::refreshCostUsage() {
 
 QVariantMap UsageStore::costUsageData() const {
     PERF_PROBE("costUsageData", 1000);
+    if (m_costUsageDataCacheValid) {
+        return m_costUsageDataCache;
+    }
     QVariantMap m;
     m["sessionTokens"] = m_costUsage.sessionTokens;
     m["sessionCostUSD"] = m_costUsage.sessionCostUSD;
@@ -875,10 +919,16 @@ QVariantMap UsageStore::costUsageData() const {
         dailyList.append(dm);
     }
     m["daily"] = dailyList;
+    m_costUsageDataCacheValid = true;
+    m_costUsageDataCache = m;
     return m;
 }
 
 QVariantList UsageStore::providerCostUsageList() const {
+    PERF_PROBE("providerCostUsageList", 1000);
+    if (m_providerCostUsageListCacheValid) {
+        return m_providerCostUsageListCache;
+    }
     QVariantList result;
     for (auto& pcs : m_allProviderCostUsage) {
         QVariantMap m;
@@ -910,6 +960,8 @@ QVariantList UsageStore::providerCostUsageList() const {
         m["daily"] = daily;
         result.append(m);
     }
+    m_providerCostUsageListCacheValid = true;
+    m_providerCostUsageListCache = result;
     return result;
 }
 
@@ -1027,11 +1079,7 @@ void UsageStore::doRefresh(const QStringList& ids) {
                     expectedGuard = updatedGuard;
                 }
 
-                QHash<QString, QString> creditsEnv;
-                QProcessEnvironment systemEnv = QProcessEnvironment::systemEnvironment();
-                for (const auto& key : systemEnv.keys()) {
-                    creditsEnv.insert(key, systemEnv.value(key));
-                }
+                QHash<QString, QString> creditsEnv = cachedSystemEnv();
                 if (m_codexAccountService) {
                     QString managedHome = m_codexAccountService->activeManagedHomePath();
                     if (!managedHome.isEmpty()) {
@@ -1047,11 +1095,7 @@ void UsageStore::doRefresh(const QStringList& ids) {
             });
         } else {
             // Identity known; proceed immediately
-            QHash<QString, QString> creditsEnv;
-            QProcessEnvironment systemEnv = QProcessEnvironment::systemEnvironment();
-            for (const auto& key : systemEnv.keys()) {
-                creditsEnv.insert(key, systemEnv.value(key));
-            }
+            QHash<QString, QString> creditsEnv = cachedSystemEnv();
             if (m_codexAccountService) {
                 QString managedHome = m_codexAccountService->activeManagedHomePath();
                 if (!managedHome.isEmpty()) {
@@ -1227,11 +1271,7 @@ void UsageStore::refreshProvider(const QString& providerId) {
                             m_codexCreditsCache.updatedAt.isValid() &&
                             m_codexCreditsCache.updatedAt.secsTo(QDateTime::currentDateTime()) < 300;
                         if (!cacheFresh) {
-                            QHash<QString, QString> creditsEnv;
-                            QProcessEnvironment systemEnv = QProcessEnvironment::systemEnvironment();
-                            for (const auto& key : systemEnv.keys()) {
-                                creditsEnv.insert(key, systemEnv.value(key));
-                            }
+                            QHash<QString, QString> creditsEnv = cachedSystemEnv();
                             if (m_codexAccountService) {
                                 QString managedHome = m_codexAccountService->activeManagedHomePath();
                                 if (!managedHome.isEmpty()) {
@@ -1307,6 +1347,9 @@ QVariantList UsageStore::utilizationChartData(const QString& providerId, const Q
 
 QVariantList UsageStore::providerList() const {
     PERF_PROBE("providerList", 5000);
+    if (m_providerListCacheValid) {
+        return m_providerListCache;
+    }
     QVariantList list;
     auto ids = ProviderRegistry::instance().providerIDs();
     
@@ -1368,6 +1411,8 @@ QVariantList UsageStore::providerList() const {
         
         list.append(entry);
     }
+    m_providerListCacheValid = true;
+    m_providerListCache = list;
     return list;
 }
 
@@ -1491,23 +1536,39 @@ QVariantMap UsageStore::providerSecretStatus(const QString& providerId, const QS
     status["envVar"] = descriptor->envVar;
     status["credentialTarget"] = descriptor->credentialTarget;
 
-    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    if (!descriptor->envVar.isEmpty() && env.contains(descriptor->envVar)) {
-        status["configured"] = true;
-        status["source"] = "env";
-        status["readOnly"] = true;
-        return status;
+    // Check env var — use cached snapshot to avoid QProcessEnvironment::systemEnvironment()
+    // on the main thread. Rebuild once on first access; tests call rebuildSystemEnvCache()
+    // after qputenv() to pick up new variables.
+    if (!descriptor->envVar.isEmpty()) {
+        const auto& cachedEnv = cachedSystemEnv();
+        if (cachedEnv.contains(descriptor->envVar)) {
+            status["configured"] = true;
+            status["source"] = "env";
+            status["readOnly"] = true;
+            return status;
+        }
     }
 
     // Use cached credential state to avoid blocking main thread with WinCred API.
+    // On cache miss, fall back to ProviderCredentialStore::exists() since this is
+    // needed for correct operation. The startup preloadCredentials() call populates
+    // the cache so this fallback rarely fires in production.
     bool credentialExists = false;
     if (!descriptor->credentialTarget.isEmpty()) {
         QMutexLocker locker(&m_credentialCacheMutex);
         if (m_credentialCache.contains(descriptor->credentialTarget)) {
             credentialExists = true;
         } else if (!m_credentialMissing.contains(descriptor->credentialTarget)) {
+            // Cache miss — check synchronously and cache the result
+            locker.unlock();
             credentialExists = ProviderCredentialStore::exists(descriptor->credentialTarget);
-            if (!credentialExists) {
+            locker.relock();
+            if (credentialExists) {
+                // Don't cache the secret data here (only the existence);
+                // the full read will happen in buildFetchContextForProvider on the worker thread.
+                // But mark it as not-missing so we don't keep re-checking.
+                m_credentialMissing[descriptor->credentialTarget] = !credentialExists;
+            } else {
                 m_credentialMissing[descriptor->credentialTarget] = true;
             }
         }
@@ -1804,6 +1865,7 @@ void UsageStore::cancelProviderLogin(const QString& providerId) {
 void UsageStore::setProviderStatus(const QString& providerId, const QVariantMap& status) {
     m_providerStatuses[providerId] = status;
     m_statusRevision++;
+    m_providerListCacheValid = false;
     emit statusRevisionChanged();
     emit providerStatusChanged(providerId);
 }
@@ -2176,11 +2238,7 @@ void UsageStore::refreshCodexCredits(const CodexAccountRefreshGuard& expectedGua
     }
 
     // Build environment
-    QHash<QString, QString> env;
-    QProcessEnvironment systemEnv = QProcessEnvironment::systemEnvironment();
-    for (const auto& key : systemEnv.keys()) {
-        env.insert(key, systemEnv.value(key));
-    }
+    QHash<QString, QString> env = cachedSystemEnv();
 
     // If a managed account is active, point CODEX_HOME at its home path
     if (m_codexAccountService) {
@@ -2470,9 +2528,11 @@ void UsageStore::onBatchUpdateReady(const QStringList& providerIds)
         emit snapshotChanged(id);
     }
 
-    // 发射全量刷新信号
     m_snapshotRevision++;
-    m_snapshotDataCache.clear();
+    for (const auto& id : providerIds) {
+        m_snapshotDataCache.remove(id);
+    }
+    m_providerListCacheValid = false;
     emit snapshotRevisionChanged();
 }
 

@@ -126,6 +126,10 @@ public:
     // Preload all provider credentials into cache (runs on background thread)
     void preloadCredentials();
 
+    // Rebuild the cached snapshot of system environment variables.
+    // Call after qputenv() in tests so that the cache picks up the new values.
+    static void rebuildSystemEnvCache();
+
 signals:
     void snapshotChanged(const QString& providerId);
     void refreshingChanged();
@@ -205,6 +209,16 @@ private:
 
     // snapshotData() result cache — invalidated on snapshotChanged / snapshotRevisionChanged
     mutable QHash<QString, QVariantMap> m_snapshotDataCache;
+
+    // costUsageData() / providerCostUsageList() result caches — invalidated on costUsageChanged
+    mutable QVariantMap m_costUsageDataCache;
+    mutable QVariantList m_providerCostUsageListCache;
+    mutable bool m_costUsageDataCacheValid = false;
+    mutable bool m_providerCostUsageListCacheValid = false;
+
+    // providerList() result cache — invalidated on providerIDsChanged / snapshotRevisionChanged / statusRevisionChanged
+    mutable QVariantList m_providerListCache;
+    mutable bool m_providerListCacheValid = false;
 
     // Codex credits cache
     struct CodexCreditsCache {
