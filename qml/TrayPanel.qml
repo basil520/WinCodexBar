@@ -3,6 +3,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 
 import CodexBar 1.0
+import "components" as Components
 
 Rectangle {
     id: root
@@ -20,12 +21,14 @@ Rectangle {
     property bool costExpanded: true
     property var expandedCards: ({})
     property int rev: LanguageManager.translationRevision
+    property int tokenAccountRevision: 0
 
     Connections {
         target: UsageStore
         function onCostUsageChanged() { root.costData = UsageStore.costUsageData() }
         function onCostUsageRefreshingChanged() { root.costData = UsageStore.costUsageData() }
         function onRefreshingChanged() { root.isRefreshing = UsageStore.isRefreshing }
+        function onTokenAccountsChanged(providerId) { root.tokenAccountRevision += 1 }
     }
 
     // Drop shadow mimic
@@ -132,7 +135,11 @@ Rectangle {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            if (costData.hasData) root.costExpanded = !root.costExpanded
+                            if (!UsageStore.costUsageEnabled) {
+                                UsageStore.ensureCostUsageEnabled()
+                            } else if (costData.hasData) {
+                                root.costExpanded = !root.costExpanded
+                            }
                         }
                     }
 
@@ -182,7 +189,10 @@ Rectangle {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: AppController.openUsage()
+                                onClicked: {
+                                    UsageStore.ensureCostUsageEnabled()
+                                    AppController.openUsage()
+                                }
                             }
                         }
                         Text {
@@ -463,6 +473,28 @@ Rectangle {
                     || modelData === "warp"
                     || modelData === "kilo"
                     || modelData === "abacus"
+                    || modelData === "codebuff"
+                property var tokenAccounts: {
+                    root.tokenAccountRevision
+                    return UsageStore.tokenAccountsForProvider(modelData)
+                }
+                property string defaultTokenAccountId: {
+                    root.tokenAccountRevision
+                    return UsageStore.defaultTokenAccount(modelData)
+                }
+                property bool hasTokenAccounts: tokenAccounts && tokenAccounts.length > 0
+                property var accountOptions: {
+                    var result = [{ value: "", label: qsTr("Provider default") }]
+                    for (var i = 0; i < tokenAccounts.length; i++) {
+                        var account = tokenAccounts[i]
+                        if (account.visibility === "archived") continue
+                        result.push({
+                            value: account.accountId,
+                            label: account.displayName || account.accountId
+                        })
+                    }
+                    return result
+                }
                 property string primaryLabel: snap.displayName === "OpenRouter" && snap.openRouterUsage !== undefined
                     ? qsTr("API key limit") : snap.sessionLabel
 
@@ -507,6 +539,34 @@ Rectangle {
                             color: "#888"
                             font.pixelSize: 10
                             visible: !!snap.loginMethod && snap.loginMethod !== "" && !cardDelegate.expanded
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+                        visible: cardDelegate.hasTokenAccounts
+
+                        Text {
+                            text: qsTr("Account")
+                            color: "#888"
+                            font.pixelSize: 10
+                            Layout.preferredWidth: 54
+                        }
+
+                        Components.SettingsComboBox {
+                            objectName: "accountSwitcher_" + modelData
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 30
+                            model: cardDelegate.accountOptions
+                            selectedValue: cardDelegate.defaultTokenAccountId
+                            onValueActivated: function(value) {
+                                if (value !== cardDelegate.defaultTokenAccountId
+                                        && UsageStore.setDefaultTokenAccount(modelData, value)) {
+                                    root.tokenAccountRevision += 1
+                                    UsageStore.refreshProvider(modelData)
+                                }
+                            }
                         }
                     }
 
@@ -1160,6 +1220,7 @@ Rectangle {
         "jetbrains": "#F000F0",
         "vertexai": "#4285F4",
         "deepseek": "#4D6BFE",
+        "codebuff": "#44FF00",
         "antigravity": "#10B981",
         "synthetic": "#6366F1",
         "opencodego": "#3B82F6"

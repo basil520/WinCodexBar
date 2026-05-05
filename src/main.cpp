@@ -8,7 +8,6 @@
 #include <QQuickItem>
 #include <QQuickView>
 #include <QScreen>
-#include <QSettings>
 #include <QDateTime>
 #include <QDir>
 #include <QElapsedTimer>
@@ -27,6 +26,7 @@
 #endif
 
 #include "cli/CLIEntry.h"
+#include "app/AppTheme.h"
 
 static bool activateExistingInstance() {
 #ifdef Q_OS_WIN
@@ -71,41 +71,8 @@ static void fileMessageHandler(QtMsgType type, const QMessageLogContext& context
 #include "util/SingleInstanceGuard.h"
 #include "network/NetworkManager.h"
 #include "util/CostUsageScanner.h"
-#include "providers/ProviderRegistry.h"
+#include "providers/ProviderBootstrap.h"
 #include "account/TokenAccountStore.h"
-#include "runtime/ProviderRuntimeManager.h"
-#include "runtime/GenericRuntime.h"
-#include "runtime/CodexRuntime.h"
-#include "runtime/AugmentRuntime.h"
-#include "providers/zai/ZaiProvider.h"
-#include "providers/openrouter/OpenRouterProvider.h"
-#include "providers/copilot/CopilotProvider.h"
-#include "providers/kimik2/KimiK2Provider.h"
-#include "providers/kilo/KiloProvider.h"
-#include "providers/kiro/KiroProvider.h"
-#include "providers/mistral/MistralProvider.h"
-#include "providers/ollama/OllamaProvider.h"
-#include "providers/codex/CodexProvider.h"
-#include "providers/claude/ClaudeProvider.h"
-#include "providers/cursor/CursorProvider.h"
-#include "providers/kimi/KimiProvider.h"
-#include "providers/opencode/OpenCodeProvider.h"
-#include "providers/opencode/OpenCodeGoProvider.h"
-#include "providers/alibaba/AlibabaProvider.h"
-
-#include "providers/deepseek/DeepSeekProvider.h"
-#include "providers/minimax/MiniMaxProvider.h"
-#include "providers/synthetic/SyntheticProvider.h"
-#include "providers/perplexity/PerplexityProvider.h"
-#include "providers/amp/AmpProvider.h"
-#include "providers/augment/AugmentProvider.h"
-#include "providers/gemini/GeminiProvider.h"
-#include "providers/vertexai/VertexAIProvider.h"
-#include "providers/jetbrains/JetBrainsProvider.h"
-#include "providers/factory/FactoryProvider.h"
-#include "providers/antigravity/AntigravityProvider.h"
-#include "providers/warp/WarpProvider.h"
-#include "providers/abacus/AbacusProvider.h"
 
 #ifdef Q_OS_WIN
 static void applyRoundedWindowRegion(QWindow* window, int radius) {
@@ -189,6 +156,10 @@ public:
 
     Q_INVOKABLE void openUsage() {
         if (!usageView) return;
+        if (usageView->source().isEmpty()) {
+            usageView->setSource(QUrl("qrc:/qml/UsageWindow.qml"));
+            if (usageView->status() == QQuickView::Error) return;
+        }
         usageView->show();
         usageView->raise();
         usageView->requestActivate();
@@ -276,48 +247,6 @@ signals:
     void forceQuitRequested();
 };
 
-static QVariantMap makeAppTheme() {
-    QVariantMap theme;
-    theme["bgPrimary"] = QColor(0x1a1a2e);
-    theme["bgSecondary"] = QColor(0x15152a);
-    theme["bgCard"] = QColor(0x1f1f38);
-    theme["bgHover"] = QColor(0x2a2a4a);
-    theme["bgSelected"] = QColor(0x3a3a5c);
-    theme["bgPressed"] = QColor(0x4a4a7c);
-    theme["borderColor"] = QColor(0x2a2a4a);
-    theme["borderAccent"] = QColor(0x4a4a7c);
-    theme["textPrimary"] = QColor(0xffffff);
-    theme["textSecondary"] = QColor(0xaaaaaa);
-    theme["textTertiary"] = QColor(0x888888);
-    theme["textDisabled"] = QColor(0x555555);
-    theme["statusOk"] = QColor(0x4CAF50);
-    theme["statusDegraded"] = QColor(0xFFC107);
-    theme["statusOutage"] = QColor(0xF44336);
-    theme["statusUnknown"] = QColor(0x888888);
-    theme["accentColor"] = QColor(0x6b6bff);
-    theme["accentHover"] = QColor(0x8a8aff);
-    theme["spacingXs"] = 4;
-    theme["spacingSm"] = 8;
-    theme["spacingMd"] = 12;
-    theme["spacingLg"] = 16;
-    theme["spacingXl"] = 24;
-    theme["radiusSm"] = 4;
-    theme["radiusMd"] = 8;
-    theme["radiusLg"] = 12;
-    theme["fontSizeSm"] = 11;
-    theme["fontSizeMd"] = 13;
-    theme["fontSizeLg"] = 16;
-    theme["fontSizeXl"] = 20;
-    theme["sidebarWidth"] = 240;
-    theme["listItemHeight"] = 48;
-    theme["iconSizeSm"] = 18;
-    theme["iconSizeMd"] = 24;
-    theme["iconSizeLg"] = 28;
-    theme["statusDotSize"] = 6;
-    theme["progressBarHeight"] = 6;
-    return theme;
-}
-
 static void dumpQuickItemTree(QQuickItem* item, int depth = 0) {
     if (!item) {
         qWarning() << "Settings item tree: <null>";
@@ -374,66 +303,13 @@ int main(int argc, char* argv[]) {
     }
     const bool showSettingsOnStartup = appArgs.contains("--show-settings");
 
-    ProviderRegistry::instance().registerProvider(new ZaiProvider());
-    ProviderRegistry::instance().registerProvider(new OpenRouterProvider());
-    ProviderRegistry::instance().registerProvider(new CopilotProvider());
-    ProviderRegistry::instance().registerProvider(new KimiK2Provider());
-    ProviderRegistry::instance().registerProvider(new KiloProvider());
-    ProviderRegistry::instance().registerProvider(new KiroProvider());
-    ProviderRegistry::instance().registerProvider(new MistralProvider());
-    ProviderRegistry::instance().registerProvider(new OllamaProvider());
-    
-    // Register providers.
-    CodexProvider* codexProvider = new CodexProvider();
-    ProviderRegistry::instance().registerProvider(codexProvider);
-    
-    ProviderRegistry::instance().registerProvider(new ClaudeProvider());
-    ProviderRegistry::instance().registerProvider(new CursorProvider());
-    ProviderRegistry::instance().registerProvider(new KimiProvider());
-    ProviderRegistry::instance().registerProvider(new OpenCodeProvider());
-    ProviderRegistry::instance().registerProvider(new OpenCodeGoProvider());
-    ProviderRegistry::instance().registerProvider(new AlibabaProvider());
-
-    ProviderRegistry::instance().registerProvider(new DeepSeekProvider());
-    ProviderRegistry::instance().registerProvider(new MiniMaxProvider());
-    ProviderRegistry::instance().registerProvider(new SyntheticProvider());
-    ProviderRegistry::instance().registerProvider(new PerplexityProvider());
-    ProviderRegistry::instance().registerProvider(new AmpProvider());
-    ProviderRegistry::instance().registerProvider(new AugmentProvider());
-    ProviderRegistry::instance().registerProvider(new GeminiProvider());
-    ProviderRegistry::instance().registerProvider(new VertexAIProvider());
-    ProviderRegistry::instance().registerProvider(new JetBrainsProvider());
-    ProviderRegistry::instance().registerProvider(new FactoryProvider());
-    ProviderRegistry::instance().registerProvider(new AntigravityProvider());
-    ProviderRegistry::instance().registerProvider(new WarpProvider());
-    ProviderRegistry::instance().registerProvider(new AbacusProvider());
-
-    // Register provider runtimes
-    auto* runtimeManager = ProviderRuntimeManager::instance();
-
-    // Codex: special dual-account runtime
-    auto* codexRuntime = new CodexRuntime();
-    runtimeManager->registerRuntime("codex", codexRuntime);
-
-    // Augment: keepalive runtime
-    auto* augmentRuntime = new AugmentRuntime();
-    runtimeManager->registerRuntime("augment", augmentRuntime);
-
-    // All other providers: generic runtime
-    for (auto* provider : ProviderRegistry::instance().allProviders()) {
-        QString pid = provider->id();
-        if (!runtimeManager->hasRuntime(pid)) {
-            runtimeManager->registerRuntime(pid, new GenericRuntime(provider));
-        }
-    }
+    ProviderBootstrap::registerAllProviders();
 
     // Increase global thread pool to handle concurrent provider refreshes
     // without exhausting workers. Default is QThread::idealThreadCount().
     int idealThreads = QThread::idealThreadCount();
     int poolMax = qMax(idealThreads * 2, 12);
     QThreadPool::globalInstance()->setMaxThreadCount(poolMax);
-
-    runtimeManager->startAll();
 
     SettingsStore* settings = new SettingsStore();
     UsageStore* usageStore = new UsageStore();
@@ -466,20 +342,8 @@ int main(int argc, char* argv[]) {
         langMgr.setLanguage(settings->language());
     });
 
-    auto allIds = usageStore->allProviderIDs();
-    QSettings reg("HKEY_CURRENT_USER\\Software\\CodexBar", QSettings::NativeFormat);
-    for (const auto& id : allIds) {
-        QString key = "providers/" + id + "/enabled";
-        bool enabled;
-        if (reg.contains(key)) {
-            enabled = reg.value(key).toBool();
-        } else {
-            auto* prov = ProviderRegistry::instance().provider(id);
-            enabled = prov ? prov->defaultEnabled() : false;
-        }
-        usageStore->setProviderEnabled(id, enabled);
-        settings->setProviderEnabled(id, enabled);
-    }
+    ProviderBootstrap::applyStoredProviderEnabledStates(settings, usageStore);
+    ProviderBootstrap::syncEnabledProviderRuntimes();
 
     StatusItemController trayCtrl(usageStore, settings);
     if (!trayCtrl.initialize()) {
@@ -502,7 +366,6 @@ int main(int argc, char* argv[]) {
     });
 
     QTimer::singleShot(1500, usageStore, [usageStore]() {
-        usageStore->setCostUsageEnabled(true);
         usageStore->refreshProviderStatuses();
     });
     QObject::connect(settings, &SettingsStore::refreshFrequencyChanged, usageStore, [settings, usageStore]() {
@@ -660,8 +523,6 @@ int main(int argc, char* argv[]) {
             : messages.join(QLatin1Char('\n'));
         qWarning() << "Failed to load usage window:" << detail;
     });
-    usageView.setSource(QUrl("qrc:/qml/UsageWindow.qml"));
-
     appController->usageView = &usageView;
     QObject::connect(&usageView, &QWindow::windowStateChanged, appController,
                      [appController]() {

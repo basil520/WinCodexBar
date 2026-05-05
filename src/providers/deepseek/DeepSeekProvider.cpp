@@ -18,6 +18,9 @@ DeepSeekAPIStrategy::DeepSeekAPIStrategy(QObject* parent) : IFetchStrategy(paren
 QString DeepSeekAPIStrategy::resolveApiKey(const ProviderFetchContext& ctx) {
     if (ctx.env.contains("DEEPSEEK_API_KEY")) return ctx.env["DEEPSEEK_API_KEY"];
     if (ctx.env.contains("DEEPSEEK_KEY")) return ctx.env["DEEPSEEK_KEY"];
+    if (ctx.accountCredentials.api.has_value() && ctx.accountCredentials.api->isValid()) {
+        return ctx.accountCredentials.api->apiKey.toString().trimmed();
+    }
     auto cred = ProviderCredentialStore::read("com.codexbar.apikey.deepseek");
     if (cred.has_value()) return QString::fromUtf8(cred.value());
     return {};

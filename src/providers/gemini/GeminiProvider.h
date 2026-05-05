@@ -33,6 +33,8 @@ public:
 
     QString brandColor() const override { return "#8860D0"; }
     QString dashboardURL() const override { return "https://aistudio.google.com/usage"; }
+    QString statusLinkURL() const override { return "https://www.google.com/appsstatus/dashboard/products/npdyhgECDJ6tB66MxXyo/history"; }
+    QString statusWorkspaceProductID() const override { return "npdyhgECDJ6tB66MxXyo"; }
     QVector<QString> supportedSourceModes() const override { return {"oauth", "api"}; }
 };
 

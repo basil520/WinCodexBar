@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QHash>
 #include <QSharedPointer>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <QTimer>
@@ -69,6 +70,8 @@ public:
     Q_INVOKABLE QStringList allProviderIDs() const;
 
     Q_INVOKABLE void refreshCostUsage();
+    Q_INVOKABLE void ensureCostUsageEnabled();
+    Q_INVOKABLE void releaseCostUsageViewCaches() const;
     Q_INVOKABLE QVariantMap costUsageData() const;
     Q_INVOKABLE QVariantList providerCostUsageList() const;
     Q_INVOKABLE QVariantMap providerCostUsageData(const QString& providerId) const;
@@ -93,6 +96,7 @@ public:
     // Token Account management (generic multi-account support)
     Q_INVOKABLE QVariantList tokenAccountsForProvider(const QString& providerId) const;
     Q_INVOKABLE QString addTokenAccount(const QString& providerId, const QString& displayName, int sourceMode);
+    Q_INVOKABLE QString addTokenAccountWithApiKey(const QString& providerId, const QString& displayName, int sourceMode, const QString& apiKey);
     Q_INVOKABLE bool removeTokenAccount(const QString& accountId);
     Q_INVOKABLE bool setTokenAccountVisibility(const QString& accountId, int visibility);
     Q_INVOKABLE bool setTokenAccountSourceMode(const QString& accountId, int sourceMode);
@@ -143,6 +147,7 @@ signals:
     void providerLoginStateChanged(const QString& providerId);
     void providerStatusChanged(const QString& providerId);
     void providerSecretChanged(const QString& providerId, const QString& key);
+    void tokenAccountsChanged(const QString& providerId);
     void statusRevisionChanged();
 
     // Codex multi-account signals
@@ -168,6 +173,7 @@ private:
     void setProviderStatuses(const QHash<QString, QVariantMap>& statuses);
     void refreshProviderWithPool(const QString& providerId, QThreadPool* pool);
     void configureStatusPolling();
+    void queueCredentialStatusCheck(const QString& providerId, const QString& key, const QString& target) const;
 
     QTimer m_refreshTimer;
     QTimer m_statusTimer;
@@ -209,6 +215,8 @@ private:
     mutable QMutex m_credentialCacheMutex;
     mutable QHash<QString, CredentialEntry> m_credentialCache;
     mutable QHash<QString, bool> m_credentialMissing;
+    mutable QSet<QString> m_credentialExisting;
+    mutable QSet<QString> m_credentialStatusInFlight;
     static constexpr int CREDENTIAL_CACHE_TTL_MS = 300000; // 5 minutes
 
     // snapshotData() result cache — invalidated on snapshotChanged / snapshotRevisionChanged

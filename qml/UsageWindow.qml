@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Window 2.15
 
 import CodexBar 1.0
 import "panes"
@@ -12,6 +13,7 @@ Rectangle {
     color: AppTheme.bgPrimary
 
     property int rev: LanguageManager.translationRevision
+    readonly property bool contentActive: Window.window !== null && Window.window.visible
 
     Rectangle {
         anchors.fill: parent
@@ -96,8 +98,11 @@ Rectangle {
             Layout.fillHeight: true
             color: AppTheme.bgPrimary
 
-            TokenUsagePane {
+            Loader {
                 anchors.fill: parent
+                active: usageWindow.contentActive
+                asynchronous: true
+                source: "panes/TokenUsagePane.qml"
             }
         }
     }

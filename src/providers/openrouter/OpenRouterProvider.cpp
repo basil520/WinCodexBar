@@ -20,6 +20,9 @@ static QString resolveOpenRouterApiKey(const ProviderFetchContext& ctx) {
     if (ctx.env.contains("OPENROUTER_API_KEY")) {
         return ctx.env["OPENROUTER_API_KEY"].trimmed().remove('"').remove('\'');
     }
+    if (ctx.accountCredentials.api.has_value() && ctx.accountCredentials.api->isValid()) {
+        return ctx.accountCredentials.api->apiKey.toString().trimmed();
+    }
     auto cred = ProviderCredentialStore::read("com.codexbar.apikey.openrouter");
     if (cred.has_value()) return QString::fromUtf8(cred.value());
     return {};

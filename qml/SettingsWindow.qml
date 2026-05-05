@@ -11,6 +11,7 @@ Rectangle {
     color: AppTheme.bgPrimary
 
     property int rev: LanguageManager.translationRevision
+    property bool providersPaneLoaded: false
     property var tabs: {
         settingsWindow.rev
         var items = [
@@ -160,6 +161,9 @@ Rectangle {
                         spacing: 4
                         clip: true
                         model: settingsWindow.tabs
+                        onCurrentIndexChanged: {
+                            if (currentIndex === 1) settingsWindow.providersPaneLoaded = true
+                        }
 
                         delegate: Rectangle {
                             width: ListView.view.width
@@ -234,100 +238,108 @@ Rectangle {
 
                     GeneralPane {}
 
-                    ProvidersPane {
-                        id: providersPane
-                        providers: UsageStore.providerList()
-                        selectedProvider: ""
-                        selectedDescriptor: null
-                        selectedConnectionTest: ({"state": "idle", "message": "", "details": "", "startedAt": 0, "finishedAt": 0, "durationMs": 0})
-                        selectedProviderStatus: ({"state": "unknown"})
-                        selectedProviderError: ""
-                        selectedUsageSnapshot: null
+                    Loader {
+                        id: providersPaneLoader
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        active: settingsWindow.providersPaneLoaded
+                        asynchronous: true
 
-                        function reloadProvider(providerId) {
-                            if (providerId === "") return
-                            providersPane.selectedProvider = providerId
-                            providersPane.selectedDescriptor = UsageStore.providerDescriptorData(providerId)
-                            providersPane.selectedConnectionTest = UsageStore.providerConnectionTest(providerId)
-                            providersPane.selectedProviderStatus = UsageStore.providerStatus(providerId)
-                            providersPane.selectedProviderError = UsageStore.providerError(providerId)
-                            providersPane.selectedUsageSnapshot = UsageStore.providerUsageSnapshot(providerId)
-                        }
-                        function refreshProviderListSoon() {
-                            providerListRefreshTimer.restart()
-                        }
-                        function refreshSelectedConnection(providerId) {
-                            if (providersPane.selectedProvider === providerId) {
+                        sourceComponent: ProvidersPane {
+                            id: providersPane
+                            providers: UsageStore.providerList()
+                            selectedProvider: ""
+                            selectedDescriptor: null
+                            selectedConnectionTest: ({"state": "idle", "message": "", "details": "", "startedAt": 0, "finishedAt": 0, "durationMs": 0})
+                            selectedProviderStatus: ({"state": "unknown"})
+                            selectedProviderError: ""
+                            selectedUsageSnapshot: null
+
+                            function reloadProvider(providerId) {
+                                if (providerId === "") return
+                                providersPane.selectedProvider = providerId
+                                providersPane.selectedDescriptor = UsageStore.providerDescriptorData(providerId)
+                                providersPane.selectedConnectionTest = UsageStore.providerConnectionTest(providerId)
+                                providersPane.selectedProviderStatus = UsageStore.providerStatus(providerId)
+                                providersPane.selectedProviderError = UsageStore.providerError(providerId)
+                                providersPane.selectedUsageSnapshot = UsageStore.providerUsageSnapshot(providerId)
+                            }
+                            function refreshProviderListSoon() {
+                                providerListRefreshTimer.restart()
+                            }
+                            function refreshSelectedConnection(providerId) {
+                                if (providersPane.selectedProvider === providerId) {
+                                    providersPane.selectedConnectionTest = UsageStore.providerConnectionTest(providerId)
+                                }
+                            }
+                            function refreshSelectedStatus(providerId) {
+                                if (providersPane.selectedProvider === providerId) {
+                                    providersPane.selectedProviderStatus = UsageStore.providerStatus(providerId)
+                                }
+                            }
+                            function refreshSelectedSnapshot() {
+                                if (providersPane.selectedProvider !== "") {
+                                    providersPane.selectedUsageSnapshot = UsageStore.providerUsageSnapshot(providersPane.selectedProvider)
+                                }
+                            }
+                            function refreshSelectedDescriptor(providerId) {
+                                if (providersPane.selectedProvider === providerId) {
+                                    providersPane.selectedDescriptor = UsageStore.providerDescriptorData(providerId)
+                                }
+                            }
+
+                            Timer {
+                                id: providerListRefreshTimer
+                                interval: 80
+                                repeat: false
+                                onTriggered: providersPane.providers = UsageStore.providerList()
+                            }
+
+                            onProviderSelected: function(providerId) {
+                                reloadProvider(providerId)
+                            }
+                            onProviderEnabled: function(providerId, enabled) {
+                                UsageStore.setProviderEnabled(providerId, enabled)
+                                providersPane.providers = UsageStore.providerList()
+                                reloadProvider(providerId)
+                            }
+                            onTestConnection: function(providerId) {
+                                UsageStore.testProviderConnection(providerId)
                                 providersPane.selectedConnectionTest = UsageStore.providerConnectionTest(providerId)
                             }
-                        }
-                        function refreshSelectedStatus(providerId) {
-                            if (providersPane.selectedProvider === providerId) {
-                                providersPane.selectedProviderStatus = UsageStore.providerStatus(providerId)
+                            onRefreshProvider: function(providerId) {
+                                UsageStore.refreshProvider(providerId)
                             }
-                        }
-                        function refreshSelectedSnapshot() {
-                            if (providersPane.selectedProvider !== "") {
-                                providersPane.selectedUsageSnapshot = UsageStore.providerUsageSnapshot(providersPane.selectedProvider)
+                            onSettingChanged: function(providerId, key, value) {
+                                UsageStore.setProviderSetting(providerId, key, value)
                             }
-                        }
-                        function refreshSelectedDescriptor(providerId) {
-                            if (providersPane.selectedProvider === providerId) {
-                                providersPane.selectedDescriptor = UsageStore.providerDescriptorData(providerId)
+                            onSecretSaveRequested: function(providerId, key, value) {
+                                UsageStore.setProviderSecret(providerId, key, value)
                             }
-                        }
+                            onSecretClearRequested: function(providerId, key) {
+                                UsageStore.clearProviderSecret(providerId, key)
+                            }
 
-                        Timer {
-                            id: providerListRefreshTimer
-                            interval: 80
-                            repeat: false
-                            onTriggered: providersPane.providers = UsageStore.providerList()
-                        }
-
-                        onProviderSelected: function(providerId) {
-                            reloadProvider(providerId)
-                        }
-                        onProviderEnabled: function(providerId, enabled) {
-                            UsageStore.setProviderEnabled(providerId, enabled)
-                            providersPane.providers = UsageStore.providerList()
-                            reloadProvider(providerId)
-                        }
-                        onTestConnection: function(providerId) {
-                            UsageStore.testProviderConnection(providerId)
-                            providersPane.selectedConnectionTest = UsageStore.providerConnectionTest(providerId)
-                        }
-                        onRefreshProvider: function(providerId) {
-                            UsageStore.refreshProvider(providerId)
-                        }
-                        onSettingChanged: function(providerId, key, value) {
-                            UsageStore.setProviderSetting(providerId, key, value)
-                        }
-                        onSecretSaveRequested: function(providerId, key, value) {
-                            UsageStore.setProviderSecret(providerId, key, value)
-                        }
-                        onSecretClearRequested: function(providerId, key) {
-                            UsageStore.clearProviderSecret(providerId, key)
-                        }
-
-                        Connections {
-                            enabled: settingsWindow.visible
-                            target: UsageStore
-                            function onProviderIDsChanged() {
-                                providersPane.providers = UsageStore.providerList()
-                            }
-                            function onProviderConnectionTestChanged(providerId) {
-                                providersPane.refreshSelectedConnection(providerId)
-                                providersPane.refreshProviderListSoon()
-                            }
-                            function onProviderSecretChanged(providerId, key) {
-                                providersPane.refreshSelectedDescriptor(providerId)
-                            }
-                            function onProviderStatusChanged(providerId) {
-                                providersPane.refreshSelectedStatus(providerId)
-                                providersPane.refreshProviderListSoon()
-                            }
-                            function onSnapshotRevisionChanged() {
-                                providersPane.refreshSelectedSnapshot()
+                            Connections {
+                                enabled: settingsWindow.visible
+                                target: UsageStore
+                                function onProviderIDsChanged() {
+                                    providersPane.providers = UsageStore.providerList()
+                                }
+                                function onProviderConnectionTestChanged(providerId) {
+                                    providersPane.refreshSelectedConnection(providerId)
+                                    providersPane.refreshProviderListSoon()
+                                }
+                                function onProviderSecretChanged(providerId, key) {
+                                    providersPane.refreshSelectedDescriptor(providerId)
+                                }
+                                function onProviderStatusChanged(providerId) {
+                                    providersPane.refreshSelectedStatus(providerId)
+                                    providersPane.refreshProviderListSoon()
+                                }
+                                function onSnapshotRevisionChanged() {
+                                    providersPane.refreshSelectedSnapshot()
+                                }
                             }
                         }
                     }

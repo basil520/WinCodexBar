@@ -33,6 +33,8 @@ public:
     QString brandColor() const override { return "#00BCD4"; }
     QString dashboardURL() const override { return "https://app.warp.dev"; }
     QVector<QString> supportedSourceModes() const override { return {"api"}; }
+    bool supportsMultipleAccounts() const override { return true; }
+    QVector<QString> requiredCredentialTypes() const override { return {"apiKey"}; }
 };
 
 class WarpAPIStrategy : public IFetchStrategy {

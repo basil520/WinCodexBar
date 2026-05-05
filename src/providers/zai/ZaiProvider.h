@@ -41,6 +41,8 @@ public:
         };
     }
     QVector<QString> supportedSourceModes() const override { return {"api"}; }
+    bool supportsMultipleAccounts() const override { return true; }
+    QVector<QString> requiredCredentialTypes() const override { return {"apiKey"}; }
 };
 
 class ZaiAPIStrategy : public IFetchStrategy {

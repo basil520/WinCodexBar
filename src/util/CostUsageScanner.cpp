@@ -12,6 +12,7 @@
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
+#include <QTime>
 #include <QVariant>
 #include <QUuid>
 #include <algorithm>
@@ -375,16 +376,11 @@ CostUsageSnapshot CostUsageScanner::scanClaude(const QString& configDir, const Q
         QDir dir(root);
         if (!dir.exists()) continue;
 
-        QStringList jsonlFiles;
         QDir::Filters filters = QDir::Files | QDir::NoDotAndDotDot | QDir::Readable;
         QDirIterator it(root, {"*.jsonl"}, filters, QDirIterator::Subdirectories);
         while (it.hasNext()) {
             if (g_shuttingDown) break;
-            jsonlFiles.append(it.next());
-        }
-
-        for (auto& path : jsonlFiles) {
-            if (g_shuttingDown) break;
+            const QString path = it.next();
             QFileInfo info(path);
 
             // Cache hit: reuse parsed contributions
@@ -545,40 +541,34 @@ CostUsageSnapshot CostUsageScanner::scanCodex(const QString& sessionsDir, const 
 
     QHash<QString, QHash<QString, CostUsageModelBreakdown>> dayModels;
 
-    QStringList jsonlFiles;
     for (const auto& root : roots) {
         if (!QDir(root).exists()) continue;
         QDir::Filters filters = QDir::Files | QDir::NoDotAndDotDot | QDir::Readable;
         QDirIterator it(root, {"*.jsonl"}, filters, QDirIterator::Subdirectories);
         while (it.hasNext()) {
             if (g_shuttingDown) break;
-            jsonlFiles.append(it.next());
-        }
-    }
+            const QString path = it.next();
+            QFileInfo info(path);
 
-    for (auto& path : jsonlFiles) {
-        if (g_shuttingDown) break;
-        QFileInfo info(path);
+            // Cache hit: reuse parsed contributions
+            if (m_cache && m_cache->isValid(path, info)) {
+                mergeCachedIntoGlobal(dayModels, m_cache->contributions(path));
+                continue;
+            }
 
-        // Cache hit: reuse parsed contributions
-        if (m_cache && m_cache->isValid(path, info)) {
-            mergeCachedIntoGlobal(dayModels, m_cache->contributions(path));
-            continue;
-        }
+            QFile file(path);
+            if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
 
-        QFile file(path);
-        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
+            struct CodexTotals { int input = 0, cached = 0, output = 0; };
+            CodexTotals prevTotals;
+            QString currentModel;         // P0: track model from turn_context
+            bool isForked = false;        // P1: fork session detection
+            bool seenFirstTotal = false;  // P1: baseline for forked sessions
+            QHash<QString, QHash<QString, CostUsageModelBreakdown>> fileDayModels;
 
-        struct CodexTotals { int input = 0, cached = 0, output = 0; };
-        CodexTotals prevTotals;
-        QString currentModel;         // P0: track model from turn_context
-        bool isForked = false;        // P1: fork session detection
-        bool seenFirstTotal = false;  // P1: baseline for forked sessions
-        QHash<QString, QHash<QString, CostUsageModelBreakdown>> fileDayModels;
-
-        while (!file.atEnd()) {
-            QByteArray line = file.readLine().trimmed();
-            if (line.isEmpty()) continue;
+            while (!file.atEnd()) {
+                QByteArray line = file.readLine().trimmed();
+                if (line.isEmpty()) continue;
 
             bool hasEventMsg = line.contains("\"type\":\"event_msg\"");
             bool hasTurnCtx  = line.contains("\"type\":\"turn_context\"");
@@ -683,10 +673,11 @@ CostUsageSnapshot CostUsageScanner::scanCodex(const QString& sessionsDir, const 
             }
         }
 
-        // Merge per-file result into global and cache it
-        mergeFileIntoGlobal(dayModels, fileDayModels);
-        if (m_cache) {
-            m_cache->setContributions(path, "codex", convertToCacheContributions(fileDayModels));
+            // Merge per-file result into global and cache it
+            mergeFileIntoGlobal(dayModels, fileDayModels);
+            if (m_cache) {
+                m_cache->setContributions(path, "codex", convertToCacheContributions(fileDayModels));
+            }
         }
     }
 
@@ -742,20 +733,16 @@ CostUsageScanner::PiScanResult CostUsageScanner::scanPi(const QDate& since, cons
     QString piRoot = home + "/.pi/agent/sessions";
     if (!QDir(piRoot).exists()) return result;
 
-    QStringList jsonlFiles;
     QDir::Filters filters = QDir::Files | QDir::NoDotAndDotDot | QDir::Readable;
     QDirIterator it(piRoot, {"*.jsonl"}, filters, QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        if (g_shuttingDown) break;
-        jsonlFiles.append(it.next());
-    }
 
     // provider-key → day → model → breakdown
     // provider-key is "codex" or "claude"
     QHash<QString, QHash<QString, QHash<QString, CostUsageModelBreakdown>>> providerDayModels;
 
-    for (auto& path : jsonlFiles) {
+    while (it.hasNext()) {
         if (g_shuttingDown) break;
+        const QString path = it.next();
         // TODO: Pi files may contain both codex and claude data.
         // Per-file cache needs multi-provider support; skipping for now.
         QFile file(path);
@@ -981,8 +968,9 @@ QHash<QString, CostUsageSnapshot> CostUsageScanner::scanOpenCodeDB(const QDate& 
             QSqlQuery pragma(db);
             pragma.exec("PRAGMA journal_mode = WAL");
             pragma.exec("PRAGMA synchronous = NORMAL");
-            pragma.exec("PRAGMA temp_store = MEMORY");
-            pragma.exec("PRAGMA mmap_size = 268435456");
+            pragma.exec("PRAGMA temp_store = FILE");
+            pragma.exec("PRAGMA mmap_size = 33554432");
+            pragma.exec("PRAGMA cache_size = -8192");
         }
 
         if (g_shuttingDown) {
@@ -992,58 +980,26 @@ QHash<QString, CostUsageSnapshot> CostUsageScanner::scanOpenCodeDB(const QDate& 
             return result;
         }
 
-        // Query correlates assistant messages (with tokens) to the most recent user message (with model info)
-        // within the same session. Groups by provider, date, and model.
-        // Filters out baiduqianfancodingplan (discarded per user decision).
+        const qint64 sinceMs = QDateTime(since, QTime(0, 0), Qt::UTC).toMSecsSinceEpoch();
+        const qint64 untilMs = QDateTime(until.addDays(1), QTime(0, 0), Qt::UTC).toMSecsSinceEpoch() - 1;
         QString sql = R"(
-            WITH user_models AS (
-                SELECT
-                    session_id,
-                    time_created,
-                    json_extract(data, '$.model.providerID') AS provider,
-                    json_extract(data, '$.model.modelID') AS model
-                FROM message
-                WHERE json_extract(data, '$.role') = 'user'
-                  AND json_extract(data, '$.model') IS NOT NULL
-            ),
-            assistant_tokens AS (
-                SELECT
-                    session_id,
-                    time_created,
-                    json_extract(data, '$.tokens.input') AS input_tokens,
-                    json_extract(data, '$.tokens.output') AS output_tokens,
-                    json_extract(data, '$.tokens.cache.read') AS cache_read
-                FROM message
-                WHERE json_extract(data, '$.role') = 'assistant'
-                  AND json_extract(data, '$.tokens') IS NOT NULL
-            )
-            SELECT
-                um.provider AS provider_id,
-                DATE(a.time_created / 1000, 'unixepoch') AS day,
-                um.provider || '/' || um.model AS model_name,
-                COUNT(*) AS message_count,
-                SUM(a.input_tokens) AS input_tokens,
-                SUM(a.output_tokens) AS output_tokens,
-                SUM(a.cache_read) AS cache_read
-            FROM assistant_tokens a
-            LEFT JOIN user_models um
-                ON a.session_id = um.session_id
-                AND um.time_created = (
-                    SELECT MAX(time_created)
-                    FROM user_models
-                    WHERE session_id = a.session_id
-                      AND time_created <= a.time_created
-                )
-            WHERE um.provider IS NOT NULL
-              AND um.provider != 'baiduqianfancodingplan'
-            GROUP BY um.provider, day, um.model
-            ORDER BY um.provider, day, input_tokens DESC
+            SELECT session_id, time_created, data
+            FROM message
+            WHERE time_created <= :untilMs
+            ORDER BY time_created ASC
         )";
 
         {
+            struct SessionModel {
+                QString provider;
+                QString model;
+            };
+            QHash<QString, SessionModel> sessionModels;
+
             QSqlQuery query(db);
             query.setForwardOnly(true); // reduces memory overhead for large result sets
             query.prepare(sql);
+            query.bindValue(":untilMs", untilMs);
             if (!query.exec() || g_shuttingDown) {
                 // query destroyed at end of scope, then db destroyed, then removeDatabase is safe
                 db.close();
@@ -1053,12 +1009,51 @@ QHash<QString, CostUsageSnapshot> CostUsageScanner::scanOpenCodeDB(const QDate& 
 
             while (query.next()) {
                 if (g_shuttingDown) break;
-                QString providerId = query.value("provider_id").toString();
-                QString day = query.value("day").toString();
-                QString model = query.value("model_name").toString();
-                int inputTokens = query.value("input_tokens").toInt();
-                int outputTokens = query.value("output_tokens").toInt();
-                int cacheRead = query.value("cache_read").toInt();
+                const QString sessionId = query.value(0).toString();
+                const qint64 timeCreated = query.value(1).toLongLong();
+                const QByteArray data = query.value(2).toByteArray();
+
+                const bool maybeUser = data.contains("\"role\":\"user\"")
+                    || data.contains("\"role\": \"user\"");
+                const bool maybeAssistant = data.contains("\"role\":\"assistant\"")
+                    || data.contains("\"role\": \"assistant\"");
+                if (!maybeUser && !maybeAssistant) continue;
+
+                QJsonParseError error;
+                const QJsonDocument doc = QJsonDocument::fromJson(data, &error);
+                if (error.error != QJsonParseError::NoError || !doc.isObject()) continue;
+                const QJsonObject obj = doc.object();
+                const QString role = obj["role"].toString();
+
+                if (role == "user") {
+                    const QJsonObject modelObj = obj["model"].toObject();
+                    const QString provider = modelObj["providerID"].toString().trimmed();
+                    const QString model = modelObj["modelID"].toString().trimmed();
+                    if (!provider.isEmpty() && !model.isEmpty()) {
+                        sessionModels[sessionId] = { provider, model };
+                    }
+                    continue;
+                }
+
+                if (role != "assistant" || timeCreated < sinceMs || timeCreated > untilMs) {
+                    continue;
+                }
+
+                const QJsonObject tokens = obj["tokens"].toObject();
+                if (tokens.isEmpty()) continue;
+
+                const auto modelIt = sessionModels.constFind(sessionId);
+                if (modelIt == sessionModels.constEnd()) continue;
+                const QString providerId = modelIt->provider;
+                if (providerId.isEmpty() || providerId == "baiduqianfancodingplan") continue;
+
+                const QString day = QDateTime::fromMSecsSinceEpoch(timeCreated, Qt::UTC)
+                    .date()
+                    .toString(Qt::ISODate);
+                const QString model = providerId + "/" + modelIt->model;
+                const int inputTokens = tokens["input"].toInt();
+                const int outputTokens = tokens["output"].toInt();
+                const int cacheRead = tokens["cache"].toObject()["read"].toInt();
 
                 auto& mb = providerData[providerId].dayModels[day][model];
                 mb.modelName = model;

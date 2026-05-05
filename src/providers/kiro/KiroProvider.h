@@ -16,6 +16,7 @@ public:
     QString sessionLabel() const override { return "Credits"; }
     QString weeklyLabel() const override { return "Bonus"; }
     QString brandColor() const override { return "#FF9900"; }
+    QString statusLinkURL() const override { return "https://health.aws.amazon.com/health/status"; }
     bool defaultEnabled() const override { return false; }
     QVector<IFetchStrategy*> createStrategies(const ProviderFetchContext& ctx) override;
     QVector<QString> supportedSourceModes() const override { return {"cli"}; }

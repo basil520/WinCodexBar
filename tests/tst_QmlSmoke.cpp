@@ -60,17 +60,21 @@ class MockUsageStore : public QObject {
     Q_OBJECT
     Q_PROPERTY(QStringList providerIDs READ providerIDs CONSTANT)
     Q_PROPERTY(bool isRefreshing READ isRefreshing CONSTANT)
-    Q_PROPERTY(bool costUsageEnabled READ costUsageEnabled CONSTANT)
+    Q_PROPERTY(bool costUsageEnabled READ costUsageEnabled NOTIFY costUsageEnabledChanged)
     Q_PROPERTY(bool costUsageRefreshing READ costUsageRefreshing CONSTANT)
     Q_PROPERTY(int snapshotRevision READ snapshotRevision CONSTANT)
     Q_PROPERTY(int statusRevision READ statusRevision CONSTANT)
     Q_PROPERTY(QVariantMap codexAccountState READ codexAccountState CONSTANT)
     Q_PROPERTY(QVariantList codexFetchAttempts READ codexFetchAttempts CONSTANT)
 public:
-    QStringList providerIDs() const { return {"codex", "claude", "cursor"}; }
+    QStringList providerIDs() const {
+        return providerIDsForTest.isEmpty()
+            ? QStringList({"codex", "claude", "cursor"})
+            : providerIDsForTest;
+    }
     Q_INVOKABLE QStringList allProviderIDs() const { return {"codex", "claude", "cursor", "zai"}; }
     bool isRefreshing() const { return false; }
-    bool costUsageEnabled() const { return false; }
+    bool costUsageEnabled() const { return costUsageEnabledValue; }
     bool costUsageRefreshing() const { return false; }
     int snapshotRevision() const { return 0; }
     int statusRevision() const { return 0; }
@@ -112,20 +116,92 @@ public:
         ++providerDescriptorCalls;
         return {};
     }
+    Q_INVOKABLE QVariantList tokenAccountsForProvider(const QString& providerId) const {
+        ++tokenAccountsForProviderCalls;
+        if (providerId == tokenAccountProviderForTest) {
+            return tokenAccountsForProviderValue;
+        }
+        return {};
+    }
+    Q_INVOKABLE QString addTokenAccount(const QString& providerId, const QString& displayName, int sourceMode) {
+        ++addTokenAccountCalls;
+        lastTokenProvider = providerId;
+        lastTokenDisplayName = displayName;
+        lastTokenSourceMode = sourceMode;
+        emit tokenAccountsChanged(providerId);
+        return "token-account-1";
+    }
+    Q_INVOKABLE QString addTokenAccountWithApiKey(const QString& providerId, const QString& displayName, int sourceMode, const QString& apiKey) {
+        ++addTokenAccountWithApiKeyCalls;
+        lastTokenProvider = providerId;
+        lastTokenDisplayName = displayName;
+        lastTokenSourceMode = sourceMode;
+        lastTokenApiKey = apiKey;
+        emit tokenAccountsChanged(providerId);
+        return "token-account-1";
+    }
+    Q_INVOKABLE bool removeTokenAccount(const QString& accountId) {
+        ++removeTokenAccountCalls;
+        lastTokenAccountId = accountId;
+        emit tokenAccountsChanged(lastTokenProvider);
+        return true;
+    }
+    Q_INVOKABLE bool setTokenAccountVisibility(const QString& accountId, int visibility) {
+        ++setTokenAccountVisibilityCalls;
+        lastTokenAccountId = accountId;
+        lastTokenVisibility = visibility;
+        return true;
+    }
+    Q_INVOKABLE bool setTokenAccountSourceMode(const QString& accountId, int sourceMode) {
+        ++setTokenAccountSourceModeCalls;
+        lastTokenAccountId = accountId;
+        lastTokenSourceMode = sourceMode;
+        return true;
+    }
+    Q_INVOKABLE bool setDefaultTokenAccount(const QString& providerId, const QString& accountId) {
+        ++setDefaultTokenAccountCalls;
+        lastTokenProvider = providerId;
+        lastTokenAccountId = accountId;
+        if (providerId == tokenAccountProviderForTest) {
+            defaultTokenAccountValue = accountId;
+        }
+        emit tokenAccountsChanged(providerId);
+        return true;
+    }
+    Q_INVOKABLE QString defaultTokenAccount(const QString& providerId) const {
+        return providerId == tokenAccountProviderForTest ? defaultTokenAccountValue : QString();
+    }
     Q_INVOKABLE QString codexActiveAccountID() const { return "live-system"; }
     Q_INVOKABLE QVariantList codexAccounts() const { return {}; }
     Q_INVOKABLE QVariantMap codexAccountState() const { return {}; }
     Q_INVOKABLE QVariantList codexFetchAttempts() const { return {}; }
     Q_INVOKABLE QVariantList utilizationChartData(const QString&, const QString&) const { return {}; }
-    Q_INVOKABLE QVariantMap costUsageData() const { return {}; }
-    Q_INVOKABLE QVariantList providerCostUsageList() const { return {}; }
+    Q_INVOKABLE QVariantMap costUsageData() const {
+        ++costUsageDataCalls;
+        return {};
+    }
+    Q_INVOKABLE QVariantList providerCostUsageList() const {
+        ++providerCostUsageListCalls;
+        return {};
+    }
     Q_INVOKABLE QVariantMap providerCostUsageData(const QString&) const { return {}; }
     Q_INVOKABLE QVariantMap providerDashboardData(const QString&) const { return {}; }
     Q_INVOKABLE QVariantMap codexConsumerProjectionData() const { return {}; }
     Q_INVOKABLE void refresh() {}
     Q_INVOKABLE void refreshAll() {}
-    Q_INVOKABLE void refreshCostUsage() {}
-    Q_INVOKABLE void refreshProvider(const QString&) {}
+    Q_INVOKABLE void refreshCostUsage() { ++refreshCostUsageCalls; }
+    Q_INVOKABLE void releaseCostUsageViewCaches() { ++releaseCostUsageViewCachesCalls; }
+    Q_INVOKABLE void ensureCostUsageEnabled() {
+        ++ensureCostUsageEnabledCalls;
+        if (!costUsageEnabledValue) {
+            costUsageEnabledValue = true;
+            emit costUsageEnabledChanged();
+        }
+    }
+    Q_INVOKABLE void refreshProvider(const QString& providerId) {
+        ++refreshProviderCalls;
+        lastRefreshProvider = providerId;
+    }
     Q_INVOKABLE void setProviderEnabled(const QString&, bool) {}
     Q_INVOKABLE void setProviderSetting(const QString&, const QString& key, const QVariant& value) {
         ++setProviderSettingCalls;
@@ -149,12 +225,36 @@ public:
     void resetCounters() {
         providerListCalls = 0;
         providerDescriptorCalls = 0;
+        costUsageDataCalls = 0;
+        providerCostUsageListCalls = 0;
+        refreshCostUsageCalls = 0;
+        releaseCostUsageViewCachesCalls = 0;
+        ensureCostUsageEnabledCalls = 0;
         setProviderSettingCalls = 0;
         setProviderSecretCalls = 0;
+        tokenAccountsForProviderCalls = 0;
+        addTokenAccountCalls = 0;
+        addTokenAccountWithApiKeyCalls = 0;
+        removeTokenAccountCalls = 0;
+        setTokenAccountVisibilityCalls = 0;
+        setTokenAccountSourceModeCalls = 0;
+        setDefaultTokenAccountCalls = 0;
+        refreshProviderCalls = 0;
+        providerIDsForTest.clear();
+        tokenAccountProviderForTest.clear();
+        tokenAccountsForProviderValue.clear();
+        defaultTokenAccountValue.clear();
         lastSettingKey.clear();
         lastSettingValue.clear();
         lastSecretKey.clear();
         lastSecretValue.clear();
+        lastTokenProvider.clear();
+        lastTokenDisplayName.clear();
+        lastTokenAccountId.clear();
+        lastTokenApiKey.clear();
+        lastRefreshProvider.clear();
+        lastTokenSourceMode = -1;
+        lastTokenVisibility = -1;
     }
 
     void emitProviderStatusChangedForTest(const QString& providerId) {
@@ -163,12 +263,37 @@ public:
 
     mutable int providerListCalls = 0;
     mutable int providerDescriptorCalls = 0;
+    mutable int costUsageDataCalls = 0;
+    mutable int providerCostUsageListCalls = 0;
+    int refreshCostUsageCalls = 0;
+    int releaseCostUsageViewCachesCalls = 0;
+    int ensureCostUsageEnabledCalls = 0;
     int setProviderSettingCalls = 0;
     int setProviderSecretCalls = 0;
+    mutable int tokenAccountsForProviderCalls = 0;
+    int addTokenAccountCalls = 0;
+    int addTokenAccountWithApiKeyCalls = 0;
+    int removeTokenAccountCalls = 0;
+    int setTokenAccountVisibilityCalls = 0;
+    int setTokenAccountSourceModeCalls = 0;
+    int setDefaultTokenAccountCalls = 0;
+    int refreshProviderCalls = 0;
+    bool costUsageEnabledValue = false;
+    QStringList providerIDsForTest;
+    QString tokenAccountProviderForTest;
+    QVariantList tokenAccountsForProviderValue;
+    QString defaultTokenAccountValue;
     QString lastSettingKey;
     QVariant lastSettingValue;
     QString lastSecretKey;
     QString lastSecretValue;
+    QString lastTokenProvider;
+    QString lastTokenDisplayName;
+    QString lastTokenAccountId;
+    QString lastTokenApiKey;
+    QString lastRefreshProvider;
+    int lastTokenSourceMode = -1;
+    int lastTokenVisibility = -1;
 
 signals:
     void snapshotChanged(const QString&);
@@ -182,6 +307,7 @@ signals:
     void providerLoginStateChanged(const QString&);
     void providerStatusChanged(const QString&);
     void providerSecretChanged(const QString&, const QString&);
+    void tokenAccountsChanged(const QString&);
     void statusRevisionChanged();
     void codexAccountsChanged();
     void codexActiveAccountChanged(const QString&);
@@ -328,6 +454,25 @@ private slots:
         delete root;
     }
 
+    void settingsWindowDefersProviderWorkUntilProvidersTab() {
+        QQmlEngine engine;
+        setupEngine(engine);
+        mockUsage.resetCounters();
+
+        QQmlComponent component(&engine, QUrl("qrc:/qml/SettingsWindow.qml"));
+        QVERIFY2(component.status() == QQmlComponent::Ready,
+                 qPrintable(component.errorString()));
+
+        QQuickItem* root = qobject_cast<QQuickItem*>(component.create());
+        QVERIFY(root != nullptr);
+        QCoreApplication::processEvents();
+
+        QCOMPARE(mockUsage.providerListCalls, 0);
+        QCOMPARE(mockUsage.providerDescriptorCalls, 0);
+
+        delete root;
+    }
+
     void trayPanelLoads() {
         QQmlEngine engine;
         setupEngine(engine);
@@ -342,6 +487,116 @@ private slots:
         QQuickItem* root = qobject_cast<QQuickItem*>(component.create());
         QVERIFY(root != nullptr);
         delete root;
+    }
+
+    void trayPanelSwitchesTokenAccount() {
+        QQuickView view;
+        setupEngine(*view.engine());
+        mockUsage.resetCounters();
+        mockUsage.providerIDsForTest = {QStringLiteral("claude")};
+        mockUsage.tokenAccountProviderForTest = QStringLiteral("claude");
+        mockUsage.defaultTokenAccountValue = QStringLiteral("account-a");
+
+        QVariantMap accountA;
+        accountA["accountId"] = QStringLiteral("account-a");
+        accountA["providerId"] = QStringLiteral("claude");
+        accountA["displayName"] = QStringLiteral("Work");
+        accountA["sourceMode"] = QStringLiteral("api");
+        accountA["visibility"] = QStringLiteral("visible");
+        QVariantMap accountB;
+        accountB["accountId"] = QStringLiteral("account-b");
+        accountB["providerId"] = QStringLiteral("claude");
+        accountB["displayName"] = QStringLiteral("Personal");
+        accountB["sourceMode"] = QStringLiteral("api");
+        accountB["visibility"] = QStringLiteral("visible");
+        mockUsage.tokenAccountsForProviderValue = {accountA, accountB};
+
+        view.resize(300, 600);
+        view.setSource(QUrl("qrc:/qml/TrayPanel.qml"));
+        QVERIFY2(view.status() == QQuickView::Ready,
+                 qPrintable(view.errors().isEmpty() ? QString() : view.errors().first().toString()));
+        view.show();
+        QTest::qWait(250);
+
+        QObject* switcher = nullptr;
+        QTRY_VERIFY((switcher = findObjectByStringProperty(view.rootObject(),
+                                                           "objectName",
+                                                           "accountSwitcher_claude")) != nullptr);
+        QVERIFY(QMetaObject::invokeMethod(switcher, "valueActivated",
+                                          Q_ARG(QVariant, QVariant(QStringLiteral("account-b")))));
+
+        QTRY_COMPARE(mockUsage.setDefaultTokenAccountCalls, 1);
+        QCOMPARE(mockUsage.lastTokenProvider, QStringLiteral("claude"));
+        QCOMPARE(mockUsage.lastTokenAccountId, QStringLiteral("account-b"));
+        QCOMPARE(mockUsage.refreshProviderCalls, 1);
+        QCOMPARE(mockUsage.lastRefreshProvider, QStringLiteral("claude"));
+
+        view.hide();
+    }
+
+    void usageWindowDefersTokenUsagePaneUntilShown() {
+        QQuickView view;
+        setupEngine(*view.engine());
+        mockUsage.resetCounters();
+
+        view.setSource(QUrl("qrc:/qml/UsageWindow.qml"));
+        QVERIFY2(view.status() == QQuickView::Ready,
+                 qPrintable(view.errors().isEmpty() ? QString() : view.errors().first().toString()));
+        QCoreApplication::processEvents();
+
+        QCOMPARE(mockUsage.costUsageDataCalls, 0);
+        QCOMPARE(mockUsage.providerCostUsageListCalls, 0);
+        QCOMPARE(mockUsage.providerListCalls, 0);
+        QCOMPARE(mockUsage.ensureCostUsageEnabledCalls, 0);
+
+        view.show();
+        QTRY_VERIFY(mockUsage.costUsageDataCalls > 0);
+        QTRY_VERIFY(mockUsage.providerCostUsageListCalls > 0);
+        QTRY_VERIFY(mockUsage.providerListCalls > 0);
+        QCOMPARE(mockUsage.ensureCostUsageEnabledCalls, 1);
+
+        view.hide();
+    }
+
+    void tokenUsagePaneRequestsCostScanOnLoad() {
+        QQuickView view;
+        setupEngine(*view.engine());
+        mockUsage.resetCounters();
+        mockUsage.costUsageEnabledValue = false;
+        view.resize(760, 560);
+
+        QQuickItem* root = createInlineRoot(view, R"(
+            import QtQuick 2.15
+            import QtQuick.Controls 2.15
+            import "qrc:/qml/panes" as Panes
+
+            Panes.TokenUsagePane {
+                width: 740
+                height: 540
+            }
+        )", QUrl("qrc:/tests/TokenUsagePaneHarness.qml"));
+
+        QVERIFY(root != nullptr);
+        view.show();
+        QTRY_COMPARE(mockUsage.ensureCostUsageEnabledCalls, 1);
+
+        view.hide();
+    }
+
+    void usageWindowReleasesTokenUsageCachesWhenHidden() {
+        QQuickView view;
+        setupEngine(*view.engine());
+        mockUsage.resetCounters();
+
+        view.setSource(QUrl("qrc:/qml/UsageWindow.qml"));
+        QVERIFY2(view.status() == QQuickView::Ready,
+                 qPrintable(view.errors().isEmpty() ? QString() : view.errors().first().toString()));
+
+        view.show();
+        QTRY_VERIFY(mockUsage.costUsageDataCalls > 0);
+        view.hide();
+
+        QTRY_COMPARE(mockUsage.releaseCostUsageViewCachesCalls, 1);
     }
 
     void settingsWindowRenders() {
@@ -500,6 +755,68 @@ private slots:
         QTRY_COMPARE(root->property("settingCount").toInt(), 1);
         QCOMPARE(root->property("lastKey").toString(), QString("apiBaseUrl"));
         QCOMPARE(root->property("lastValue").toString(), QString("abc"));
+
+        view.hide();
+    }
+
+    void tokenAccountsPaneAddsApiAccount() {
+        QQuickView view;
+        setupEngine(*view.engine());
+        mockUsage.resetCounters();
+        view.resize(760, 360);
+
+        QQuickItem* root = createInlineRoot(view, R"(
+            import QtQuick 2.15
+            import QtQuick.Controls 2.15
+            import "qrc:/qml/components" as Components
+            import CodexBar 1.0
+
+            Components.TokenAccountsPane {
+                width: 740
+                height: 320
+                providerId: "codebuff"
+                descriptor: ({
+                    sourceModes: ["api"],
+                    tokenAccount: {
+                        supportsMultipleAccounts: true,
+                        requiredCredentialTypes: ["apiKey"]
+                    }
+                })
+                accounts: []
+                defaultAccountId: ""
+                onAddAccount: function(displayName, sourceMode, apiKey) {
+                    UsageStore.addTokenAccountWithApiKey(providerId, displayName, sourceMode, apiKey)
+                }
+            }
+        )", QUrl("qrc:/tests/TokenAccountsPaneHarness.qml"));
+
+        QVERIFY(root != nullptr);
+        view.show();
+        QTest::qWait(200);
+
+        QQuickItem* nameInput = qobject_cast<QQuickItem*>(
+            findObjectByStringProperty(root, "objectName", "accountNameField"));
+        QVERIFY(nameInput != nullptr);
+        QVERIFY(nameInput->setProperty("text", QStringLiteral("Production")));
+
+        QQuickItem* keyInput = qobject_cast<QQuickItem*>(
+            findObjectByStringProperty(root, "objectName", "accountApiKeyField"));
+        QVERIFY(keyInput != nullptr);
+        QVERIFY(keyInput->setProperty("text", QStringLiteral("cb-test-token")));
+        QCoreApplication::processEvents();
+
+        QQuickItem* addButton = qobject_cast<QQuickItem*>(
+            findObjectByStringProperty(root, "objectName", "addAccountButton"));
+        QVERIFY(addButton != nullptr);
+        const QPoint clickPoint = addButton->mapToScene(
+            QPointF(addButton->width() / 2.0, addButton->height() / 2.0)).toPoint();
+        QTest::mouseClick(&view, Qt::LeftButton, Qt::NoModifier, clickPoint);
+
+        QTRY_COMPARE(mockUsage.addTokenAccountWithApiKeyCalls, 1);
+        QCOMPARE(mockUsage.lastTokenProvider, QString("codebuff"));
+        QCOMPARE(mockUsage.lastTokenDisplayName, QString("Production"));
+        QCOMPARE(mockUsage.lastTokenSourceMode, 4);
+        QCOMPARE(mockUsage.lastTokenApiKey, QString("cb-test-token"));
 
         view.hide();
     }

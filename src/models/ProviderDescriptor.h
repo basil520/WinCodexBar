@@ -14,6 +14,8 @@ struct ProviderMetadata {
     bool supportsCredits = false;
     QString cliName;
     QString statusPageURL;
+    QString statusLinkURL;
+    QString statusWorkspaceProductID;
     QString dashboardURL;
     QString subscriptionDashboardURL;
 };
@@ -29,12 +31,18 @@ struct ProviderTokenCostConfig {
 
 struct ProviderFetchPlan {
     QVector<QString> allowedSourceModes;
+    QString defaultSourceMode = QStringLiteral("auto");
 };
 
 struct ProviderCLIConfig {
     QString name;
     QVector<QString> aliases;
     QString versionArg;
+};
+
+struct ProviderTokenAccountConfig {
+    bool supportsMultipleAccounts = false;
+    QVector<QString> requiredCredentialTypes;
 };
 
 struct ProviderDescriptor {
@@ -44,4 +52,5 @@ struct ProviderDescriptor {
     ProviderTokenCostConfig tokenCost;
     ProviderFetchPlan fetchPlan;
     ProviderCLIConfig cli;
+    ProviderTokenAccountConfig tokenAccounts;
 };

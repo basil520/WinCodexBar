@@ -28,7 +28,10 @@ public:
                    {}, "com.codexbar.apikey.openrouter", "OPENROUTER_API_KEY",
                    "sk-or-...", "Stored in Windows Credential Manager", false, true} };
     }
+    QString statusLinkURL() const override { return "https://status.openrouter.ai"; }
     QVector<QString> supportedSourceModes() const override { return {"api"}; }
+    bool supportsMultipleAccounts() const override { return true; }
+    QVector<QString> requiredCredentialTypes() const override { return {"apiKey"}; }
 };
 
 class OpenRouterAPIStrategy : public IFetchStrategy {

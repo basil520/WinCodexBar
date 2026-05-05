@@ -33,6 +33,8 @@ public:
 
     QString brandColor() const override { return "#6366F1"; }
     QVector<QString> supportedSourceModes() const override { return {"api"}; }
+    bool supportsMultipleAccounts() const override { return true; }
+    QVector<QString> requiredCredentialTypes() const override { return {"apiKey"}; }
 };
 
 class SyntheticAPIStrategy : public IFetchStrategy {

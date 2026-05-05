@@ -16,6 +16,9 @@ static QString resolveKimiK2ApiKey(const ProviderFetchContext& ctx) {
     for (auto& key : {"KIMI_K2_API_KEY", "KIMI_API_KEY", "KIMI_KEY"}) {
         if (ctx.env.contains(key)) return ctx.env[key].trimmed();
     }
+    if (ctx.accountCredentials.api.has_value() && ctx.accountCredentials.api->isValid()) {
+        return ctx.accountCredentials.api->apiKey.toString().trimmed();
+    }
     auto cred = ProviderCredentialStore::read("com.codexbar.apikey.kimik2");
     if (cred.has_value()) return QString::fromUtf8(cred.value());
     return {};

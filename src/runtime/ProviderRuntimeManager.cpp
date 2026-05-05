@@ -1,7 +1,11 @@
 #include "ProviderRuntimeManager.h"
+#include "AugmentRuntime.h"
+#include "CodexRuntime.h"
+#include "GenericRuntime.h"
 #include "../providers/ProviderRegistry.h"
 #include "../providers/IProvider.h"
 #include <QDebug>
+#include <QSet>
 
 ProviderRuntimeManager::ProviderRuntimeManager(QObject* parent)
     : QObject(parent)
@@ -49,6 +53,81 @@ QStringList ProviderRuntimeManager::registeredRuntimeIds() const
 bool ProviderRuntimeManager::hasRuntime(const QString& providerId) const
 {
     return m_runtimes.contains(providerId);
+}
+
+IProviderRuntime* ProviderRuntimeManager::ensureRuntimeForProvider(const QString& providerId)
+{
+    if (providerId.isEmpty()) {
+        return nullptr;
+    }
+
+    if (auto* existing = runtimeFor(providerId)) {
+        return existing;
+    }
+
+    IProviderRuntime* runtime = nullptr;
+    if (providerId == QLatin1String("codex")) {
+        runtime = new CodexRuntime();
+    } else if (providerId == QLatin1String("augment")) {
+        runtime = new AugmentRuntime();
+    } else if (auto* provider = ProviderRegistry::instance().provider(providerId)) {
+        runtime = new GenericRuntime(provider);
+    }
+
+    if (!runtime) {
+        qWarning() << "ProviderRuntimeManager: no provider registered for runtime" << providerId;
+        return nullptr;
+    }
+
+    registerRuntime(providerId, runtime);
+    return runtime;
+}
+
+void ProviderRuntimeManager::setProviderRuntimeEnabled(const QString& providerId, bool enabled)
+{
+    if (enabled) {
+        IProviderRuntime* runtime = ensureRuntimeForProvider(providerId);
+        if (!runtime) {
+            return;
+        }
+
+        runtime->setEnabled(true);
+        if (runtime->state() == RuntimeState::Stopped) {
+            runtime->start();
+        } else if (runtime->state() == RuntimeState::Paused) {
+            runtime->resume();
+        }
+        return;
+    }
+
+    IProviderRuntime* runtime = runtimeFor(providerId);
+    if (!runtime) {
+        return;
+    }
+
+    runtime->setEnabled(false);
+    runtime->stop();
+}
+
+void ProviderRuntimeManager::syncEnabledProviderRuntimes()
+{
+    const QVector<QString> enabledIds = ProviderRegistry::instance().enabledProviderIDs();
+    QSet<QString> enabled;
+    enabled.reserve(enabledIds.size());
+    for (const QString& providerId : enabledIds) {
+        enabled.insert(providerId);
+    }
+
+    const QStringList registeredIds = registeredRuntimeIds();
+    for (const QString& providerId : registeredIds) {
+        if (!enabled.contains(providerId)) {
+            setProviderRuntimeEnabled(providerId, false);
+        }
+    }
+
+    for (const QString& providerId : enabledIds) {
+        setProviderRuntimeEnabled(providerId, true);
+    }
 }
 
 void ProviderRuntimeManager::startAll()

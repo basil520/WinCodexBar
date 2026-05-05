@@ -18,6 +18,9 @@ WarpAPIStrategy::WarpAPIStrategy(QObject* parent) : IFetchStrategy(parent) {}
 QString WarpAPIStrategy::resolveApiKey(const ProviderFetchContext& ctx) {
     if (ctx.env.contains("WARP_API_KEY")) return ctx.env["WARP_API_KEY"];
     if (ctx.env.contains("WARP_TOKEN")) return ctx.env["WARP_TOKEN"];
+    if (ctx.accountCredentials.api.has_value() && ctx.accountCredentials.api->isValid()) {
+        return ctx.accountCredentials.api->apiKey.toString().trimmed();
+    }
     auto cred = ProviderCredentialStore::read("com.codexbar.apikey.warp");
     if (cred.has_value()) return QString::fromUtf8(cred.value());
     return {};

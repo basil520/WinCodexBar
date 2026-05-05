@@ -22,6 +22,7 @@ public:
     QVector<IFetchStrategy*> createStrategies(const ProviderFetchContext& ctx) override;
 
     QString brandColor() const override { return "#4285F4"; }
+    QString statusLinkURL() const override { return "https://status.cloud.google.com"; }
     QVector<QString> supportedSourceModes() const override { return {"oauth"}; }
 };
 

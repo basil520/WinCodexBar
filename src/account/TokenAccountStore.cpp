@@ -441,7 +441,8 @@ void TokenAccountStore::migrateFromLegacy(SettingsStore* settings)
         "zai", "openrouter", "copilot", "kimik2", "kilo", "kiro", "mistral",
         "ollama", "codex", "claude", "cursor", "kimi", "opencode", "alibaba",
         "deepseek", "minimax", "synthetic", "perplexity", "amp", "augment",
-        "gemini", "vertexai", "jetbrains", "factory", "antigravity", "warp", "abacus"
+        "gemini", "vertexai", "jetbrains", "factory", "antigravity", "warp", "abacus",
+        "codebuff"
     };
 
     QWriteLocker lock(&m_lock);

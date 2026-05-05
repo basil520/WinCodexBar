@@ -25,6 +25,8 @@ public:
     QVector<IFetchStrategy*> createStrategies(const ProviderFetchContext& ctx) override;
 
     QString brandColor() const override { return "#10B981"; }
+    QString statusLinkURL() const override { return "https://www.google.com/appsstatus/dashboard/products/npdyhgECDJ6tB66MxXyo/history"; }
+    QString statusWorkspaceProductID() const override { return "npdyhgECDJ6tB66MxXyo"; }
     QVector<QString> supportedSourceModes() const override { return {"auto"}; }
 };
 

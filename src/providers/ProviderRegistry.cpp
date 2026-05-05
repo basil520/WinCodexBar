@@ -19,10 +19,19 @@ void ProviderRegistry::registerProvider(IProvider* provider) {
     descriptor.metadata.supportsCredits = provider->supportsCredits();
     descriptor.metadata.cliName = provider->cliName();
     descriptor.metadata.statusPageURL = provider->statusPageURL();
+    descriptor.metadata.statusLinkURL = provider->statusLinkURL();
+    descriptor.metadata.statusWorkspaceProductID = provider->statusWorkspaceProductID();
     descriptor.metadata.dashboardURL = provider->dashboardURL();
     descriptor.metadata.subscriptionDashboardURL = provider->subscriptionDashboardURL();
     descriptor.fetchPlan.allowedSourceModes = provider->supportedSourceModes();
+    descriptor.fetchPlan.defaultSourceMode = descriptor.fetchPlan.allowedSourceModes.contains(QStringLiteral("auto"))
+        ? QStringLiteral("auto")
+        : (descriptor.fetchPlan.allowedSourceModes.isEmpty()
+               ? QStringLiteral("auto")
+               : descriptor.fetchPlan.allowedSourceModes.first());
     descriptor.cli.name = provider->cliName();
+    descriptor.tokenAccounts.supportsMultipleAccounts = provider->supportsMultipleAccounts();
+    descriptor.tokenAccounts.requiredCredentialTypes = provider->requiredCredentialTypes();
     registerDescriptor(descriptor);
 }
 

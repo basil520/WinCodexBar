@@ -22,10 +22,13 @@ public:
 
     QString dashboardURL() const override { return "https://www.alibabacloud.com"; }
     QString statusPageURL() const override { return "https://status.alibabacloud.com"; }
+    QString statusLinkURL() const override { return "https://status.aliyun.com"; }
     QString brandColor() const override { return "#F97316"; }
 
     QVector<ProviderSettingsDescriptor> settingsDescriptors() const override;
     QVector<QString> supportedSourceModes() const override { return {"auto", "web", "api"}; }
+    bool supportsMultipleAccounts() const override { return true; }
+    QVector<QString> requiredCredentialTypes() const override { return {"apiKey"}; }
 };
 
 // Web Cookie strategy

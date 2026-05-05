@@ -14,7 +14,11 @@ Rectangle {
     property var providerRows: []
     property int rev: LanguageManager.translationRevision
 
-    Component.onCompleted: refreshData()
+    Component.onCompleted: {
+        UsageStore.ensureCostUsageEnabled()
+        refreshData()
+    }
+    Component.onDestruction: UsageStore.releaseCostUsageViewCaches()
 
     Connections {
         target: UsageStore

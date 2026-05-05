@@ -74,6 +74,24 @@ private slots:
         };
         QCOMPARE(keys, expected);
     }
+
+    void scannerAvoidsKnownMemorySpikePatterns() {
+        QFile source(QStringLiteral(PROJECT_SOURCE_DIR) + "/src/util/CostUsageScanner.cpp");
+        QVERIFY2(source.open(QIODevice::ReadOnly | QIODevice::Text),
+                 qPrintable(source.errorString()));
+        const QString text = QString::fromUtf8(source.readAll());
+
+        QVERIFY2(!text.contains("PRAGMA temp_store = MEMORY"),
+                 "OpenCode DB scans must not keep SQLite temp tables in process memory");
+        QVERIFY2(!text.contains("PRAGMA mmap_size = 268435456"),
+                 "OpenCode DB scans must not map 256MB of database pages");
+        QVERIFY2(text.contains("PRAGMA temp_store = FILE"),
+                 "OpenCode DB scans should spill SQLite temp structures to disk");
+        QVERIFY2(text.contains("PRAGMA mmap_size = 33554432"),
+                 "OpenCode DB scans should cap mmap at 32MB");
+        QVERIFY2(!text.contains("QStringList jsonlFiles"),
+                 "JSONL scanners should stream QDirIterator results instead of collecting all paths first");
+    }
 };
 
 QTEST_MAIN(CostUsageScannerTest)

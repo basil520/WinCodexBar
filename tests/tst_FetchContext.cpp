@@ -13,6 +13,7 @@
 #include <QStandardPaths>
 #include <QThread>
 #include <QTemporaryDir>
+#include <atomic>
 #include <memory>
 
 namespace {
@@ -118,6 +119,21 @@ public:
     QVector<QString> supportedSourceModes() const override { return {"api"}; }
 };
 
+class FastClaudeRefreshProvider : public IProvider {
+public:
+    QString id() const override { return "claude"; }
+    QString displayName() const override { return "Claude Refresh Test"; }
+    QString sessionLabel() const override { return "Session"; }
+    QString weeklyLabel() const override { return "Weekly"; }
+    bool defaultEnabled() const override { return false; }
+
+    QVector<IFetchStrategy*> createStrategies(const ProviderFetchContext&) override {
+        return { new ConnectionLagStrategy() };
+    }
+
+    QVector<QString> supportedSourceModes() const override { return {"api"}; }
+};
+
 class SlowReadCredentialBackend : public ProviderCredentialBackend {
 public:
     bool write(const QString&, const QString&, const QByteArray&) override { return true; }
@@ -132,6 +148,21 @@ public:
     bool exists(const QString&) override { return false; }
 
     int readCount = 0;
+};
+
+class SlowExistsCredentialBackend : public ProviderCredentialBackend {
+public:
+    bool write(const QString&, const QString&, const QByteArray&) override { return true; }
+    std::optional<QByteArray> read(const QString&) override { return std::nullopt; }
+    bool remove(const QString&) override { return true; }
+
+    bool exists(const QString&) override {
+        ++existsCount;
+        QThread::msleep(220);
+        return true;
+    }
+
+    std::atomic<int> existsCount = 0;
 };
 
 class tst_FetchContext : public QObject {
@@ -156,7 +187,12 @@ private slots:
 
     void cleanup() {
         ProviderCredentialStore::resetBackendForTesting();
+        for (const auto& id : ProviderRegistry::instance().providerIDs()) {
+            ProviderRegistry::instance().setProviderEnabled(id, false);
+        }
         qunsetenv("Z_AI_API_KEY");
+        qunsetenv("CODEX_HOME");
+        qunsetenv("CLAUDE_CONFIG_DIR");
         UsageStore::rebuildSystemEnvCache();
         QFile::remove(managedAccountStorePath());
         QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
@@ -271,6 +307,7 @@ private slots:
         store.setSettingsStore(&settings);
 
         ProviderCredentialStore::write("com.codexbar.apikey.zai", {}, "stored-secret");
+        store.preloadCredentials();
         QVariantMap credentialStatus = store.providerSecretStatus("zai", "apiKey");
         QCOMPARE(credentialStatus.value("configured").toBool(), true);
         QCOMPARE(credentialStatus.value("source").toString(), QString("credential"));
@@ -281,6 +318,36 @@ private slots:
         QCOMPARE(envStatus.value("configured").toBool(), true);
         QCOMPARE(envStatus.value("source").toString(), QString("env"));
         QCOMPARE(envStatus.value("readOnly").toBool(), true);
+    }
+
+    void providerSecretStatusDoesNotBlockOnCredentialExists() {
+        qunsetenv("Z_AI_API_KEY");
+        UsageStore::rebuildSystemEnvCache();
+
+        auto backend = std::make_shared<SlowExistsCredentialBackend>();
+        ProviderCredentialStore::setBackendForTesting(backend);
+
+        SettingsStore settings;
+        UsageStore store;
+        store.setSettingsStore(&settings);
+        QSignalSpy secretSpy(&store, &UsageStore::providerSecretChanged);
+
+        QElapsedTimer elapsed;
+        elapsed.start();
+        QVariantMap status = store.providerSecretStatus("zai", "apiKey");
+        const qint64 returnedInMs = elapsed.elapsed();
+
+        QVERIFY2(returnedInMs < 100,
+                 qPrintable(QString("providerSecretStatus returned after %1 ms").arg(returnedInMs)));
+        QCOMPARE(status.value("configured").toBool(), false);
+        QCOMPARE(status.value("checking").toBool(), true);
+
+        QTRY_VERIFY_WITH_TIMEOUT(backend->existsCount.load() > 0, 1000);
+        QTRY_VERIFY_WITH_TIMEOUT(secretSpy.count() > 0, 1000);
+
+        QVariantMap resolved = store.providerSecretStatus("zai", "apiKey");
+        QCOMPARE(resolved.value("configured").toBool(), true);
+        QCOMPARE(resolved.value("source").toString(), QString("credential"));
     }
 
     void descriptorUsesStringProviderId() {
@@ -347,6 +414,46 @@ private slots:
         QCOMPARE(revisionSpy.count(), 3);
         // snapshotChanged is no longer emitted for display setting changes;
         // TrayPanel/PlanUtilizationChart refresh via snapshotRevisionChanged binding.
+    }
+
+    void costUsageDoesNotStartWhenOnlyNonTokenProvidersAreEnabled() {
+        SettingsStore settings;
+        UsageStore store;
+        store.setSettingsStore(&settings);
+        store.setProviderEnabled("zai", true);
+
+        QSignalSpy refreshingSpy(&store, &UsageStore::costUsageRefreshingChanged);
+
+        store.setCostUsageEnabled(true);
+        QTest::qWait(50);
+
+        QCOMPARE(store.costUsageEnabled(), true);
+        QCOMPARE(store.costUsageRefreshing(), false);
+        QCOMPARE(refreshingSpy.count(), 0);
+    }
+
+    void providerRefreshDoesNotPiggybackCostUsageScan() {
+        QTemporaryDir claudeHome(QDir::currentPath() + "/refresh-cost-claude-home-XXXXXX");
+        QVERIFY(claudeHome.isValid());
+        qputenv("CLAUDE_CONFIG_DIR", QDir::toNativeSeparators(claudeHome.path()).toUtf8());
+
+        ProviderRegistry::instance().registerProvider(new FastClaudeRefreshProvider());
+
+        SettingsStore settings;
+        UsageStore store;
+        store.setSettingsStore(&settings);
+        store.setProviderEnabled("claude", true);
+
+        QSignalSpy refreshingSpy(&store, &UsageStore::costUsageRefreshingChanged);
+        store.setCostUsageEnabled(true);
+        QTRY_VERIFY_WITH_TIMEOUT(!store.costUsageRefreshing(), 3000);
+        refreshingSpy.clear();
+
+        store.refresh();
+        QTest::qWait(50);
+
+        QCOMPARE(store.costUsageRefreshing(), false);
+        QCOMPARE(refreshingSpy.count(), 0);
     }
 
     void testProviderConnectionDoesNotBlockOnCredentialRead() {

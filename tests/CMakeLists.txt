@@ -80,6 +80,14 @@ if(TARGET translations)
 endif()
 add_wincodexbar_test(tst_Localization tst_Localization)
 
+add_executable(tst_AppTheme
+    tst_AppTheme.cpp
+)
+target_include_directories(tst_AppTheme PRIVATE ${COMMON_INCLUDE})
+target_compile_definitions(tst_AppTheme PRIVATE ${COMMON_DEFINES})
+target_link_libraries(tst_AppTheme PRIVATE codexbar_core Qt6::Core Qt6::Gui Qt6::Test)
+add_wincodexbar_test(tst_AppTheme tst_AppTheme)
+
 add_executable(tst_TextParser
     tst_TextParser.cpp
     tst_TextParser.h
@@ -118,6 +126,7 @@ target_include_directories(tst_CostUsageScanner PRIVATE ${COMMON_INCLUDE})
 target_compile_definitions(tst_CostUsageScanner PRIVATE
     ${COMMON_DEFINES}
     TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
+    PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 )
 target_link_libraries(tst_CostUsageScanner PRIVATE Qt6::Core Qt6::Test Qt6::Sql)
 add_wincodexbar_test(tst_CostUsageScanner tst_CostUsageScanner)
@@ -209,6 +218,18 @@ target_include_directories(tst_DeepSeekProvider PRIVATE ${COMMON_INCLUDE})
 target_compile_definitions(tst_DeepSeekProvider PRIVATE ${COMMON_DEFINES})
 target_link_libraries(tst_DeepSeekProvider PRIVATE codexbar_core Qt6::Core Qt6::Test)
 add_wincodexbar_test(tst_DeepSeekProvider tst_DeepSeekProvider)
+
+add_executable(tst_CodebuffProvider tst_CodebuffProvider.cpp)
+target_include_directories(tst_CodebuffProvider PRIVATE ${COMMON_INCLUDE})
+target_compile_definitions(tst_CodebuffProvider PRIVATE ${COMMON_DEFINES})
+target_link_libraries(tst_CodebuffProvider PRIVATE codexbar_core Qt6::Core Qt6::Test)
+add_wincodexbar_test(tst_CodebuffProvider tst_CodebuffProvider)
+
+add_executable(tst_ProviderBootstrap tst_ProviderBootstrap.cpp)
+target_include_directories(tst_ProviderBootstrap PRIVATE ${COMMON_INCLUDE})
+target_compile_definitions(tst_ProviderBootstrap PRIVATE ${COMMON_DEFINES})
+target_link_libraries(tst_ProviderBootstrap PRIVATE codexbar_core Qt6::Core Qt6::Test)
+add_wincodexbar_test(tst_ProviderBootstrap tst_ProviderBootstrap)
 
 add_executable(tst_MiniMaxProvider tst_MiniMaxProvider.cpp)
 target_include_directories(tst_MiniMaxProvider PRIVATE ${COMMON_INCLUDE})

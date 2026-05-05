@@ -34,6 +34,7 @@ set(CORE_SOURCES
     src/models/CursorUsageSummary.cpp
 
     src/providers/ProviderRegistry.cpp
+    src/providers/ProviderBootstrap.cpp
     src/providers/ProviderPipeline.cpp
     src/providers/shared/ProviderCredentialStore.cpp
 
@@ -94,10 +95,12 @@ set(CORE_SOURCES
     src/providers/antigravity/AntigravityProvider.cpp
     src/providers/warp/WarpProvider.cpp
     src/providers/abacus/AbacusProvider.cpp
+    src/providers/codebuff/CodebuffProvider.cpp
 
     src/network/NetworkManager.cpp
 
     src/app/CodexBarApp.cpp
+    src/app/AppTheme.cpp
     src/app/SettingsStore.cpp
     src/app/UsageStore.cpp
     src/app/BatchUpdateController.cpp
@@ -198,10 +201,12 @@ set(CORE_HEADERS
     src/providers/antigravity/AntigravityProvider.h
     src/providers/warp/WarpProvider.h
     src/providers/abacus/AbacusProvider.h
+    src/providers/codebuff/CodebuffProvider.h
 
     src/providers/IProvider.h
     src/providers/IFetchStrategy.h
     src/providers/ProviderRegistry.h
+    src/providers/ProviderBootstrap.h
     src/providers/ProviderFetchContext.h
     src/providers/ProviderFetchResult.h
     src/providers/ProviderPipeline.h
@@ -218,6 +223,7 @@ set(CORE_HEADERS
     src/network/NetworkManager.h
 
     src/app/CodexBarApp.h
+    src/app/AppTheme.h
     src/app/SettingsStore.h
     src/app/UsageStore.h
     src/app/BatchUpdateController.h

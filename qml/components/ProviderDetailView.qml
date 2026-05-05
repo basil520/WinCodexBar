@@ -31,7 +31,12 @@ ScrollView {
     ScrollBar.vertical.policy: ScrollBar.AsNeeded
     ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
-    onProviderIdChanged: detailsExpanded = false
+    onProviderIdChanged: {
+        detailsExpanded = false
+        reloadTokenAccounts()
+    }
+    onDescriptorChanged: reloadTokenAccounts()
+    onVisibleChanged: if (visible) reloadTokenAccounts()
 
     property var codexAccountState: root.providerId === "codex"
         ? UsageStore.codexAccountState
@@ -39,6 +44,8 @@ ScrollView {
     property var codexProjection: root.providerId === "codex"
         ? UsageStore.codexConsumerProjectionData()
         : ({})
+    property var tokenAccounts: []
+    property string defaultTokenAccountId: ""
 
     // Reactive binding for codexAccountState
     Connections {
@@ -57,6 +64,11 @@ ScrollView {
         function onSnapshotChanged(providerId) {
             if (providerId === "codex" && root.providerId === "codex") {
                 root.codexProjection = UsageStore.codexConsumerProjectionData()
+            }
+        }
+        function onTokenAccountsChanged(providerId) {
+            if (providerId === root.providerId) {
+                root.reloadTokenAccounts()
             }
         }
     }
@@ -89,10 +101,31 @@ ScrollView {
                 || usageSnapshot.tertiary !== undefined)
     }
 
+    function tokenAccountConfig() {
+        return descriptor && descriptor.tokenAccount ? descriptor.tokenAccount : ({})
+    }
+
+    function supportsTokenAccounts() {
+        return providerId !== "codex"
+            && (tokenAccountConfig().supportsMultipleAccounts === true
+                || (tokenAccounts && tokenAccounts.length > 0))
+    }
+
+    function reloadTokenAccounts() {
+        if (!root.providerId || root.providerId === "codex") {
+            tokenAccounts = []
+            defaultTokenAccountId = ""
+            return
+        }
+        tokenAccounts = UsageStore.tokenAccountsForProvider(root.providerId)
+        defaultTokenAccountId = UsageStore.defaultTokenAccount(root.providerId)
+    }
+
     property bool isDetailProvider: root.providerId === "deepseek"
         || root.providerId === "warp"
         || root.providerId === "kilo"
         || root.providerId === "abacus"
+        || root.providerId === "codebuff"
 
     function durationLabel(ms) {
         var value = Number(ms || 0)
@@ -572,6 +605,63 @@ ScrollView {
                                 color: AppTheme.borderColor
                                 opacity: 0.55
                                 visible: index < (root.descriptor.settingsFields.length - 1)
+                            }
+                        }
+                    }
+                }
+            }
+
+            SettingsGroupBox {
+                visible: root.supportsTokenAccounts()
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    SectionTitle { text: qsTr("Token Accounts") }
+
+                    TokenAccountsPane {
+                        Layout.fillWidth: true
+                        providerId: root.providerId
+                        descriptor: root.descriptor || ({})
+                        accounts: root.tokenAccounts || []
+                        defaultAccountId: root.defaultTokenAccountId
+
+                        onAddAccount: function(displayName, sourceMode, apiKey) {
+                            if (apiKey && apiKey.trim() !== "") {
+                                UsageStore.addTokenAccountWithApiKey(root.providerId, displayName, sourceMode, apiKey)
+                            } else {
+                                UsageStore.addTokenAccount(root.providerId, displayName, sourceMode)
+                            }
+                            root.reloadTokenAccounts()
+                            UsageStore.refreshProvider(root.providerId)
+                        }
+                        onRemoveAccount: function(accountId) {
+                            if (UsageStore.removeTokenAccount(accountId)) {
+                                root.reloadTokenAccounts()
+                                UsageStore.refreshProvider(root.providerId)
+                            }
+                        }
+                        onSetDefaultAccount: function(accountId) {
+                            if (UsageStore.setDefaultTokenAccount(root.providerId, accountId)) {
+                                root.reloadTokenAccounts()
+                                UsageStore.refreshProvider(root.providerId)
+                            }
+                        }
+                        onSetSourceMode: function(accountId, sourceMode) {
+                            if (UsageStore.setTokenAccountSourceMode(accountId, sourceMode)) {
+                                root.reloadTokenAccounts()
+                                if (accountId === root.defaultTokenAccountId) {
+                                    UsageStore.refreshProvider(root.providerId)
+                                }
+                            }
+                        }
+                        onSetVisibility: function(accountId, visibility) {
+                            if (UsageStore.setTokenAccountVisibility(accountId, visibility)) {
+                                root.reloadTokenAccounts()
+                                if (accountId === root.defaultTokenAccountId) {
+                                    UsageStore.refreshProvider(root.providerId)
+                                }
                             }
                         }
                     }

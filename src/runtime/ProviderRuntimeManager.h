@@ -15,6 +15,9 @@ public:
     IProviderRuntime* runtimeFor(const QString& providerId) const;
     QStringList registeredRuntimeIds() const;
     bool hasRuntime(const QString& providerId) const;
+    IProviderRuntime* ensureRuntimeForProvider(const QString& providerId);
+    void setProviderRuntimeEnabled(const QString& providerId, bool enabled);
+    void syncEnabledProviderRuntimes();
 
     // Global lifecycle
     void startAll();

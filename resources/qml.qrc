@@ -22,6 +22,7 @@
         <file alias="qml/components/ConnectionStatus.qml">../qml/components/ConnectionStatus.qml</file>
         <file alias="qml/components/ProviderErrorCard.qml">../qml/components/ProviderErrorCard.qml</file>
         <file alias="qml/components/CodexAccountsPane.qml">../qml/components/CodexAccountsPane.qml</file>
+        <file alias="qml/components/TokenAccountsPane.qml">../qml/components/TokenAccountsPane.qml</file>
         <file alias="qml/panes/GeneralPane.qml">../qml/panes/GeneralPane.qml</file>
         <file alias="qml/panes/ProvidersPane.qml">../qml/panes/ProvidersPane.qml</file>
         <file alias="qml/panes/TokenUsagePane.qml">../qml/panes/TokenUsagePane.qml</file>
@@ -36,6 +37,7 @@
         <file alias="icons/ProviderIcon-antigravity.svg">../resources/icons/ProviderIcon-antigravity.svg</file>
         <file alias="icons/ProviderIcon-augment.svg">../resources/icons/ProviderIcon-augment.svg</file>
         <file alias="icons/ProviderIcon-claude.svg">../resources/icons/ProviderIcon-claude.svg</file>
+        <file alias="icons/ProviderIcon-codebuff.svg">../resources/icons/ProviderIcon-codebuff.svg</file>
         <file alias="icons/ProviderIcon-codex.svg">../resources/icons/ProviderIcon-codex.svg</file>
         <file alias="icons/ProviderIcon-copilot.svg">../resources/icons/ProviderIcon-copilot.svg</file>
         <file alias="icons/ProviderIcon-cursor.svg">../resources/icons/ProviderIcon-cursor.svg</file>

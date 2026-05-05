@@ -23,6 +23,8 @@ public:
     }
     QString brandColor() const override { return "#4C00FF"; }
     QVector<QString> supportedSourceModes() const override { return {"api"}; }
+    bool supportsMultipleAccounts() const override { return true; }
+    QVector<QString> requiredCredentialTypes() const override { return {"apiKey"}; }
 };
 
 class KimiK2APIStrategy : public IFetchStrategy {

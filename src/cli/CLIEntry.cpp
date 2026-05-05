@@ -4,40 +4,7 @@
 #include "CLICostCommand.h"
 #include "CLIConfigCommand.h"
 
-#include "../providers/ProviderRegistry.h"
-#include "../providers/zai/ZaiProvider.h"
-#include "../providers/openrouter/OpenRouterProvider.h"
-#include "../providers/copilot/CopilotProvider.h"
-#include "../providers/kimik2/KimiK2Provider.h"
-#include "../providers/kilo/KiloProvider.h"
-#include "../providers/kiro/KiroProvider.h"
-#include "../providers/mistral/MistralProvider.h"
-#include "../providers/ollama/OllamaProvider.h"
-#include "../providers/codex/CodexProvider.h"
-#include "../providers/claude/ClaudeProvider.h"
-#include "../providers/cursor/CursorProvider.h"
-#include "../providers/kimi/KimiProvider.h"
-#include "../providers/opencode/OpenCodeProvider.h"
-#include "../providers/opencode/OpenCodeGoProvider.h"
-#include "../providers/alibaba/AlibabaProvider.h"
-#include "../providers/deepseek/DeepSeekProvider.h"
-#include "../providers/minimax/MiniMaxProvider.h"
-#include "../providers/synthetic/SyntheticProvider.h"
-#include "../providers/perplexity/PerplexityProvider.h"
-#include "../providers/amp/AmpProvider.h"
-#include "../providers/augment/AugmentProvider.h"
-#include "../providers/gemini/GeminiProvider.h"
-#include "../providers/vertexai/VertexAIProvider.h"
-#include "../providers/jetbrains/JetBrainsProvider.h"
-#include "../providers/factory/FactoryProvider.h"
-#include "../providers/antigravity/AntigravityProvider.h"
-#include "../providers/warp/WarpProvider.h"
-#include "../providers/abacus/AbacusProvider.h"
-
-#include "../runtime/ProviderRuntimeManager.h"
-#include "../runtime/GenericRuntime.h"
-#include "../runtime/CodexRuntime.h"
-#include "../runtime/AugmentRuntime.h"
+#include "../providers/ProviderBootstrap.h"
 #include "../account/TokenAccountStore.h"
 #include "../app/SettingsStore.h"
 #include "../app/UsageStore.h"
@@ -55,46 +22,7 @@ bool CLIEntry::isCliCommand(const QString& arg)
 
 void CLIEntry::initBackend()
 {
-    ProviderRegistry::instance().registerProvider(new ZaiProvider());
-    ProviderRegistry::instance().registerProvider(new OpenRouterProvider());
-    ProviderRegistry::instance().registerProvider(new CopilotProvider());
-    ProviderRegistry::instance().registerProvider(new KimiK2Provider());
-    ProviderRegistry::instance().registerProvider(new KiloProvider());
-    ProviderRegistry::instance().registerProvider(new KiroProvider());
-    ProviderRegistry::instance().registerProvider(new MistralProvider());
-    ProviderRegistry::instance().registerProvider(new OllamaProvider());
-    ProviderRegistry::instance().registerProvider(new CodexProvider());
-    ProviderRegistry::instance().registerProvider(new ClaudeProvider());
-    ProviderRegistry::instance().registerProvider(new CursorProvider());
-    ProviderRegistry::instance().registerProvider(new KimiProvider());
-    ProviderRegistry::instance().registerProvider(new OpenCodeProvider());
-    ProviderRegistry::instance().registerProvider(new OpenCodeGoProvider());
-    ProviderRegistry::instance().registerProvider(new AlibabaProvider());
-    ProviderRegistry::instance().registerProvider(new DeepSeekProvider());
-    ProviderRegistry::instance().registerProvider(new MiniMaxProvider());
-    ProviderRegistry::instance().registerProvider(new SyntheticProvider());
-    ProviderRegistry::instance().registerProvider(new PerplexityProvider());
-    ProviderRegistry::instance().registerProvider(new AmpProvider());
-    ProviderRegistry::instance().registerProvider(new AugmentProvider());
-    ProviderRegistry::instance().registerProvider(new GeminiProvider());
-    ProviderRegistry::instance().registerProvider(new VertexAIProvider());
-    ProviderRegistry::instance().registerProvider(new JetBrainsProvider());
-    ProviderRegistry::instance().registerProvider(new FactoryProvider());
-    ProviderRegistry::instance().registerProvider(new AntigravityProvider());
-    ProviderRegistry::instance().registerProvider(new WarpProvider());
-    ProviderRegistry::instance().registerProvider(new AbacusProvider());
-
-    // Register runtimes
-    auto* runtimeManager = ProviderRuntimeManager::instance();
-    runtimeManager->registerRuntime("codex", new CodexRuntime());
-    runtimeManager->registerRuntime("augment", new AugmentRuntime());
-    for (auto* provider : ProviderRegistry::instance().allProviders()) {
-        QString pid = provider->id();
-        if (!runtimeManager->hasRuntime(pid)) {
-            runtimeManager->registerRuntime(pid, new GenericRuntime(provider));
-        }
-    }
-    runtimeManager->startAll();
+    ProviderBootstrap::registerAllProviders();
 
     SettingsStore* settings = new SettingsStore();
     UsageStore* usageStore = new UsageStore();
@@ -103,6 +31,8 @@ void CLIEntry::initBackend()
     TokenAccountStore* tokenStore = TokenAccountStore::instance();
     tokenStore->loadFromDisk();
     tokenStore->migrateFromLegacy(settings);
+    ProviderBootstrap::applyStoredProviderEnabledStates(settings, usageStore);
+    ProviderBootstrap::syncEnabledProviderRuntimes();
 }
 
 int CLIEntry::run(int argc, char* argv[])

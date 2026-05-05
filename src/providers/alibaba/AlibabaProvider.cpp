@@ -150,6 +150,10 @@ QString AlibabaAPIStrategy::resolveAPIKey(const ProviderFetchContext& ctx) {
     QString envKey = ctx.env.value("ALIBABA_API_KEY");
     if (!envKey.isEmpty()) return envKey;
 
+    if (ctx.accountCredentials.api.has_value() && ctx.accountCredentials.api->isValid()) {
+        return ctx.accountCredentials.api->apiKey.toString().trimmed();
+    }
+
     // 2. Check Windows Credential Manager
     auto cred = ProviderCredentialStore::read("com.codexbar.apikey.alibaba");
     if (cred.has_value() && !cred->isEmpty()) return QString::fromUtf8(*cred);

@@ -31,6 +31,7 @@ public:
     virtual QVector<ProviderSettingsDescriptor> settingsDescriptors() const { return {}; }
 
     virtual QString statusPageURL() const { return {}; }
+    virtual QString statusLinkURL() const { return {}; }
     virtual QString statusWorkspaceProductID() const { return {}; }
     virtual QString dashboardURL() const { return {}; }
     virtual QString subscriptionDashboardURL() const { return {}; }

@@ -33,7 +33,10 @@ public:
 
     QString brandColor() const override { return "#4D6BFE"; }
     QString dashboardURL() const override { return "https://platform.deepseek.com/usage"; }
+    QString statusLinkURL() const override { return "https://status.deepseek.com"; }
     QVector<QString> supportedSourceModes() const override { return {"api"}; }
+    bool supportsMultipleAccounts() const override { return true; }
+    QVector<QString> requiredCredentialTypes() const override { return {"apiKey"}; }
 };
 
 class DeepSeekAPIStrategy : public IFetchStrategy {

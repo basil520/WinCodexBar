@@ -21,6 +21,9 @@ static QString resolveApiKey(const ProviderFetchContext& ctx) {
     if (ctx.env.contains("Z_AI_API_KEY")) {
         return ctx.env["Z_AI_API_KEY"];
     }
+    if (ctx.accountCredentials.api.has_value() && ctx.accountCredentials.api->isValid()) {
+        return ctx.accountCredentials.api->apiKey.toString().trimmed();
+    }
     auto cred = ProviderCredentialStore::read("com.codexbar.apikey.zai");
     if (cred.has_value()) {
         return QString::fromUtf8(cred.value());

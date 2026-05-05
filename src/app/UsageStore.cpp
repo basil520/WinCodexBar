@@ -23,6 +23,7 @@
 #include <QDateTime>
 #include <QJsonObject>
 #include <QProcessEnvironment>
+#include <QPointer>
 #include <QCryptographicHash>
 #include <QStandardPaths>
 #include <QThread>
@@ -115,6 +116,75 @@ QString mappedStatusFromIndicator(const QString& indicator)
     return "unknown";
 }
 
+struct CostUsageScanPlan {
+    QSet<QString> enabledProviderIds;
+    bool scanClaude = false;
+    bool scanCodex = false;
+    bool scanPi = false;
+    bool scanOpenCodeDB = false;
+    bool includeAllOpenCodeDBProviders = false;
+    bool scanOpenCodeGo = false;
+
+    bool hasWork() const
+    {
+        return scanClaude || scanCodex || scanPi || scanOpenCodeDB || scanOpenCodeGo;
+    }
+};
+
+CostUsageScanPlan buildCostUsageScanPlan()
+{
+    CostUsageScanPlan plan;
+    const auto enabledIds = ProviderRegistry::instance().enabledProviderIDs();
+    for (const auto& id : enabledIds) {
+        plan.enabledProviderIds.insert(id);
+    }
+
+    plan.scanClaude = plan.enabledProviderIds.contains("claude");
+    plan.scanCodex = plan.enabledProviderIds.contains("codex");
+    plan.scanPi = plan.scanClaude || plan.scanCodex;
+    plan.scanOpenCodeGo = plan.enabledProviderIds.contains("opencodego");
+    plan.includeAllOpenCodeDBProviders = plan.enabledProviderIds.contains("opencode");
+    plan.scanOpenCodeDB = plan.includeAllOpenCodeDBProviders || plan.scanOpenCodeGo;
+    return plan;
+}
+
+CostUsageSnapshot mergeCostUsageSnapshots(const QVector<CostUsageSnapshot>& snapshots)
+{
+    CostUsageSnapshot merged;
+    merged.updatedAt = QDateTime::currentDateTime();
+
+    QHash<QString, CostUsageDailyEntry> dayMap;
+    for (const auto& snap : snapshots) {
+        merged.sessionTokens += snap.sessionTokens;
+        merged.sessionCostUSD += snap.sessionCostUSD;
+        merged.last30DaysTokens += snap.last30DaysTokens;
+        merged.last30DaysCostUSD += snap.last30DaysCostUSD;
+
+        for (const auto& day : snap.daily) {
+            auto& entry = dayMap[day.date];
+            entry.date = day.date;
+            entry.inputTokens += day.inputTokens;
+            entry.cacheReadTokens += day.cacheReadTokens;
+            entry.cacheCreationTokens += day.cacheCreationTokens;
+            entry.outputTokens += day.outputTokens;
+            entry.costUSD += day.costUSD;
+            for (const auto& model : day.models) {
+                entry.models.append(model);
+            }
+        }
+    }
+
+    for (auto it = dayMap.constBegin(); it != dayMap.constEnd(); ++it) {
+        merged.daily.append(it.value());
+    }
+    std::sort(merged.daily.begin(), merged.daily.end(),
+              [](const CostUsageDailyEntry& a, const CostUsageDailyEntry& b) {
+                  return a.date < b.date;
+              });
+
+    return merged;
+}
+
 } // namespace
 
 UsageStore::UsageStore(QObject* parent)
@@ -175,6 +245,18 @@ UsageStore::UsageStore(QObject* parent)
                      this, &UsageStore::codexRemovalFinished);
     QObject::connect(m_codexAccountService, &ManagedCodexAccountService::removalFinished,
                      this, [this](const QString&, bool) { emit codexAccountStateChanged(); });
+
+    TokenAccountStore* tokenStore = TokenAccountStore::instance();
+    QObject::connect(tokenStore, &TokenAccountStore::accountsChanged,
+                     this, [this](const QString& providerId) {
+        m_providerListCacheValid = false;
+        emit tokenAccountsChanged(providerId);
+    });
+    QObject::connect(tokenStore, &TokenAccountStore::defaultAccountChanged,
+                     this, [this](const QString& providerId, const QString&) {
+        m_providerListCacheValid = false;
+        emit tokenAccountsChanged(providerId);
+    });
 }
 
 void UsageStore::setSettingsStore(SettingsStore* s) {
@@ -222,6 +304,7 @@ bool UsageStore::isProviderEnabled(const QString& id) const {
 
 void UsageStore::setProviderEnabled(const QString& id, bool enabled) {
     ProviderRegistry::instance().setProviderEnabled(id, enabled);
+    ProviderRuntimeManager::instance()->setProviderRuntimeEnabled(id, enabled);
     if (m_settingsStore) {
         m_settingsStore->setProviderEnabled(id, enabled);
     }
@@ -260,9 +343,13 @@ void UsageStore::preloadCredentials() {
                 QMutexLocker locker(&m_credentialCacheMutex);
                 if (stored.has_value()) {
                     m_credentialCache[desc.credentialTarget] = {stored.value(), QDateTime::currentDateTime()};
+                    m_credentialExisting.insert(desc.credentialTarget);
+                    m_credentialMissing.remove(desc.credentialTarget);
                 } else {
+                    m_credentialExisting.remove(desc.credentialTarget);
                     m_credentialMissing[desc.credentialTarget] = true;
                 }
+                m_credentialStatusInFlight.remove(desc.credentialTarget);
             }
         }
     }
@@ -470,7 +557,8 @@ QVariantMap UsageStore::snapshotData(const QString& id) const {
     m["supportsCredits"] = prov ? prov->supportsCredits() : false;
     m["displayName"] = providerDisplayName(id);
 
-    const bool isDetailProvider = (id == "deepseek" || id == "warp" || id == "kilo" || id == "abacus");
+    const bool isDetailProvider = (id == "deepseek" || id == "warp" || id == "kilo" ||
+                                   id == "abacus" || id == "codebuff");
 
     if (snap.primary.has_value()) {
         addWindowFields("primary", *snap.primary, isDetailProvider);
@@ -688,12 +776,46 @@ void UsageStore::setCostUsageEnabled(bool v) {
     }
 }
 
+void UsageStore::ensureCostUsageEnabled() {
+    if (!m_costUsageEnabled) {
+        setCostUsageEnabled(true);
+    }
+}
+
+void UsageStore::releaseCostUsageViewCaches() const {
+    m_costUsageDataCache.clear();
+    m_providerCostUsageListCache.clear();
+    m_costUsageDataCacheValid = false;
+    m_providerCostUsageListCacheValid = false;
+}
+
 void UsageStore::refreshCostUsage() {
     if (!m_costUsageEnabled || m_costUsageRefreshing) return;
+
+    const CostUsageScanPlan plan = buildCostUsageScanPlan();
+    if (!plan.hasWork()) {
+        const bool hadData = m_costUsage.last30DaysTokens > 0
+            || !m_perProviderCostUsage.isEmpty()
+            || !m_allProviderCostUsage.isEmpty()
+            || m_costUsageDataCacheValid
+            || m_providerCostUsageListCacheValid;
+        m_costUsage = CostUsageSnapshot{};
+        m_perProviderCostUsage.clear();
+        m_allProviderCostUsage.clear();
+        m_costUsageDataCache.clear();
+        m_providerCostUsageListCache.clear();
+        m_costUsageDataCacheValid = false;
+        m_providerCostUsageListCacheValid = false;
+        if (hadData) {
+            emit costUsageChanged();
+        }
+        return;
+    }
+
     m_costUsageRefreshing = true;
     emit costUsageRefreshingChanged();
 
-    QtConcurrent::run(m_threadPool, [this]() {
+    QtConcurrent::run(m_threadPool, [this, plan]() {
         PERF_PROBE("refreshCostUsage_worker", 5000);
 
         CostUsageCache& cache = CostUsageCache::instance();
@@ -704,81 +826,49 @@ void UsageStore::refreshCostUsage() {
         QDate today = QDate::currentDate();
         QDate since = today.addDays(-29);
 
-        CostUsageSnapshot claude = scanner.scanClaude({}, since, today);
-        CostUsageSnapshot codex = scanner.scanCodex({}, since, today);
-        auto piResult = scanner.scanPi(since, today);
+        CostUsageSnapshot claude;
+        CostUsageSnapshot codex;
+        CostUsageScanner::PiScanResult piResult;
+        QHash<QString, CostUsageSnapshot> openCodeDBResults;
+        CostUsageSnapshot opencodego;
+
+        if (plan.scanClaude) {
+            claude = scanner.scanClaude({}, since, today);
+        }
+        if (plan.scanCodex) {
+            codex = scanner.scanCodex({}, since, today);
+        }
+        if (plan.scanPi) {
+            piResult = scanner.scanPi(since, today);
+        }
+        if (plan.scanOpenCodeDB) {
+            openCodeDBResults = scanner.scanOpenCodeDB(since, today);
+        }
+        if (plan.scanOpenCodeGo) {
+            opencodego = scanner.scanOpenCodeGo(since, today);
+        }
 
         cache.save();
 
         // Per-provider storage
         QHash<QString, CostUsageSnapshot> perProvider;
 
-        // Claude (merge claude scan + pi claude)
-        CostUsageSnapshot mergedClaude;
-        mergedClaude.updatedAt = QDateTime::currentDateTime();
-        mergedClaude.sessionTokens = claude.sessionTokens + piResult.claude.sessionTokens;
-        mergedClaude.sessionCostUSD = claude.sessionCostUSD + piResult.claude.sessionCostUSD;
-        mergedClaude.last30DaysTokens = claude.last30DaysTokens + piResult.claude.last30DaysTokens;
-        mergedClaude.last30DaysCostUSD = claude.last30DaysCostUSD + piResult.claude.last30DaysCostUSD;
-        {
-            QHash<QString, CostUsageDailyEntry> dayMap;
-            auto mergeDaily = [&](const QVector<CostUsageDailyEntry>& daily) {
-                for (auto& d : daily) {
-                    auto& e = dayMap[d.date];
-                    e.date = d.date;
-                    e.inputTokens += d.inputTokens;
-                    e.cacheReadTokens += d.cacheReadTokens;
-                    e.cacheCreationTokens += d.cacheCreationTokens;
-                    e.outputTokens += d.outputTokens;
-                    e.costUSD += d.costUSD;
-                    for (auto& m : d.models) e.models.append(m);
-                }
-            };
-            mergeDaily(claude.daily);
-            mergeDaily(piResult.claude.daily);
-            for (auto it = dayMap.constBegin(); it != dayMap.constEnd(); ++it)
-                mergedClaude.daily.append(it.value());
-            std::sort(mergedClaude.daily.begin(), mergedClaude.daily.end(),
-                      [](const CostUsageDailyEntry& a, const CostUsageDailyEntry& b) { return a.date < b.date; });
-        }
-        if (mergedClaude.last30DaysTokens > 0)
+        // Claude (merge native Claude scan + Pi Claude only when Claude is enabled)
+        CostUsageSnapshot mergedClaude = mergeCostUsageSnapshots({claude, piResult.claude});
+        if (plan.enabledProviderIds.contains("claude") && mergedClaude.last30DaysTokens > 0)
             perProvider["claude"] = mergedClaude;
 
-        // Codex (merge codex scan + pi codex)
-        CostUsageSnapshot mergedCodex;
-        mergedCodex.updatedAt = QDateTime::currentDateTime();
-        mergedCodex.sessionTokens = codex.sessionTokens + piResult.codex.sessionTokens;
-        mergedCodex.sessionCostUSD = codex.sessionCostUSD + piResult.codex.sessionCostUSD;
-        mergedCodex.last30DaysTokens = codex.last30DaysTokens + piResult.codex.last30DaysTokens;
-        mergedCodex.last30DaysCostUSD = codex.last30DaysCostUSD + piResult.codex.last30DaysCostUSD;
-        {
-            QHash<QString, CostUsageDailyEntry> dayMap;
-            auto mergeDaily = [&](const QVector<CostUsageDailyEntry>& daily) {
-                for (auto& d : daily) {
-                    auto& e = dayMap[d.date];
-                    e.date = d.date;
-                    e.inputTokens += d.inputTokens;
-                    e.cacheReadTokens += d.cacheReadTokens;
-                    e.cacheCreationTokens += d.cacheCreationTokens;
-                    e.outputTokens += d.outputTokens;
-                    e.costUSD += d.costUSD;
-                    for (auto& m : d.models) e.models.append(m);
-                }
-            };
-            mergeDaily(codex.daily);
-            mergeDaily(piResult.codex.daily);
-            for (auto it = dayMap.constBegin(); it != dayMap.constEnd(); ++it)
-                mergedCodex.daily.append(it.value());
-            std::sort(mergedCodex.daily.begin(), mergedCodex.daily.end(),
-                      [](const CostUsageDailyEntry& a, const CostUsageDailyEntry& b) { return a.date < b.date; });
-        }
-        if (mergedCodex.last30DaysTokens > 0)
+        // Codex (merge native Codex scan + Pi Codex only when Codex is enabled)
+        CostUsageSnapshot mergedCodex = mergeCostUsageSnapshots({codex, piResult.codex});
+        if (plan.enabledProviderIds.contains("codex") && mergedCodex.last30DaysTokens > 0)
             perProvider["codex"] = mergedCodex;
 
-        // OpenCode DB (always scan, merge into respective providers)
-        auto openCodeDBResults = scanner.scanOpenCodeDB(since, today);
+        // OpenCode DB: scan only for explicit OpenCode/OpenCode Go usage.
         for (auto it = openCodeDBResults.constBegin(); it != openCodeDBResults.constEnd(); ++it) {
             QString providerId = it.key();
+            if (!plan.includeAllOpenCodeDBProviders && !plan.enabledProviderIds.contains(providerId)) {
+                continue;
+            }
             CostUsageSnapshot snap = it.value();
             if (snap.last30DaysTokens <= 0) continue;
             if (perProvider.contains(providerId)) {
@@ -810,43 +900,15 @@ void UsageStore::refreshCostUsage() {
         }
 
         // OpenCode Go (separate from opencode.db)
-        CostUsageSnapshot opencodego = scanner.scanOpenCodeGo(since, today);
-        if (opencodego.last30DaysTokens > 0)
+        if (plan.scanOpenCodeGo && opencodego.last30DaysTokens > 0)
             perProvider["opencodego"] = opencodego;
 
         // Global aggregate (backward compat)
-        CostUsageSnapshot combined;
-        combined.updatedAt = QDateTime::currentDateTime();
+        QVector<CostUsageSnapshot> providerSnapshots;
         for (auto it = perProvider.constBegin(); it != perProvider.constEnd(); ++it) {
-            combined.sessionTokens += it.value().sessionTokens;
-            combined.sessionCostUSD += it.value().sessionCostUSD;
-            combined.last30DaysTokens += it.value().last30DaysTokens;
-            combined.last30DaysCostUSD += it.value().last30DaysCostUSD;
+            providerSnapshots.append(it.value());
         }
-        {
-            QHash<QString, CostUsageDailyEntry> dayMap;
-            auto mergeDaily = [&](const QVector<CostUsageDailyEntry>& daily) {
-                for (auto& d : daily) {
-                    auto& e = dayMap[d.date];
-                    e.date = d.date;
-                    e.inputTokens += d.inputTokens;
-                    e.cacheReadTokens += d.cacheReadTokens;
-                    e.cacheCreationTokens += d.cacheCreationTokens;
-                    e.outputTokens += d.outputTokens;
-                    e.costUSD += d.costUSD;
-                    for (auto& m : d.models) e.models.append(m);
-                }
-            };
-            mergeDaily(mergedClaude.daily);
-            mergeDaily(mergedCodex.daily);
-            for (auto it = openCodeDBResults.constBegin(); it != openCodeDBResults.constEnd(); ++it)
-                mergeDaily(it.value().daily);
-            mergeDaily(opencodego.daily);
-            for (auto it = dayMap.constBegin(); it != dayMap.constEnd(); ++it)
-                combined.daily.append(it.value());
-            std::sort(combined.daily.begin(), combined.daily.end(),
-                      [](const CostUsageDailyEntry& a, const CostUsageDailyEntry& b) { return a.date < b.date; });
-        }
+        CostUsageSnapshot combined = mergeCostUsageSnapshots(providerSnapshots);
 
         // Build model summaries per provider
         QVector<ProviderCostUsageSnapshot> allProviders;
@@ -974,7 +1036,7 @@ QVariantMap UsageStore::providerCostUsageData(const QString& providerId) const {
     auto it = m_perProviderCostUsage.constFind(providerId);
     if (it == m_perProviderCostUsage.constEnd()) return QVariantMap();
 
-    CostUsageSnapshot snap = it.value();
+    const CostUsageSnapshot& snap = it.value();
     QVariantMap m;
     m["providerId"] = providerId;
     m["sessionTokens"] = snap.sessionTokens;
@@ -1026,13 +1088,11 @@ QVariantMap UsageStore::providerCostUsageData(const QString& providerId) const {
 }
 
 void UsageStore::refresh() {
-    refreshCostUsage();
     auto ids = ProviderRegistry::instance().enabledProviderIDs();
     doRefresh(ids);
 }
 
 void UsageStore::refreshAll() {
-    refreshCostUsage();
     auto ids = ProviderRegistry::instance().providerIDs();
     doRefresh(ids);
 }
@@ -1391,7 +1451,25 @@ QVariantList UsageStore::providerList() const {
             entry["supportsCredits"] = desc.has_value() ? desc->metadata.supportsCredits : prov->supportsCredits();
             entry["dashboardURL"] = desc.has_value() ? desc->metadata.dashboardURL : prov->dashboardURL();
             entry["statusPageURL"] = desc.has_value() ? desc->metadata.statusPageURL : prov->statusPageURL();
+            entry["statusLinkURL"] = desc.has_value() ? desc->metadata.statusLinkURL : prov->statusLinkURL();
+            entry["statusWorkspaceProductID"] = desc.has_value()
+                ? desc->metadata.statusWorkspaceProductID : prov->statusWorkspaceProductID();
             entry["brandColor"] = prov->brandColor();
+            QVariantList sourceModes;
+            const auto modes = desc.has_value() ? desc->fetchPlan.allowedSourceModes : prov->supportedSourceModes();
+            for (const auto& mode : modes) sourceModes.append(mode);
+            entry["sourceModes"] = sourceModes;
+            QVariantMap tokenAccount;
+            tokenAccount["supportsMultipleAccounts"] = desc.has_value()
+                ? desc->tokenAccounts.supportsMultipleAccounts : prov->supportsMultipleAccounts();
+            QVariantList requiredCredentials;
+            const auto credentials = desc.has_value()
+                ? desc->tokenAccounts.requiredCredentialTypes : prov->requiredCredentialTypes();
+            for (const auto& credential : credentials) requiredCredentials.append(credential);
+            tokenAccount["requiredCredentialTypes"] = requiredCredentials;
+            entry["tokenAccount"] = tokenAccount;
+            entry["defaultTokenAccount"] = TokenAccountStore::instance()->defaultAccountId(id);
+            entry["tokenAccountCount"] = TokenAccountStore::instance()->accountCountForProvider(id);
         } else {
             entry["name"] = id;
             entry["sessionLabel"] = Localization::providerLabel("Session");
@@ -1459,6 +1537,8 @@ QVariantMap UsageStore::providerDescriptorData(const QString& id) const {
     data["dashboardURL"] = desc->metadata.dashboardURL;
     data["subscriptionDashboardURL"] = desc->metadata.subscriptionDashboardURL;
     data["statusPageURL"] = desc->metadata.statusPageURL;
+    data["statusLinkURL"] = desc->metadata.statusLinkURL;
+    data["statusWorkspaceProductID"] = desc->metadata.statusWorkspaceProductID;
     data["supportsCredits"] = desc->metadata.supportsCredits;
     data["cliName"] = desc->metadata.cliName;
     data["enabled"] = ProviderRegistry::instance().isProviderEnabled(id);
@@ -1470,6 +1550,18 @@ QVariantMap UsageStore::providerDescriptorData(const QString& id) const {
     QVariantList modes;
     for (const auto& mode : desc->fetchPlan.allowedSourceModes) modes.append(mode);
     data["sourceModes"] = modes;
+    data["defaultSourceMode"] = desc->fetchPlan.defaultSourceMode;
+    QVariantMap tokenAccount;
+    tokenAccount["supportsMultipleAccounts"] = desc->tokenAccounts.supportsMultipleAccounts;
+    QVariantList requiredCredentials;
+    for (const auto& credential : desc->tokenAccounts.requiredCredentialTypes) {
+        requiredCredentials.append(credential);
+    }
+    tokenAccount["requiredCredentialTypes"] = requiredCredentials;
+    data["tokenAccount"] = tokenAccount;
+    data["supportsMultipleAccounts"] = desc->tokenAccounts.supportsMultipleAccounts;
+    data["defaultTokenAccount"] = TokenAccountStore::instance()->defaultAccountId(id);
+    data["tokenAccountCount"] = TokenAccountStore::instance()->accountCountForProvider(id);
     return data;
 }
 
@@ -1557,42 +1649,86 @@ QVariantMap UsageStore::providerSecretStatus(const QString& providerId, const QS
         }
     }
 
-    // Use cached credential state to avoid blocking main thread with WinCred API.
-    // On cache miss, fall back to ProviderCredentialStore::exists() since this is
-    // needed for correct operation. The startup preloadCredentials() call populates
-    // the cache so this fallback rarely fires in production.
-    bool credentialExists = false;
     if (!descriptor->credentialTarget.isEmpty()) {
-        QMutexLocker locker(&m_credentialCacheMutex);
-        if (m_credentialCache.contains(descriptor->credentialTarget)) {
-            credentialExists = true;
-        } else if (!m_credentialMissing.contains(descriptor->credentialTarget)) {
-            // Cache miss — check synchronously and cache the result
-            locker.unlock();
-            credentialExists = ProviderCredentialStore::exists(descriptor->credentialTarget);
-            locker.relock();
-            if (credentialExists) {
-                // Don't cache the secret data here (only the existence);
-                // the full read will happen in buildFetchContextForProvider on the worker thread.
-                // But mark it as not-missing so we don't keep re-checking.
-                m_credentialMissing[descriptor->credentialTarget] = !credentialExists;
-            } else {
-                m_credentialMissing[descriptor->credentialTarget] = true;
+        bool credentialExists = false;
+        bool credentialCheckPending = false;
+        {
+            QMutexLocker locker(&m_credentialCacheMutex);
+            if (m_credentialCache.contains(descriptor->credentialTarget)
+                || m_credentialExisting.contains(descriptor->credentialTarget)) {
+                credentialExists = true;
+            } else if (!m_credentialMissing.contains(descriptor->credentialTarget)) {
+                credentialCheckPending = true;
             }
+        }
+
+        if (credentialExists) {
+            status["configured"] = true;
+            status["source"] = "credential";
+            return status;
+        }
+        if (credentialCheckPending) {
+            status["checking"] = true;
+            status["source"] = "checking";
+            queueCredentialStatusCheck(providerId, key, descriptor->credentialTarget);
+            return status;
         }
     }
 
-    if (credentialExists) {
-        status["configured"] = true;
-        status["source"] = "credential";
-    } else if (descriptor->credentialTarget.isEmpty()
-               && m_settingsStore
-               && m_settingsStore->providerSetting(providerId, key).isValid()
-               && !m_settingsStore->providerSetting(providerId, key).toString().isEmpty()) {
+    // Known-missing credentials fall through without probing WinCred here.
+    if (!descriptor->credentialTarget.isEmpty()) {
+        return status;
+    }
+
+    if (m_settingsStore
+        && m_settingsStore->providerSetting(providerId, key).isValid()
+        && !m_settingsStore->providerSetting(providerId, key).toString().isEmpty()) {
         status["configured"] = true;
         status["source"] = "settings";
     }
     return status;
+}
+
+void UsageStore::queueCredentialStatusCheck(const QString& providerId,
+                                            const QString& key,
+                                            const QString& target) const
+{
+    if (target.isEmpty() || !m_threadPool) return;
+
+    {
+        QMutexLocker locker(&m_credentialCacheMutex);
+        if (m_credentialCache.contains(target)
+            || m_credentialExisting.contains(target)
+            || m_credentialMissing.contains(target)
+            || m_credentialStatusInFlight.contains(target)) {
+            return;
+        }
+        m_credentialStatusInFlight.insert(target);
+    }
+
+    auto* self = const_cast<UsageStore*>(this);
+    QPointer<UsageStore> guard(self);
+    QtConcurrent::run(m_threadPool, [guard, providerId, key, target]() {
+        const bool exists = ProviderCredentialStore::exists(target);
+        if (!guard) return;
+
+        QMetaObject::invokeMethod(guard.data(), [guard, providerId, key, target, exists]() {
+            if (!guard) return;
+            auto* store = guard.data();
+            {
+                QMutexLocker locker(&store->m_credentialCacheMutex);
+                store->m_credentialStatusInFlight.remove(target);
+                if (exists) {
+                    store->m_credentialExisting.insert(target);
+                    store->m_credentialMissing.remove(target);
+                } else {
+                    store->m_credentialExisting.remove(target);
+                    store->m_credentialMissing[target] = true;
+                }
+            }
+            emit store->providerSecretChanged(providerId, key);
+        }, Qt::QueuedConnection);
+    });
 }
 
 bool UsageStore::setProviderSecret(const QString& providerId,
@@ -1615,7 +1751,9 @@ bool UsageStore::setProviderSecret(const QString& providerId,
             if (ok) {
                 QMutexLocker locker(&m_credentialCacheMutex);
                 m_credentialCache[target] = {trimmed.toUtf8(), QDateTime::currentDateTime()};
+                m_credentialExisting.insert(target);
                 m_credentialMissing.remove(target);
+                m_credentialStatusInFlight.remove(target);
             }
             QMetaObject::invokeMethod(this, [this, providerId, key]() {
                 emit providerSecretChanged(providerId, key);
@@ -1648,7 +1786,9 @@ bool UsageStore::clearProviderSecret(const QString& providerId, const QString& k
             {
                 QMutexLocker locker(&m_credentialCacheMutex);
                 m_credentialCache.remove(target);
+                m_credentialExisting.remove(target);
                 m_credentialMissing[target] = true;
+                m_credentialStatusInFlight.remove(target);
             }
             QMetaObject::invokeMethod(this, [this, providerId, key]() {
                 emit providerSecretChanged(providerId, key);
@@ -2554,7 +2694,7 @@ QString UsageStore::addTokenAccount(const QString& providerId, const QString& di
 {
     TokenAccount account;
     account.providerId = providerId;
-    account.displayName = displayName.isEmpty() ? providerId : displayName;
+    account.displayName = displayName.trimmed().isEmpty() ? providerId : displayName.trimmed();
     account.sourceMode = static_cast<ProviderSourceMode>(sourceMode);
     account.visibility = AccountVisibility::Visible;
     account.createdAt = QDateTime::currentDateTimeUtc();
@@ -2567,12 +2707,44 @@ QString UsageStore::addTokenAccount(const QString& providerId, const QString& di
         TokenAccountStore::instance()->setDefaultAccountId(providerId, accountId);
     }
 
+    TokenAccountStore::instance()->saveToDisk();
+    return accountId;
+}
+
+QString UsageStore::addTokenAccountWithApiKey(const QString& providerId,
+                                              const QString& displayName,
+                                              int sourceMode,
+                                              const QString& apiKey)
+{
+    TokenAccount account;
+    account.providerId = providerId;
+    account.displayName = displayName.trimmed().isEmpty() ? providerId : displayName.trimmed();
+    account.sourceMode = static_cast<ProviderSourceMode>(sourceMode);
+    account.visibility = AccountVisibility::Visible;
+    account.createdAt = QDateTime::currentDateTimeUtc();
+    account.lastUsedAt = account.createdAt;
+
+    const QString trimmedKey = apiKey.trimmed();
+    if (!trimmedKey.isEmpty()) {
+        APICredentials api;
+        api.apiKey = SecureString(trimmedKey);
+        account.credentials.api = api;
+    }
+
+    QString accountId = TokenAccountStore::instance()->addAccount(account);
+    if (TokenAccountStore::instance()->accountCountForProvider(providerId) == 1) {
+        TokenAccountStore::instance()->setDefaultAccountId(providerId, accountId);
+    }
+
+    TokenAccountStore::instance()->saveToDisk();
     return accountId;
 }
 
 bool UsageStore::removeTokenAccount(const QString& accountId)
 {
-    return TokenAccountStore::instance()->removeAccount(accountId);
+    const bool ok = TokenAccountStore::instance()->removeAccount(accountId);
+    if (ok) TokenAccountStore::instance()->saveToDisk();
+    return ok;
 }
 
 bool UsageStore::setTokenAccountVisibility(const QString& accountId, int visibility)
@@ -2581,7 +2753,9 @@ bool UsageStore::setTokenAccountVisibility(const QString& accountId, int visibil
     if (!accOpt.has_value()) return false;
     TokenAccount acc = accOpt.value();
     acc.visibility = static_cast<AccountVisibility>(visibility);
-    return TokenAccountStore::instance()->updateAccount(accountId, acc);
+    const bool ok = TokenAccountStore::instance()->updateAccount(accountId, acc);
+    if (ok) TokenAccountStore::instance()->saveToDisk();
+    return ok;
 }
 
 bool UsageStore::setTokenAccountSourceMode(const QString& accountId, int sourceMode)
@@ -2590,12 +2764,21 @@ bool UsageStore::setTokenAccountSourceMode(const QString& accountId, int sourceM
     if (!accOpt.has_value()) return false;
     TokenAccount acc = accOpt.value();
     acc.sourceMode = static_cast<ProviderSourceMode>(sourceMode);
-    return TokenAccountStore::instance()->updateAccount(accountId, acc);
+    const bool ok = TokenAccountStore::instance()->updateAccount(accountId, acc);
+    if (ok) TokenAccountStore::instance()->saveToDisk();
+    return ok;
 }
 
 bool UsageStore::setDefaultTokenAccount(const QString& providerId, const QString& accountId)
 {
+    if (!accountId.isEmpty()) {
+        auto accOpt = TokenAccountStore::instance()->account(accountId);
+        if (!accOpt.has_value() || accOpt->providerId != providerId) {
+            return false;
+        }
+    }
     TokenAccountStore::instance()->setDefaultAccountId(providerId, accountId);
+    TokenAccountStore::instance()->saveToDisk();
     return true;
 }
 

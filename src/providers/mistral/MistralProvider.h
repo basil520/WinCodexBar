@@ -25,6 +25,7 @@ public:
                    "Stored in Windows Credential Manager", true, true} };
     }
     QVector<QString> supportedSourceModes() const override { return {"web"}; }
+    QString statusLinkURL() const override { return "https://status.mistral.ai"; }
 };
 
 class MistralWebStrategy : public IFetchStrategy {

@@ -35,6 +35,7 @@ public:
 
     QString brandColor() const override { return "#22C55E"; }
     QString dashboardURL() const override { return "https://www.perplexity.ai/account/usage"; }
+    QString statusLinkURL() const override { return "https://status.perplexity.com/"; }
     QVector<QString> supportedSourceModes() const override { return {"web"}; }
 };
 

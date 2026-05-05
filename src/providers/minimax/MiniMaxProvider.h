@@ -42,6 +42,8 @@ public:
         return "https://platform.minimax.io/user-center/payment/coding-plan?cycle_type=3";
     }
     QVector<QString> supportedSourceModes() const override { return {"auto", "web", "api"}; }
+    bool supportsMultipleAccounts() const override { return true; }
+    QVector<QString> requiredCredentialTypes() const override { return {"apiKey"}; }
 };
 
 class MiniMaxAPIStrategy : public IFetchStrategy {
