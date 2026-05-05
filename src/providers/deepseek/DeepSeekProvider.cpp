@@ -105,12 +105,12 @@ ProviderFetchResult DeepSeekAPIStrategy::parseResponse(const QJsonObject& json) 
     if (total <= 0 || !isAvailable) {
         rw.usedPercent = 100;
         rw.resetDescription = !isAvailable
-            ? "Balance unavailable for API calls"
-            : QString("%1%2 \xE2\x80\x94 add credits at platform.deepseek.com")
+            ? QCoreApplication::translate("ProviderLabels", "Balance unavailable for API calls")
+            : QCoreApplication::translate("ProviderLabels", "%1%2 — add credits at platform.deepseek.com")
                 .arg(symbol).arg(total, 0, 'f', 2);
     } else {
         rw.usedPercent = 0;
-        rw.resetDescription = QString("%1%2 (Paid: %1%3 / Granted: %1%4)")
+        rw.resetDescription = QCoreApplication::translate("ProviderLabels", "%1%2 (Paid: %1%3 / Granted: %1%4)")
             .arg(symbol)
             .arg(total, 0, 'f', 2)
             .arg(toppedUp, 0, 'f', 2)

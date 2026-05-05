@@ -220,7 +220,7 @@ UsageSnapshot KimiWebStrategy::parseKimiResponse(const QJsonObject& json) {
             double limitVal = *detail.limit;
             double usedVal = detail.used.has_value() ? *detail.used
                 : (detail.remaining.has_value() ? (limitVal - *detail.remaining) : 0);
-            QString desc = QString("%1/%2 requests").arg(usedVal, 0, 'f', 0).arg(limitVal, 0, 'f', 0);
+            QString desc = QCoreApplication::translate("ProviderLabels", "%1/%2 requests").arg(usedVal, 0, 'f', 0).arg(limitVal, 0, 'f', 0);
             RateWindow rw = makeKimiWindow(detail, 0, desc);
             snapshot.primary = rw;
         }
@@ -235,7 +235,8 @@ UsageSnapshot KimiWebStrategy::parseKimiResponse(const QJsonObject& json) {
             double limitVal = *detail.limit;
             double usedVal = detail.used.has_value() ? *detail.used
                 : (detail.remaining.has_value() ? (limitVal - *detail.remaining) : 0);
-            QString desc = QString("Rate: %1/%2 per 5 hours").arg(usedVal, 0, 'f', 0).arg(limitVal, 0, 'f', 0);
+            QString desc = QCoreApplication::translate("ProviderLabels", "Rate: %1/%2 per 5 hours")
+                .arg(usedVal, 0, 'f', 0).arg(limitVal, 0, 'f', 0);
             RateWindow rw = makeKimiWindow(detail, 300, desc);
             snapshot.secondary = rw;
         }

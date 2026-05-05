@@ -102,12 +102,12 @@ ProviderFetchResult PerplexityWebStrategy::parseResponse(const QJsonObject& json
 
     RateWindow secondary;
     secondary.usedPercent = (promoTotal > 0) ? (static_cast<double>(promoUsed) / promoTotal * 100.0) : 100;
-    secondary.resetDescription = "Promo credits";
+    secondary.resetDescription = QCoreApplication::translate("ProviderLabels", "Promo credits");
     snap.secondary = secondary;
 
     RateWindow tertiary;
     tertiary.usedPercent = (purchasedCents > 0) ? (static_cast<double>(purchasedUsed) / purchasedCents * 100.0) : 100;
-    tertiary.resetDescription = "Purchased credits";
+    tertiary.resetDescription = QCoreApplication::translate("ProviderLabels", "Purchased credits");
     snap.tertiary = tertiary;
 
     result.usage = snap;

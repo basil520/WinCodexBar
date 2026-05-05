@@ -54,6 +54,15 @@ const char* const providerLabelSources[] = {
     QT_TRANSLATE_NOOP("ProviderLabels", "Requests"),
     QT_TRANSLATE_NOOP("ProviderLabels", "Interval"),
     QT_TRANSLATE_NOOP("ProviderLabels", "Rate Limit"),
+    QT_TRANSLATE_NOOP("ProviderLabels", "Unlimited"),
+    QT_TRANSLATE_NOOP("ProviderLabels", "Paid"),
+    QT_TRANSLATE_NOOP("ProviderLabels", "Granted"),
+    QT_TRANSLATE_NOOP("ProviderLabels", "Promo credits"),
+    QT_TRANSLATE_NOOP("ProviderLabels", "Purchased credits"),
+    QT_TRANSLATE_NOOP("ProviderLabels", "compute points"),
+    QT_TRANSLATE_NOOP("ProviderLabels", "requests"),
+    QT_TRANSLATE_NOOP("ProviderLabels", "bonus credits"),
+    QT_TRANSLATE_NOOP("ProviderLabels", "Balance unavailable for API calls"),
 };
 
 const char* const providerSettingSources[] = {

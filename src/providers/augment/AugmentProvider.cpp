@@ -153,7 +153,7 @@ ProviderFetchResult AugmentWebStrategy::parseCreditsResponse(const QJsonObject& 
 
     RateWindow rw;
     rw.usedPercent = (total > 0) ? (static_cast<double>(consumed) / total * 100.0) : 0;
-    rw.resetDescription = QString("%1 remaining (%2/%3 used)").arg(remaining).arg(consumed).arg(total);
+    rw.resetDescription = QCoreApplication::translate("ProviderLabels", "%1 remaining (%2/%3 used)").arg(remaining).arg(consumed).arg(total);
     snap.primary = rw;
 
     result.usage = snap;

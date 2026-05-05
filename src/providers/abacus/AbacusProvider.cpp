@@ -96,7 +96,7 @@ ProviderFetchResult AbacusWebStrategy::fetchSync(const ProviderFetchContext& ctx
     rw.usedPercent = (totalPoints > 0)
         ? qBound(0.0, ((totalPoints - pointsLeft) / totalPoints) * 100.0, 100.0)
         : 0;
-    rw.resetDescription = QString("%1 / %2 compute points")
+    rw.resetDescription = QCoreApplication::translate("ProviderLabels", "%1 / %2 compute points")
         .arg(pointsLeft, 0, 'f', 1)
         .arg(totalPoints, 0, 'f', 1);
     snap.primary = rw;

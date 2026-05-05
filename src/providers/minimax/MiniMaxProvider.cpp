@@ -173,7 +173,7 @@ ProviderFetchResult MiniMaxAPIStrategy::parseResponse(const QJsonObject& json) {
             int sec = remainsTime > 1000000 ? remainsTime / 1000 : remainsTime;
             rw.resetsAt = QDateTime::currentDateTime().addSecs(sec);
         }
-        rw.resetDescription = QString("%1 / %2 prompts").arg(used).arg(total);
+        rw.resetDescription = QCoreApplication::translate("ProviderLabels", "%1 / %2 prompts").arg(used).arg(total);
         snap.primary = rw;
     }
 

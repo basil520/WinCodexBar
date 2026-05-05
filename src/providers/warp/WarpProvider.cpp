@@ -59,10 +59,10 @@ ProviderFetchResult WarpAPIStrategy::parseResponse(const QJsonObject& json) {
     RateWindow primary;
     if (isUnlimited) {
         primary.usedPercent = 0;
-        primary.resetDescription = "Unlimited";
+        primary.resetDescription = QCoreApplication::translate("ProviderLabels", "Unlimited");
     } else if (requestLimit > 0) {
         primary.usedPercent = static_cast<double>(requestsUsed) / requestLimit * 100.0;
-        primary.resetDescription = QString("%1 / %2 requests").arg(requestsUsed).arg(requestLimit);
+        primary.resetDescription = QCoreApplication::translate("ProviderLabels", "%1 / %2 requests").arg(requestsUsed).arg(requestLimit);
     }
     if (nextRefresh > 0) primary.resetsAt = QDateTime::fromMSecsSinceEpoch(nextRefresh);
     snap.primary = primary;
@@ -80,7 +80,7 @@ ProviderFetchResult WarpAPIStrategy::parseResponse(const QJsonObject& json) {
     if (totalBonusGranted > 0) {
         RateWindow secondary;
         secondary.usedPercent = ((totalBonusGranted - totalBonusRemaining) / totalBonusGranted) * 100.0;
-        secondary.resetDescription = QString("%1 bonus credits").arg(totalBonusRemaining, 0, 'f', 0);
+        secondary.resetDescription = QCoreApplication::translate("ProviderLabels", "%1 bonus credits").arg(totalBonusRemaining, 0, 'f', 0);
         snap.secondary = secondary;
     }
 

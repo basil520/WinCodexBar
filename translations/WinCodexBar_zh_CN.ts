@@ -803,572 +803,572 @@
 <context>
     <name>ProviderErrors</name>
     <message>
-        <location filename="../src/app/Localization.cpp" line="74"/>
+        <location filename="../src/app/Localization.cpp" line="83"/>
         <source>fetchSync not implemented</source>
         <translation>fetchSync 未实现</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="75"/>
+        <location filename="../src/app/Localization.cpp" line="84"/>
         <source>strategy timed out</source>
         <translation>策略超时</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="76"/>
+        <location filename="../src/app/Localization.cpp" line="85"/>
         <source>no available fetch strategy</source>
         <translation>没有可用的获取策略</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="77"/>
+        <location filename="../src/app/Localization.cpp" line="86"/>
         <source>empty or invalid response</source>
         <translation>响应为空或无效</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="78"/>
+        <location filename="../src/app/Localization.cpp" line="87"/>
         <source>API error</source>
         <translation>API 错误</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="79"/>
+        <location filename="../src/app/Localization.cpp" line="88"/>
         <source>no cookies found</source>
         <translation>未找到 Cookie</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="80"/>
+        <location filename="../src/app/Localization.cpp" line="89"/>
         <source>empty response</source>
         <translation>响应为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="81"/>
+        <location filename="../src/app/Localization.cpp" line="90"/>
         <source>empty HTML</source>
         <translation>HTML 为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="82"/>
+        <location filename="../src/app/Localization.cpp" line="91"/>
         <source>Claude OAuth credentials not found. Run `claude` to authenticate.</source>
         <translation>未找到 Claude OAuth 凭据。请运行 `claude` 进行认证。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="83"/>
+        <location filename="../src/app/Localization.cpp" line="92"/>
         <source>empty or invalid response from Claude OAuth API</source>
         <translation>Claude OAuth API 响应为空或无效</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="84"/>
+        <location filename="../src/app/Localization.cpp" line="93"/>
         <source>OAuth error</source>
         <translation>OAuth 错误</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="85"/>
+        <location filename="../src/app/Localization.cpp" line="94"/>
         <source>no usage data in Claude OAuth response</source>
         <translation>Claude OAuth 响应中没有用量数据</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="86"/>
+        <location filename="../src/app/Localization.cpp" line="95"/>
         <source>No Claude session key found in browser cookies.</source>
         <translation>浏览器 Cookie 中未找到 Claude 会话密钥。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="87"/>
+        <location filename="../src/app/Localization.cpp" line="96"/>
         <source>No Claude organization found.</source>
         <translation>未找到 Claude 组织。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="88"/>
+        <location filename="../src/app/Localization.cpp" line="97"/>
         <source>No usage data from Claude web API.</source>
         <translation>Claude Web API 未返回用量数据。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="89"/>
+        <location filename="../src/app/Localization.cpp" line="98"/>
         <source>No Cursor session cookies found in browser.</source>
         <translation>浏览器中未找到 Cursor 会话 Cookie。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="90"/>
+        <location filename="../src/app/Localization.cpp" line="99"/>
         <source>No Cursor session cookie found.</source>
         <translation>未找到 Cursor 会话 Cookie。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="91"/>
+        <location filename="../src/app/Localization.cpp" line="100"/>
         <source>empty response from Cursor usage API</source>
         <translation>Cursor 用量 API 响应为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="92"/>
+        <location filename="../src/app/Localization.cpp" line="101"/>
         <source>no usage data in Cursor response</source>
         <translation>Cursor 响应中没有用量数据</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="93"/>
+        <location filename="../src/app/Localization.cpp" line="102"/>
         <source>OAuth device flow failed</source>
         <translation>OAuth 设备流程失败</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="94"/>
+        <location filename="../src/app/Localization.cpp" line="103"/>
         <source>empty copilot response</source>
         <translation>Copilot 响应为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="95"/>
+        <location filename="../src/app/Localization.cpp" line="104"/>
         <source>kiro-cli timed out</source>
         <translation>kiro-cli 超时</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="96"/>
+        <location filename="../src/app/Localization.cpp" line="105"/>
         <source>empty CLI output</source>
         <translation>CLI 输出为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="97"/>
+        <location filename="../src/app/Localization.cpp" line="106"/>
         <source>no results in tRPC response</source>
         <translation>tRPC 响应中没有结果</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="98"/>
+        <location filename="../src/app/Localization.cpp" line="107"/>
         <source>Codex auth.json not found. Run `codex` to log in.</source>
         <translation>未找到 Codex auth.json。请运行 `codex` 登录。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="99"/>
+        <location filename="../src/app/Localization.cpp" line="108"/>
         <source>empty or invalid response from Codex API</source>
         <translation>Codex API 响应为空或无效</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="100"/>
+        <location filename="../src/app/Localization.cpp" line="109"/>
         <source>no rate limit data in response</source>
         <translation>响应中没有速率限制数据</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="101"/>
+        <location filename="../src/app/Localization.cpp" line="110"/>
         <source>empty credits response</source>
         <translation>积分响应为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="103"/>
+        <location filename="../src/app/Localization.cpp" line="112"/>
         <source>DeepSeek API key not configured.</source>
         <translation>DeepSeek API 密钥未配置。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="104"/>
+        <location filename="../src/app/Localization.cpp" line="113"/>
         <source>Empty or invalid response from DeepSeek API</source>
         <translation>DeepSeek API 响应为空或无效</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="106"/>
+        <location filename="../src/app/Localization.cpp" line="115"/>
         <source>MiniMax API key not configured.</source>
         <translation>MiniMax API 密钥未配置。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="107"/>
+        <location filename="../src/app/Localization.cpp" line="116"/>
         <source>Empty or invalid response from MiniMax API</source>
         <translation>MiniMax API 响应为空或无效</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="108"/>
+        <location filename="../src/app/Localization.cpp" line="117"/>
         <source>MiniMax API credentials are invalid or expired.</source>
         <translation>MiniMax API 凭据无效或已过期。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="109"/>
+        <location filename="../src/app/Localization.cpp" line="118"/>
         <source>Empty response from MiniMax coding plan page</source>
         <translation>MiniMax Coding Plan 页面响应为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="110"/>
+        <location filename="../src/app/Localization.cpp" line="119"/>
         <source>MiniMax session expired. Please re-import your cookie.</source>
         <translation>MiniMax 会话已过期，请重新导入 Cookie。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="111"/>
+        <location filename="../src/app/Localization.cpp" line="120"/>
         <source>Could not parse MiniMax coding plan data from page</source>
         <translation>无法解析页面中的 MiniMax Coding Plan 数据</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="112"/>
+        <location filename="../src/app/Localization.cpp" line="121"/>
         <source>No MiniMax cookie available. Log in to platform.minimax.io in your browser.</source>
         <translation>无 MiniMax Cookie。请在浏览器中登录 platform.minimax.io。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="114"/>
+        <location filename="../src/app/Localization.cpp" line="123"/>
         <source>Empty or invalid response from Synthetic API</source>
         <translation>Synthetic API 响应为空或无效</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="115"/>
+        <location filename="../src/app/Localization.cpp" line="124"/>
         <source>Synthetic API key not configured.</source>
         <translation>Synthetic API 密钥未配置。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="117"/>
+        <location filename="../src/app/Localization.cpp" line="126"/>
         <source>Empty or invalid response from Perplexity API</source>
         <translation>Perplexity API 响应为空或无效</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="118"/>
+        <location filename="../src/app/Localization.cpp" line="127"/>
         <source>No Perplexity cookie available. Log in to perplexity.ai in your browser or paste cookie manually.</source>
         <translation>无 Perplexity Cookie。请在浏览器中登录 perplexity.ai 或手动粘贴 Cookie。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="120"/>
+        <location filename="../src/app/Localization.cpp" line="129"/>
         <source>Empty response from Amp</source>
         <translation>Amp 响应为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="121"/>
+        <location filename="../src/app/Localization.cpp" line="130"/>
         <source>Not signed in. Log in to ampcode.com in your browser.</source>
         <translation>未登录。请在浏览器中登录 ampcode.com。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="122"/>
+        <location filename="../src/app/Localization.cpp" line="131"/>
         <source>Could not parse Amp usage data from page</source>
         <translation>无法解析页面中的 Amp 用量数据</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="123"/>
+        <location filename="../src/app/Localization.cpp" line="132"/>
         <source>Could not find quota in Amp usage data</source>
         <translation>未在 Amp 用量数据中找到配额</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="124"/>
+        <location filename="../src/app/Localization.cpp" line="133"/>
         <source>No Amp cookie available. Log in to ampcode.com in your browser.</source>
         <translation>无 Amp Cookie。请在浏览器中登录 ampcode.com。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="126"/>
+        <location filename="../src/app/Localization.cpp" line="135"/>
         <source>auggie CLI not found in PATH.</source>
         <translation>未在 PATH 中找到 auggie CLI。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="127"/>
+        <location filename="../src/app/Localization.cpp" line="136"/>
         <source>auggie account status timed out</source>
         <translation>auggie account status 超时</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="128"/>
+        <location filename="../src/app/Localization.cpp" line="137"/>
         <source>Empty output from auggie CLI</source>
         <translation>auggie CLI 输出为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="129"/>
+        <location filename="../src/app/Localization.cpp" line="138"/>
         <source>Empty response from Augment API</source>
         <translation>Augment API 响应为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="130"/>
+        <location filename="../src/app/Localization.cpp" line="139"/>
         <source>No Augment cookie available.</source>
         <translation>无 Augment Cookie。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="132"/>
+        <location filename="../src/app/Localization.cpp" line="141"/>
         <source>No quota buckets in Gemini response</source>
         <translation>Gemini 响应中无配额桶</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="133"/>
+        <location filename="../src/app/Localization.cpp" line="142"/>
         <source>Gemini OAuth credentials not found. Run &apos;gemini&apos; CLI to authenticate.</source>
         <translation>刷新 Gemini OAuth 令牌失败。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="134"/>
+        <location filename="../src/app/Localization.cpp" line="143"/>
         <source>Failed to refresh Gemini OAuth token.</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="135"/>
+        <location filename="../src/app/Localization.cpp" line="144"/>
         <source>Gemini API key mode does not support usage quotas. Use OAuth mode (run &apos;gemini&apos; CLI to authenticate).</source>
         <translation>Gemini API Key 模式不支持用量配额。请使用 OAuth 模式（运行 &apos;gemini&apos; CLI 认证）。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="137"/>
+        <location filename="../src/app/Localization.cpp" line="146"/>
         <source>Google ADC not found. Run &apos;gcloud auth application-default login&apos;.</source>
         <translation>未找到 Google ADC。请运行 &apos;gcloud auth application-default login&apos;。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="138"/>
+        <location filename="../src/app/Localization.cpp" line="147"/>
         <source>GCP project not found. Set GOOGLE_CLOUD_PROJECT or run &apos;gcloud config set project&apos;.</source>
         <translation>未找到 GCP 项目。请设置 GOOGLE_CLOUD_PROJECT 或运行 &apos;gcloud config set project&apos;。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="140"/>
+        <location filename="../src/app/Localization.cpp" line="149"/>
         <source>No AIAssistant quota data found in XML</source>
         <translation>XML 中未找到 AI Assistant 配额数据</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="141"/>
+        <location filename="../src/app/Localization.cpp" line="150"/>
         <source>No quotaInfo in JetBrains data</source>
         <translation>JetBrains 数据中无 quotaInfo</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="142"/>
+        <location filename="../src/app/Localization.cpp" line="151"/>
         <source>No JetBrains IDE installation found.</source>
         <translation>未找到 JetBrains IDE 安装。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="144"/>
+        <location filename="../src/app/Localization.cpp" line="153"/>
         <source>Empty response from Factory API</source>
         <translation>Factory API 响应为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="145"/>
+        <location filename="../src/app/Localization.cpp" line="154"/>
         <source>No Factory cookie available. Log in to app.factory.ai in your browser.</source>
         <translation>无 Factory Cookie。请在浏览器中登录 app.factory.ai。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="147"/>
+        <location filename="../src/app/Localization.cpp" line="156"/>
         <source>No response from Antigravity local service</source>
         <translation>Antigravity 本地服务无响应</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="148"/>
+        <location filename="../src/app/Localization.cpp" line="157"/>
         <source>Antigravity is not running.</source>
         <translation>Antigravity 未在运行。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="150"/>
+        <location filename="../src/app/Localization.cpp" line="159"/>
         <source>Warp API key not configured.</source>
         <translation>Warp API 密钥未配置。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="151"/>
+        <location filename="../src/app/Localization.cpp" line="160"/>
         <source>Empty response from Warp GraphQL API</source>
         <translation>Warp GraphQL API 响应为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="152"/>
+        <location filename="../src/app/Localization.cpp" line="161"/>
         <source>GraphQL error</source>
         <translation>GraphQL 错误</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="154"/>
+        <location filename="../src/app/Localization.cpp" line="163"/>
         <source>No Abacus AI cookie available. Log in to apps.abacus.ai in your browser.</source>
         <translation>无 Abacus AI Cookie。请在浏览器中登录 apps.abacus.ai。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="155"/>
+        <location filename="../src/app/Localization.cpp" line="164"/>
         <source>Empty response from Abacus AI API</source>
         <translation>Abacus AI API 响应为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="156"/>
+        <location filename="../src/app/Localization.cpp" line="165"/>
         <source>Abacus AI API error</source>
         <translation>Abacus AI API 错误</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="158"/>
+        <location filename="../src/app/Localization.cpp" line="167"/>
         <source>Kimi auth token is missing. Please add your JWT token from the Kimi console.</source>
         <translation>Kimi 认证令牌缺失。请从 Kimi 控制台添加 JWT 令牌。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="159"/>
+        <location filename="../src/app/Localization.cpp" line="168"/>
         <source>Kimi auth token is invalid or expired. Please refresh your token.</source>
         <translation>Kimi 认证令牌无效或已过期。请刷新令牌。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="160"/>
+        <location filename="../src/app/Localization.cpp" line="169"/>
         <source>Invalid request</source>
         <translation>无效请求</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="161"/>
+        <location filename="../src/app/Localization.cpp" line="170"/>
         <source>Kimi network error</source>
         <translation>Kimi 网络错误</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="162"/>
+        <location filename="../src/app/Localization.cpp" line="171"/>
         <source>Kimi API error</source>
         <translation>Kimi API 错误</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="163"/>
+        <location filename="../src/app/Localization.cpp" line="172"/>
         <source>Failed to parse Kimi usage data</source>
         <translation>无法解析 Kimi 用量数据</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="164"/>
+        <location filename="../src/app/Localization.cpp" line="173"/>
         <source>Unknown Kimi error</source>
         <translation>未知 Kimi 错误</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="166"/>
+        <location filename="../src/app/Localization.cpp" line="175"/>
         <source>Codex CLI RPC returned no rate limit data.</source>
         <translation>Codex CLI RPC 未返回速率限制数据。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="167"/>
+        <location filename="../src/app/Localization.cpp" line="176"/>
         <source>Codex CLI RPC returned no rate limit windows.</source>
         <translation>Codex CLI RPC 未返回速率限制窗口。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="168"/>
+        <location filename="../src/app/Localization.cpp" line="177"/>
         <source>ConPTY is not available on this Windows version (requires Windows 10 1809+). codex CLI needs a terminal.</source>
         <translation>此 Windows 版本不支持 ConPTY（需要 Windows 10 1809+）。codex CLI 需要终端。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="169"/>
+        <location filename="../src/app/Localization.cpp" line="178"/>
         <source>codex CLI still reports &apos;stdin is not a terminal&apos; even with ConPTY.</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="170"/>
+        <location filename="../src/app/Localization.cpp" line="179"/>
         <source>Codex CLI update needed. Run `npm i -g @openai/codex` to continue.</source>
         <translation>需更新 Codex CLI。请运行 `npm i -g @openai/codex` 继续。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="171"/>
+        <location filename="../src/app/Localization.cpp" line="180"/>
         <source>Codex data not available yet; will retry shortly.</source>
         <translation>Codex 数据暂不可用，稍后将重试。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="172"/>
+        <location filename="../src/app/Localization.cpp" line="181"/>
         <source>Could not parse codex CLI status output. The CLI returned interactive screen output instead of usage data.</source>
         <translation>无法解析 codex CLI 状态输出。CLI 返回了交互式屏幕输出而非用量数据。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="173"/>
+        <location filename="../src/app/Localization.cpp" line="182"/>
         <source>Empty response from web dashboard (HTTP request failed or returned empty)</source>
         <translation>Web Dashboard 响应为空（HTTP 请求失败或返回空内容）</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="174"/>
+        <location filename="../src/app/Localization.cpp" line="183"/>
         <source>Could not parse usage data from web dashboard.</source>
         <translation>无法解析 Web Dashboard 用量数据。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="175"/>
+        <location filename="../src/app/Localization.cpp" line="184"/>
         <source>codex CLI not found in PATH. Install via `npm i -g @openai/codex`</source>
         <translation>PATH 中未找到 codex CLI。请通过 `npm i -g @openai/codex` 安装。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="176"/>
+        <location filename="../src/app/Localization.cpp" line="185"/>
         <source>Failed to start ConPTY session for codex CLI</source>
         <translation>无法启动 codex CLI 的 ConPTY 会话</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="177"/>
+        <location filename="../src/app/Localization.cpp" line="186"/>
         <source>codex CLI exited before we could send /status</source>
         <translation>codex CLI 在发送 /status 前已退出</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="178"/>
+        <location filename="../src/app/Localization.cpp" line="187"/>
         <source>Could not parse codex CLI status output.</source>
         <translation>无法解析 codex CLI 状态输出。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="179"/>
+        <location filename="../src/app/Localization.cpp" line="188"/>
         <source>Failed to start persistent CLI session</source>
         <translation>无法启动持久 CLI 会话</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="180"/>
+        <location filename="../src/app/Localization.cpp" line="189"/>
         <source>CLI session exited unexpectedly</source>
         <translation>CLI 会话意外退出</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="181"/>
+        <location filename="../src/app/Localization.cpp" line="190"/>
         <source>Timed out waiting for status output</source>
         <translation>等待状态输出超时</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="182"/>
+        <location filename="../src/app/Localization.cpp" line="191"/>
         <source>Empty response from token refresh endpoint</source>
         <translation>令牌刷新端点响应为空</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="183"/>
+        <location filename="../src/app/Localization.cpp" line="192"/>
         <source>Refresh token expired. Please run `codex` to log in again.</source>
         <translation>刷新令牌已过期。请运行 `codex` 重新登录。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="184"/>
+        <location filename="../src/app/Localization.cpp" line="193"/>
         <source>Refresh token was revoked. Please run `codex` to log in again.</source>
         <translation>刷新令牌已被撤销。请运行 `codex` 重新登录。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="185"/>
+        <location filename="../src/app/Localization.cpp" line="194"/>
         <source>Refresh token was already used. Please run `codex` to log in again.</source>
         <translation>刷新令牌已被使用。请运行 `codex` 重新登录。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="186"/>
+        <location filename="../src/app/Localization.cpp" line="195"/>
         <source>Token refresh failed</source>
         <translation>令牌刷新失败</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="187"/>
+        <location filename="../src/app/Localization.cpp" line="196"/>
         <source>Invalid refresh response: missing access_token</source>
         <translation>无效的刷新响应：缺少 access_token</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="188"/>
+        <location filename="../src/app/Localization.cpp" line="197"/>
         <source>RPC client not started</source>
         <translation>RPC 客户端未启动</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="189"/>
+        <location filename="../src/app/Localization.cpp" line="198"/>
         <source>No credits data in OAuth response</source>
         <translation>OAuth 响应中无积分数据</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="190"/>
+        <location filename="../src/app/Localization.cpp" line="199"/>
         <source>Codex CLI RPC failed to start</source>
         <translation>Codex CLI RPC 启动失败</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="191"/>
+        <location filename="../src/app/Localization.cpp" line="200"/>
         <source>No credits in RPC response</source>
         <translation>RPC 响应中无积分</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="192"/>
+        <location filename="../src/app/Localization.cpp" line="201"/>
         <source>No credits parsed from CLI status output</source>
         <translation>CLI 状态输出中未解析到积分</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="194"/>
+        <location filename="../src/app/Localization.cpp" line="203"/>
         <source>No OpenCode Go auth cookie found in browser cookies or manual input.</source>
         <translation>未找到 OpenCode Go 认证 Cookie。请在浏览器 Cookie 或手动输入中检查。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="195"/>
+        <location filename="../src/app/Localization.cpp" line="204"/>
         <source>Failed to fetch OpenCode workspace ID.</source>
         <translation>获取 OpenCode 工作区 ID 失败。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="196"/>
+        <location filename="../src/app/Localization.cpp" line="205"/>
         <source>OpenCode Go workspace page returned no usage data.</source>
         <translation>OpenCode Go 工作区页面未返回用量数据。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="197"/>
+        <location filename="../src/app/Localization.cpp" line="206"/>
         <source>No usage data found in OpenCode Go response.</source>
         <translation>OpenCode Go 响应中未找到用量数据。</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="199"/>
+        <location filename="../src/app/Localization.cpp" line="208"/>
         <source>Application shutting down</source>
         <translation>应用正在关闭</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="200"/>
+        <location filename="../src/app/Localization.cpp" line="209"/>
         <source>No available fetch strategy</source>
         <translation>无可用获取策略</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="201"/>
+        <location filename="../src/app/Localization.cpp" line="210"/>
         <source>test override returned no credits</source>
         <translation>测试覆盖未返回积分</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="203"/>
+        <location filename="../src/app/Localization.cpp" line="212"/>
         <source>empty or invalid response from Alibaba web</source>
         <translation>Alibaba Web 响应为空或无效</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="204"/>
+        <location filename="../src/app/Localization.cpp" line="213"/>
         <source>Quota information unavailable</source>
         <translation>配额信息不可用</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="205"/>
+        <location filename="../src/app/Localization.cpp" line="214"/>
         <source>API authenticated</source>
         <translation>API 已认证</translation>
     </message>
@@ -1545,61 +1545,161 @@
         <source>Rate Limit</source>
         <translation>速率限制</translation>
     </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="57"/>
+        <location filename="../src/providers/warp/WarpProvider.cpp" line="62"/>
+        <source>Unlimited</source>
+        <translation>无限</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="58"/>
+        <source>Paid</source>
+        <translation>已购</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="59"/>
+        <source>Granted</source>
+        <translation>赠送</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="60"/>
+        <location filename="../src/providers/perplexity/PerplexityProvider.cpp" line="105"/>
+        <source>Promo credits</source>
+        <translation>促销积分</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="61"/>
+        <location filename="../src/providers/perplexity/PerplexityProvider.cpp" line="110"/>
+        <source>Purchased credits</source>
+        <translation>已购积分</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="62"/>
+        <source>compute points</source>
+        <translation>算力积分</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="63"/>
+        <source>requests</source>
+        <translation>请求</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="64"/>
+        <source>bonus credits</source>
+        <translation>奖励积分</translation>
+    </message>
+    <message>
+        <location filename="../src/app/Localization.cpp" line="65"/>
+        <location filename="../src/providers/deepseek/DeepSeekProvider.cpp" line="108"/>
+        <source>Balance unavailable for API calls</source>
+        <translation>API 余额不可用</translation>
+    </message>
+    <message>
+        <location filename="../src/providers/abacus/AbacusProvider.cpp" line="99"/>
+        <source>%1 / %2 compute points</source>
+        <translation>%1 / %2 算力积分</translation>
+    </message>
+    <message>
+        <location filename="../src/providers/amp/AmpProvider.cpp" line="113"/>
+        <location filename="../src/providers/jetbrains/JetBrainsProvider.cpp" line="130"/>
+        <source>%1 / %2</source>
+        <translation>%1 / %2</translation>
+    </message>
+    <message>
+        <location filename="../src/providers/augment/AugmentProvider.cpp" line="156"/>
+        <source>%1 remaining (%2/%3 used)</source>
+        <translation>剩余 %1（已用 %2/%3）</translation>
+    </message>
+    <message>
+        <location filename="../src/providers/deepseek/DeepSeekProvider.cpp" line="109"/>
+        <source>%1%2 — add credits at platform.deepseek.com</source>
+        <translation>%1%2 — 请前往 platform.deepseek.com 充值</translation>
+    </message>
+    <message>
+        <location filename="../src/providers/deepseek/DeepSeekProvider.cpp" line="113"/>
+        <source>%1%2 (Paid: %1%3 / Granted: %1%4)</source>
+        <translation>%1%2（已购：%1%3 / 赠送：%1%4）</translation>
+    </message>
+    <message>
+        <location filename="../src/providers/kimi/KimiProvider.cpp" line="223"/>
+        <source>%1/%2 requests</source>
+        <translation>%1/%2 请求</translation>
+    </message>
+    <message>
+        <location filename="../src/providers/kimi/KimiProvider.cpp" line="238"/>
+        <source>Rate: %1/%2 per 5 hours</source>
+        <translation>速率：%1/%2 / 5 小时</translation>
+    </message>
+    <message>
+        <location filename="../src/providers/minimax/MiniMaxProvider.cpp" line="176"/>
+        <source>%1 / %2 prompts</source>
+        <translation>%1 / %2 提示</translation>
+    </message>
+    <message>
+        <location filename="../src/providers/warp/WarpProvider.cpp" line="65"/>
+        <source>%1 / %2 requests</source>
+        <translation>%1 / %2 请求</translation>
+    </message>
+    <message>
+        <location filename="../src/providers/warp/WarpProvider.cpp" line="83"/>
+        <source>%1 bonus credits</source>
+        <translation>%1 奖励积分</translation>
+    </message>
 </context>
 <context>
     <name>ProviderSettings</name>
     <message>
-        <location filename="../src/app/Localization.cpp" line="60"/>
+        <location filename="../src/app/Localization.cpp" line="69"/>
         <source>Data source</source>
         <translation>数据来源</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="61"/>
+        <location filename="../src/app/Localization.cpp" line="70"/>
         <source>Cookie source</source>
         <translation>Cookie 来源</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="62"/>
+        <location filename="../src/app/Localization.cpp" line="71"/>
         <source>API region</source>
         <translation>API 区域</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="63"/>
+        <location filename="../src/app/Localization.cpp" line="72"/>
         <source>API key</source>
         <translation>API 密钥</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="64"/>
+        <location filename="../src/app/Localization.cpp" line="73"/>
         <source>API Key</source>
         <translation>API 密钥</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="65"/>
+        <location filename="../src/app/Localization.cpp" line="74"/>
         <source>API key (optional)</source>
         <translation>API 密钥（可选）</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="66"/>
+        <location filename="../src/app/Localization.cpp" line="75"/>
         <source>Manual cookie</source>
         <translation>手动 Cookie</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="67"/>
+        <location filename="../src/app/Localization.cpp" line="76"/>
         <source>Manual cookie header</source>
         <translation>手动 Cookie 头部</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="68"/>
+        <location filename="../src/app/Localization.cpp" line="77"/>
         <source>Region</source>
         <translation>区域</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="69"/>
+        <location filename="../src/app/Localization.cpp" line="78"/>
         <source>Workspace ID</source>
         <translation>工作区 ID</translation>
     </message>
     <message>
-        <location filename="../src/app/Localization.cpp" line="70"/>
+        <location filename="../src/app/Localization.cpp" line="79"/>
         <source>Browser or manual cookie</source>
         <translation>浏览器或手动 Cookie</translation>
     </message>

@@ -110,7 +110,7 @@ ProviderFetchResult AmpWebStrategy::parseHTML(const QString& html) {
     RateWindow rw;
     rw.usedPercent = (quota > 0) ? (used / quota * 100.0) : 0;
     if (windowHours > 0) rw.windowMinutes = static_cast<int>(windowHours * 60);
-    rw.resetDescription = QString("%1 / %2").arg(used, 0, 'f', 1).arg(quota, 0, 'f', 1);
+    rw.resetDescription = QCoreApplication::translate("ProviderLabels", "%1 / %2").arg(used, 0, 'f', 1).arg(quota, 0, 'f', 1);
     snap.primary = rw;
 
     result.usage = snap;

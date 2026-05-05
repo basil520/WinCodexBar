@@ -127,7 +127,7 @@ ProviderFetchResult JetBrainsLocalStrategy::parseXml(const QString& xmlContent) 
 
     RateWindow rw;
     rw.usedPercent = (maximum > 0) ? qBound(0.0, (current / maximum) * 100.0, 100.0) : 0;
-    rw.resetDescription = QString("%1 / %2").arg(current, 0, 'f', 0).arg(maximum, 0, 'f', 0);
+    rw.resetDescription = QCoreApplication::translate("ProviderLabels", "%1 / %2").arg(current, 0, 'f', 0).arg(maximum, 0, 'f', 0);
 
     QJsonObject nextRefill = root["nextRefill"].toObject();
     QString nextTime = nextRefill["next"].toString();
