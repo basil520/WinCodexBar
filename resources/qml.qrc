@@ -59,6 +59,7 @@
         <file alias="icons/ProviderIcon-synthetic.svg">../resources/icons/ProviderIcon-synthetic.svg</file>
         <file alias="icons/ProviderIcon-vertexai.svg">../resources/icons/ProviderIcon-vertexai.svg</file>
         <file alias="icons/ProviderIcon-warp.svg">../resources/icons/ProviderIcon-warp.svg</file>
+        <file alias="icons/ProviderIcon-windsurf.svg">../resources/icons/ProviderIcon-windsurf.svg</file>
         <file alias="icons/ProviderIcon-zai.svg">../resources/icons/ProviderIcon-zai.svg</file>
     </qresource>
 </RCC>

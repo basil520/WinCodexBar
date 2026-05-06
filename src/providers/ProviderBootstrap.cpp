@@ -30,6 +30,7 @@
 #include "warp/WarpProvider.h"
 #include "abacus/AbacusProvider.h"
 #include "codebuff/CodebuffProvider.h"
+#include "windsurf/WindsurfProvider.h"
 
 #include "../app/SettingsStore.h"
 #include "../app/UsageStore.h"
@@ -84,6 +85,7 @@ void registerAllProviders()
     registerProviderIfMissing<WarpProvider>(QStringLiteral("warp"));
     registerProviderIfMissing<AbacusProvider>(QStringLiteral("abacus"));
     registerProviderIfMissing<CodebuffProvider>(QStringLiteral("codebuff"));
+    registerProviderIfMissing<WindsurfProvider>(QStringLiteral("windsurf"));
 }
 
 void applyStoredProviderEnabledStates(SettingsStore* settings, UsageStore* usageStore)

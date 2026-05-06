@@ -96,6 +96,7 @@ set(CORE_SOURCES
     src/providers/warp/WarpProvider.cpp
     src/providers/abacus/AbacusProvider.cpp
     src/providers/codebuff/CodebuffProvider.cpp
+    src/providers/windsurf/WindsurfProvider.cpp
 
     src/network/NetworkManager.cpp
 
@@ -202,6 +203,7 @@ set(CORE_HEADERS
     src/providers/warp/WarpProvider.h
     src/providers/abacus/AbacusProvider.h
     src/providers/codebuff/CodebuffProvider.h
+    src/providers/windsurf/WindsurfProvider.h
 
     src/providers/IProvider.h
     src/providers/IFetchStrategy.h

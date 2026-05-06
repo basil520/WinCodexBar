@@ -6,6 +6,7 @@
 #include "../src/providers/claude/ClaudeProvider.h"
 #include "../src/providers/codex/CodexProvider.h"
 #include "../src/providers/zai/ZaiProvider.h"
+#include "../src/providers/windsurf/WindsurfProvider.h"
 #include "../src/providers/shared/ProviderCredentialStore.h"
 
 #include <QDir>
@@ -176,6 +177,7 @@ private slots:
         ProviderRegistry::instance().registerProvider(new ClaudeProvider());
         ProviderRegistry::instance().registerProvider(new CodexProvider());
         ProviderRegistry::instance().registerProvider(new ZaiProvider());
+        ProviderRegistry::instance().registerProvider(new WindsurfProvider());
         ProviderRegistry::instance().registerProvider(new DisplaySettingsProvider());
         ProviderRegistry::instance().registerProvider(new ConnectionLagProvider());
     }
@@ -264,6 +266,17 @@ private slots:
         QVERIFY(ctx.manualCookieHeader.has_value());
         QCOMPARE(*ctx.manualCookieHeader, QString("sessionKey=sk-ant-credential"));
         QCOMPARE(ctx.settings.get("manualCookieHeader").toString(), QString("sessionKey=sk-ant-credential"));
+    }
+
+    void preservesProviderCookieSourceDefault() {
+        SettingsStore settings;
+        UsageStore store;
+        store.setSettingsStore(&settings);
+
+        ProviderFetchContext ctx = store.buildFetchContextForProvider("windsurf");
+
+        QCOMPARE(ctx.settings.get("cookieSource").toString(), QString("off"));
+        QVERIFY(!ctx.manualCookieHeader.has_value());
     }
 
     void codexActiveManagedAccountScopesFetchContext() {

@@ -30,7 +30,7 @@ function(add_wincodexbar_test TEST_NAME TARGET_NAME)
     if(WIN32 AND QT_RUNTIME_DIR)
         add_test(NAME ${TEST_NAME}
             COMMAND ${CMAKE_COMMAND} -E env
-                "PATH=${QT_RUNTIME_DIR}"
+                "PATH=${QT_RUNTIME_DIR};$ENV{PATH}"
                 "QT_PLUGIN_PATH=${QT_PLUGIN_DIR}"
                 $<TARGET_FILE:${TARGET_NAME}>)
     else()
@@ -299,6 +299,20 @@ target_include_directories(tst_AbacusProvider PRIVATE ${COMMON_INCLUDE})
 target_compile_definitions(tst_AbacusProvider PRIVATE ${COMMON_DEFINES})
 target_link_libraries(tst_AbacusProvider PRIVATE codexbar_core Qt6::Core Qt6::Test)
 add_wincodexbar_test(tst_AbacusProvider tst_AbacusProvider)
+
+add_executable(tst_WindsurfProvider tst_WindsurfProvider.cpp)
+target_include_directories(tst_WindsurfProvider PRIVATE ${COMMON_INCLUDE})
+target_compile_definitions(tst_WindsurfProvider PRIVATE ${COMMON_DEFINES})
+target_link_libraries(tst_WindsurfProvider PRIVATE codexbar_core Qt6::Core Qt6::Test Qt6::Sql)
+if(WIN32 AND QT_RUNTIME_DIR)
+    add_test(NAME tst_WindsurfProvider
+        COMMAND ${CMAKE_COMMAND} -E env
+            "PATH=${QT_RUNTIME_DIR};$ENV{PATH}"
+            "QT_PLUGIN_PATH=${QT_PLUGIN_DIR}"
+            cmd.exe /c "$<SHELL_PATH:$<TARGET_FILE:tst_WindsurfProvider>> -o tst_WindsurfProvider.log,txt")
+else()
+    add_wincodexbar_test(tst_WindsurfProvider tst_WindsurfProvider)
+endif()
 
 # CostUsageCache unit tests
 add_executable(tst_CostUsageCache tst_CostUsageCache.cpp)

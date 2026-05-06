@@ -43,6 +43,13 @@ public:
                                                        const QHash<QString, QString>& headers = {},
                                                        int timeoutMs = -1,
                                                        bool http2Allowed = true);
+    // Returns {responseBody, httpStatusCode}. httpStatusCode is 0 on network error/timeout.
+    std::pair<QByteArray, int> postBytesSyncWithStatus(const QUrl& url,
+                                                       const QByteArray& body,
+                                                       const QHash<QString, QString>& headers = {},
+                                                       const QByteArray& contentType = {},
+                                                       int timeoutMs = -1,
+                                                       bool http2Allowed = true);
     QJsonObject postFormSync(const QUrl& url,
                              const QByteArray& formData,
                              const QHash<QString, QString>& headers = {},

@@ -25,6 +25,16 @@ void tst_ProviderBootstrap::registersCodebuffProvider()
     QVERIFY(descriptor.has_value());
     QCOMPARE(descriptor->metadata.cliName, QStringLiteral("codebuff"));
     QVERIFY(descriptor->metadata.supportsCredits);
+
+    auto* windsurf = ProviderRegistry::instance().provider(QStringLiteral("windsurf"));
+    QVERIFY(windsurf != nullptr);
+    QCOMPARE(windsurf->displayName(), QStringLiteral("Windsurf"));
+
+    auto windsurfDescriptor = ProviderRegistry::instance().descriptor(QStringLiteral("windsurf"));
+    QVERIFY(windsurfDescriptor.has_value());
+    QCOMPARE(windsurfDescriptor->metadata.cliName, QStringLiteral("windsurf"));
+    QVERIFY(windsurfDescriptor->fetchPlan.allowedSourceModes.contains(QStringLiteral("web")));
+    QVERIFY(windsurfDescriptor->fetchPlan.allowedSourceModes.contains(QStringLiteral("cli")));
 }
 
 void tst_ProviderBootstrap::descriptorExposesProviderMetadata()

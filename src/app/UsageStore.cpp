@@ -439,7 +439,9 @@ ProviderFetchContext UsageStore::buildFetchContextForProvider(const QString& pro
     ctx.settings.set("sourceMode", sourceMode);
     ctx.sourceMode = sourceModeFromString(sourceMode);
 
-    QString cookieSource = addSetting("cookieSource", "auto").toString();
+    QString cookieSource = addSetting(
+        "cookieSource",
+        ctx.settings.get("cookieSource", "auto")).toString();
     if (providerId == "cursor" && cookieSource == "auto") {
         cookieSource = addSetting("cursorCookieSource", "auto").toString();
     }

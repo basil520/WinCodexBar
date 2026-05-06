@@ -1221,6 +1221,7 @@ Rectangle {
         "vertexai": "#4285F4",
         "deepseek": "#4D6BFE",
         "codebuff": "#44FF00",
+        "windsurf": "#34E8BB",
         "antigravity": "#10B981",
         "synthetic": "#6366F1",
         "opencodego": "#3B82F6"

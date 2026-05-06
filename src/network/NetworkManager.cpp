@@ -199,6 +199,27 @@ std::pair<QJsonObject, int> NetworkManager::postJsonSyncWithStatus(
     return {parseJsonObject(result.data), result.httpStatus};
 }
 
+std::pair<QByteArray, int> NetworkManager::postBytesSyncWithStatus(
+    const QUrl& url,
+    const QByteArray& body,
+    const QHash<QString, QString>& headers,
+    const QByteArray& contentType,
+    int timeoutMs,
+    bool http2Allowed)
+{
+    QNetworkAccessManager* nam = threadLocalNam();
+    QNetworkRequest request(url);
+    request.setAttribute(QNetworkRequest::Http2AllowedAttribute, http2Allowed);
+    applyHeaders(request, headers, QByteArray());
+    if (!contentType.isEmpty()) {
+        request.setHeader(QNetworkRequest::ContentTypeHeader, contentType);
+    }
+    auto result = waitForReplyWithStatus(
+        nam->post(request, body),
+        timeoutMs > 0 ? timeoutMs : m_defaultTimeout);
+    return {result.data, result.httpStatus};
+}
+
 QFuture<QJsonObject> NetworkManager::getJson(
     const QUrl& url,
     const QHash<QString, QString>& headers)
